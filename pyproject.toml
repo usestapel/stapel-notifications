@@ -27,7 +27,7 @@ all = ["stapel-notifications[firebase,kafka]"]
 
 [tool.setuptools]
 package-dir = {"stapel_notifications" = "."}
-packages = ["stapel_notifications", "stapel_notifications.migrations"]
+packages = ["stapel_notifications", "stapel_notifications.channels", "stapel_notifications.management", "stapel_notifications.management.commands", "stapel_notifications.migrations", "stapel_notifications.tests"]
 
 [tool.setuptools.package-data]
 stapel_notifications = ["migrations/*.py", "migrations/**/*.py"]
