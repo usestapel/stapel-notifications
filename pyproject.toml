@@ -31,3 +31,7 @@ packages = ["stapel_notifications", "stapel_notifications.channels", "stapel_not
 
 [tool.setuptools.package-data]
 stapel_notifications = ["migrations/*.py", "migrations/**/*.py"]
+
+[tool.pytest.ini_options]
+django_find_project = false
+addopts = "--tb=short -q"
