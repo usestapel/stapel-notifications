@@ -1,6 +1,5 @@
 """Data Transfer Objects for notifications API."""
 from dataclasses import dataclass
-from typing import Optional
 from uuid import UUID
 
 
