@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{{ subject }}</title>
+  <style type="text/css">
+    body, table, td, p, a, li { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
+    @media only screen and (max-width: 620px) {
+      .email-container { width: 100% !important; }
+      .email-body { padding: 24px 20px !important; }
+      .email-header { padding: 20px 20px !important; }
+      .email-footer { padding: 20px 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F5F5F6; font-family: Helvetica, Arial, sans-serif;">
+  <div style="display: none; max-height: 0; overflow: hidden;">{{ subject }} &#8199;&#65279;&#847;</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #F5F5F6;">
+    <tr>
+      <td align="center" style="padding: 24px 16px;">
+        <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 12px; overflow: hidden;">
+          <tr>
+            <td class="email-header" style="padding: 28px 32px 20px 32px; border-bottom: 1px solid #DADADB;">
+              <img src="{{ logo_url }}" alt="Iron" width="96" style="display: block; height: auto; font-family: Helvetica, Arial, sans-serif; font-size: 24px; font-weight: bold; color: #00AEEF;">
+            </td>
+          </tr>
+          <tr>
+            <td class="email-body" style="padding: 32px 32px 40px 32px;">
+              <h1 style="margin: 0 0 16px 0; font-family: Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 600; line-height: 26px; color: #1C1D20;">
+                {{ heading }}
+              </h1>
+              <p style="margin: 0 0 8px 0; font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 22px; color: #1C1D20;">
+                {{ body }}
+              </p>
+              {% if warning %}
+              <p style="margin: 16px 0 0 0; font-family: Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px; color: #7D7E81;">
+                {{ warning }}
+              </p>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="email-footer" style="padding: 24px 32px 28px 32px; border-top: 1px solid #DADADB; background-color: #FAFAFA;">
+              <p style="margin: 0 0 12px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; line-height: 18px; color: #7D7E81;">{{ footer_legal }}</p>
+              <p style="margin: 0 0 12px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; line-height: 18px; color: #7D7E81;">{{ footer_address }}</p>
+              <p style="margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; line-height: 18px;">
+                <a href="https://iron.com" style="color: #2A90D9; text-decoration: underline;">iron.com</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

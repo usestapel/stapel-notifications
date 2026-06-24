@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "stapel-notifications"
+version = "0.1.0"
+description = "Push and in-app notifications Django app for the Stapel framework"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+keywords = ["django", "stapel", "notifications", "push", "firebase"]
+classifiers = [
+    "Framework :: Django",
+    "Framework :: Django :: 4.2",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "stapel-core>=0.1.0",
+]
+
+[project.optional-dependencies]
+firebase = ["firebase-admin>=6.4"]
+kafka = ["confluent-kafka>=2.3"]
+all = ["stapel-notifications[firebase,kafka]"]
+
+[tool.setuptools]
+package-dir = {"stapel_notifications" = "."}
+packages = ["stapel_notifications", "stapel_notifications.migrations"]
+
+[tool.setuptools.package-data]
+stapel_notifications = ["migrations/*.py", "migrations/**/*.py"]
