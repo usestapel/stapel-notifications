@@ -6,7 +6,8 @@ Syncs notification translation keys from translate service.
 
 import logging
 
-from stapel_core.kafka import BaseKafkaConsumerCommand, Event, EventType
+from stapel_core.bus import BaseBusConsumerCommand as BaseKafkaConsumerCommand, Event
+from stapel_core.kafka.events import EventType
 from stapel_core.kafka.topics import TOPIC_TRANSLATIONS_CHANGED
 
 from stapel_notifications.models import TranslationCache
