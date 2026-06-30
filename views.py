@@ -5,9 +5,9 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from stapel_core.django.api.errors import (
-    IronErrorResponse,
-    IronErrorSerializer,
-    IronResponse,
+    StapelErrorResponse,
+    StapelErrorSerializer,
+    StapelResponse,
 )
 from stapel_core.django.api.pagination import CreatedAtAnchorPagination
 from stapel_core.django.api.permissions import IsServiceRequest, IsStaffUser
@@ -37,7 +37,7 @@ class DeviceTokenView(APIView):
         request=DeviceTokenRequestSerializer,
         responses={
             201: DeviceTokenResponseSerializer,
-            400: IronErrorSerializer,
+            400: StapelErrorSerializer,
         },
     )
     def post(self, request):
@@ -48,7 +48,7 @@ class DeviceTokenView(APIView):
         platform = serializer.validated_data["platform"]
 
         if platform not in VALID_PLATFORMS:
-            return IronErrorResponse(400, ERR_400_INVALID_PLATFORM)
+            return StapelErrorResponse(400, ERR_400_INVALID_PLATFORM)
 
         DevicePushToken.objects.update_or_create(
             token=token,
@@ -60,7 +60,7 @@ class DeviceTokenView(APIView):
         )
 
         dto = DeviceTokenResponse(token=token, platform=platform)
-        return IronResponse(
+        return StapelResponse(
             DeviceTokenResponseSerializer(dto), status=status.HTTP_201_CREATED
         )
 
@@ -76,7 +76,7 @@ class DeviceTokenDeleteView(APIView):
         summary="Unregister push token",
         responses={
             204: None,
-            404: IronErrorSerializer,
+            404: StapelErrorSerializer,
         },
     )
     def delete(self, request, token):
@@ -86,9 +86,9 @@ class DeviceTokenDeleteView(APIView):
         ).delete()
 
         if not deleted:
-            return IronErrorResponse(404, ERR_404_TOKEN_NOT_FOUND)
+            return StapelErrorResponse(404, ERR_404_TOKEN_NOT_FOUND)
 
-        return IronResponse(status=status.HTTP_204_NO_CONTENT)
+        return StapelResponse(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(tags=["Translation Keys"])
@@ -104,7 +104,7 @@ class NotificationKeysView(APIView):
         responses={200: dict},
     )
     def get(self, request):
-        return IronResponse(NOTIFICATION_KEYS)
+        return StapelResponse(NOTIFICATION_KEYS)
 
 
 class FeedPagination(CreatedAtAnchorPagination):
