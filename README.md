@@ -1,5 +1,8 @@
 # stapel-notifications
 
+[![CI](https://github.com/usestapel/stapel-notifications/actions/workflows/ci.yml/badge.svg)](https://github.com/usestapel/stapel-notifications/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/usestapel/stapel-notifications/graph/badge.svg)](https://codecov.io/gh/usestapel/stapel-notifications)
+
 > Notifications — push (Firebase), email, SMS channels with delivery logging
 
 Part of the [Stapel framework](https://github.com/usestapel) — composable Django apps for building production-grade platforms.
