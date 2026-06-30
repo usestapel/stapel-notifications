@@ -1,5 +1,5 @@
 """Serializers for notifications API."""
-from stapel_core.django.serializers import IronDataclassSerializer
+from stapel_core.django.api.serializers import IronDataclassSerializer
 from .dto import DeviceTokenRequest, DeviceTokenResponse, FeedItemResponse
 
 

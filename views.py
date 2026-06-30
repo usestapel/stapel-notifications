@@ -1,34 +1,39 @@
-"""Views for iron-notifications service."""
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+"""Views for stapel-notifications service."""
+
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from stapel_core.django.api.errors import (
+    IronErrorResponse,
+    IronErrorSerializer,
+    IronResponse,
+)
+from stapel_core.django.api.pagination import CreatedAtAnchorPagination
+from stapel_core.django.api.permissions import IsServiceRequest, IsStaffUser
 
-from stapel_core.django.errors import IronResponse, IronErrorResponse, IronErrorSerializer
-from stapel_core.django.pagination import CreatedAtAnchorPagination
-from stapel_core.django.permissions import IsStaffUser, IsServiceRequest
-
-from .models import DevicePushToken, NotificationLog
 from .dto import DeviceTokenResponse, FeedItemResponse
+from .errors import ERR_400_INVALID_PLATFORM, ERR_404_TOKEN_NOT_FOUND
+from .models import DevicePushToken, NotificationLog
 from .serializers import (
     DeviceTokenRequestSerializer,
     DeviceTokenResponseSerializer,
     FeedItemResponseSerializer,
 )
-from .errors import ERR_400_INVALID_PLATFORM, ERR_404_TOKEN_NOT_FOUND
 from .translation_keys import NOTIFICATION_KEYS
 
-VALID_PLATFORMS = {'ios', 'android', 'web'}
+VALID_PLATFORMS = {"ios", "android", "web"}
 
 
-@extend_schema(tags=['Devices'])
+@extend_schema(tags=["Devices"])
 class DeviceTokenView(APIView):
     """Register a push notification token."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        operation_id='register_device_token',
-        summary='Register push token',
+        operation_id="register_device_token",
+        summary="Register push token",
         request=DeviceTokenRequestSerializer,
         responses={
             201: DeviceTokenResponseSerializer,
@@ -39,8 +44,8 @@ class DeviceTokenView(APIView):
         serializer = DeviceTokenRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        token = serializer.validated_data['token']
-        platform = serializer.validated_data['platform']
+        token = serializer.validated_data["token"]
+        platform = serializer.validated_data["platform"]
 
         if platform not in VALID_PLATFORMS:
             return IronErrorResponse(400, ERR_400_INVALID_PLATFORM)
@@ -48,24 +53,27 @@ class DeviceTokenView(APIView):
         DevicePushToken.objects.update_or_create(
             token=token,
             defaults={
-                'user_id': request.user.id,
-                'platform': platform,
-                'is_active': True,
+                "user_id": request.user.id,
+                "platform": platform,
+                "is_active": True,
             },
         )
 
         dto = DeviceTokenResponse(token=token, platform=platform)
-        return IronResponse(DeviceTokenResponseSerializer(dto), status=status.HTTP_201_CREATED)
+        return IronResponse(
+            DeviceTokenResponseSerializer(dto), status=status.HTTP_201_CREATED
+        )
 
 
-@extend_schema(tags=['Devices'])
+@extend_schema(tags=["Devices"])
 class DeviceTokenDeleteView(APIView):
     """Unregister a push notification token."""
+
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
-        operation_id='unregister_device_token',
-        summary='Unregister push token',
+        operation_id="unregister_device_token",
+        summary="Unregister push token",
         responses={
             204: None,
             404: IronErrorSerializer,
@@ -83,15 +91,16 @@ class DeviceTokenDeleteView(APIView):
         return IronResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-@extend_schema(tags=['Translation Keys'])
+@extend_schema(tags=["Translation Keys"])
 class NotificationKeysView(APIView):
     """Expose notification translation keys for the translate service collector."""
+
     permission_classes = [IsStaffUser | IsServiceRequest]
 
     @extend_schema(
-        operation_id='get_notification_keys',
-        summary='Get notification translation keys',
-        description='Returns all notification translation keys with English defaults. Used by translate service to sync.',
+        operation_id="get_notification_keys",
+        summary="Get notification translation keys",
+        description="Returns all notification translation keys with English defaults. Used by translate service to sync.",
         responses={200: dict},
     )
     def get(self, request):
@@ -103,16 +112,17 @@ class FeedPagination(CreatedAtAnchorPagination):
     max_page_size = 50
 
 
-@extend_schema(tags=['Feed'])
+@extend_schema(tags=["Feed"])
 class NotificationFeedView(APIView):
     """User's notification feed (push notifications log)."""
+
     permission_classes = [IsAuthenticated]
     pagination_class = FeedPagination
 
     @extend_schema(
-        operation_id='get_notification_feed',
-        summary='Get notification feed',
-        description='Returns push notification log entries for the authenticated user, ordered by created_at desc.',
+        operation_id="get_notification_feed",
+        summary="Get notification feed",
+        description="Returns push notification log entries for the authenticated user, ordered by created_at desc.",
         responses={200: FeedItemResponseSerializer(many=True)},
     )
     def get(self, request):
