@@ -162,7 +162,7 @@ def process_notification(
     all_vars.setdefault("company_year", str(getattr(settings, 'COMPANY_YEAR', datetime.date.today().year)))
 
     # Add unsubscribe/manage URLs for non-auth groups
-    frontend_url = getattr(settings, 'FRONTEND_URL', getattr(settings, 'COMPANY_URL', ''))
+    frontend_url = getattr(settings, 'FRONTEND_URL', '')
     if group != "auth" and user_id:
         token = generate_unsubscribe_token(user_id, group, "email")
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
