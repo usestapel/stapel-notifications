@@ -154,8 +154,15 @@ def process_notification(
         if k not in reserved_keys:
             all_vars[k] = v
 
+    # Company branding — used in templates and formatted translation strings
+    import datetime
+    all_vars.setdefault("company_name", getattr(settings, 'COMPANY_NAME', 'Iron'))
+    all_vars.setdefault("company_url", getattr(settings, 'COMPANY_URL', ''))
+    all_vars.setdefault("company_address", getattr(settings, 'COMPANY_ADDRESS', ''))
+    all_vars.setdefault("company_year", str(getattr(settings, 'COMPANY_YEAR', datetime.date.today().year)))
+
     # Add unsubscribe/manage URLs for non-auth groups
-    frontend_url = getattr(settings, 'FRONTEND_URL', 'https://app.iron.com')
+    frontend_url = getattr(settings, 'FRONTEND_URL', getattr(settings, 'COMPANY_URL', ''))
     if group != "auth" and user_id:
         token = generate_unsubscribe_token(user_id, group, "email")
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
@@ -240,7 +247,7 @@ def _dispatch(
         if not template:
             raise ValueError(f"No email template for notification type: {notification_type}")
         html = render_to_string(template, all_vars)
-        subject = all_vars.get("subject", "Iron Notification")
+        subject = all_vars.get("subject", f"{all_vars.get('company_name', '')} Notification".strip())
         headers = {}
         if group != "auth" and "unsubscribe_url" in all_vars:
             headers["List-Unsubscribe"] = f"<{all_vars['unsubscribe_url']}>"
@@ -250,7 +257,7 @@ def _dispatch(
     elif channel == "push":
         if not user_id:
             raise ValueError("No user_id for push notification")
-        title = all_vars.get("push_title", all_vars.get("heading", "Iron"))
+        title = all_vars.get("push_title", all_vars.get("heading", all_vars.get("company_name", "")))
         body = all_vars.get("push_body", all_vars.get("body", ""))
         data = {"notification_type": notification_type}
         # Add deep link data from variables

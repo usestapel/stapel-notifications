@@ -8,18 +8,18 @@ TranslationEntry records with source='backend:notifications'.
 
 NOTIFICATION_KEYS: dict[str, str] = {
     # ── OTP Code (A1) ───────────────────────────────────────────
-    "notification.otp_code.subject": "Your Iron verification code: {code}",
+    "notification.otp_code.subject": "Your {company_name} verification code: {code}",
     "notification.otp_code.heading": "Your verification code",
     "notification.otp_code.body": "Use the code below to verify your identity:",
     "notification.otp_code.warning": "Don't share this code with anyone. If you didn't request this, you can safely ignore this email.",
     "notification.otp_code.expiry": "This code expires in {expiry_minutes} minutes.",
-    "notification.otp_code.sms": "Your Iron code: {code}. Expires in {expiry_minutes} min.",
+    "notification.otp_code.sms": "Your {company_name} code: {code}. Expires in {expiry_minutes} min.",
     # ── Auth Change Requested (A2) ──────────────────────────────
     "notification.auth_change_requested.subject": "Authenticator change requested",
     "notification.auth_change_requested.heading": "Change requested",
     "notification.auth_change_requested.body": "Your {change_type} change has been requested. New {change_type}: {masked_new_value}. Change will complete on: {scheduled_date}.",
     "notification.auth_change_requested.warning": "If you did not request this change, please contact support immediately.",
-    "notification.auth_change_requested.sms": "Iron: Your {change_type} change has been requested. Completes {scheduled_date}. Contact support if unexpected.",
+    "notification.auth_change_requested.sms": "{company_name}: Your {change_type} change has been requested. Completes {scheduled_date}. Contact support if unexpected.",
     "notification.auth_change_requested.push_title": "Authenticator change requested",
     "notification.auth_change_requested.push_body": "Your {change_type} change will complete on {scheduled_date}.",
     # ── Auth Change Reminder (A3) ───────────────────────────────
@@ -27,7 +27,7 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.auth_change_reminder.heading": "Change reminder",
     "notification.auth_change_reminder.body": "Your {change_type} will be changed to {masked_new_value} in {days_remaining} days.",
     "notification.auth_change_reminder.warning": "If you did not request this, please contact support.",
-    "notification.auth_change_reminder.sms": "Iron: Your {change_type} changes in {days_remaining} days to {masked_new_value}. Contact support if unexpected.",
+    "notification.auth_change_reminder.sms": "{company_name}: Your {change_type} changes in {days_remaining} days to {masked_new_value}. Contact support if unexpected.",
     "notification.auth_change_reminder.push_title": "{change_type} change in {days_remaining} days",
     "notification.auth_change_reminder.push_body": "Your {change_type} will be changed to {masked_new_value}.",
     # ── Auth Change Urgent (A4) ─────────────────────────────────
@@ -35,7 +35,7 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.auth_change_urgent.heading": "Change tomorrow",
     "notification.auth_change_urgent.body": "Your {change_type} will be changed TOMORROW ({scheduled_date}). This is your last chance to cancel.",
     "notification.auth_change_urgent.warning": "After this change, you will need the new {change_type} to log in.",
-    "notification.auth_change_urgent.sms": "URGENT: Iron {change_type} changes tomorrow ({scheduled_date}). Last chance to cancel!",
+    "notification.auth_change_urgent.sms": "URGENT: {company_name} {change_type} changes tomorrow ({scheduled_date}). Last chance to cancel!",
     "notification.auth_change_urgent.push_title": "URGENT: {change_type} change tomorrow",
     "notification.auth_change_urgent.push_body": "Last chance to cancel your {change_type} change.",
     # ── Auth Change Completed (A5) ──────────────────────────────
@@ -43,7 +43,7 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.auth_change_completed.heading": "Change completed",
     "notification.auth_change_completed.body": "Your account {change_type} has been successfully changed.",
     "notification.auth_change_completed.warning": "If you did not authorize this change, contact support immediately.",
-    "notification.auth_change_completed.sms": "Iron: Your {change_type} has been changed. Contact support if unexpected.",
+    "notification.auth_change_completed.sms": "{company_name}: Your {change_type} has been changed. Contact support if unexpected.",
     "notification.auth_change_completed.push_title": "{change_type} changed",
     "notification.auth_change_completed.push_body": "Your account {change_type} has been updated.",
     # ── New Message (B1) ────────────────────────────────────────
@@ -70,14 +70,14 @@ NOTIFICATION_KEYS: dict[str, str] = {
     # ── Listing Blocked (C3) ────────────────────────────────────
     "notification.listing_blocked.subject": "Your listing has been blocked",
     "notification.listing_blocked.heading": "Your listing has been blocked",
-    "notification.listing_blocked.body": "Your listing \u201c{listing_title}\u201d has been blocked for violating Iron guidelines.",
+    "notification.listing_blocked.body": "Your listing \u201c{listing_title}\u201d has been blocked for violating {company_name} guidelines.",
     "notification.listing_blocked.cta": "Learn More",
     "notification.listing_blocked.warning": "If you believe this was a mistake, please contact our support team.",
     "notification.listing_blocked.push_title": "Listing blocked",
     "notification.listing_blocked.push_body": "\u201c{listing_title}\u201d was blocked for guideline violations.",
     # ── Magic Link Login (A6) ───────────────────────────────────
-    "notification.magic_link_login.subject": "Your Iron sign-in link",
-    "notification.magic_link_login.heading": "Sign in to Iron",
+    "notification.magic_link_login.subject": "Your {company_name} sign-in link",
+    "notification.magic_link_login.heading": "Sign in to {company_name}",
     "notification.magic_link_login.body": "Click the button below to sign in. This link expires in 15 minutes and can only be used once.",
     "notification.magic_link_login.cta": "Sign in",
     "notification.magic_link_login.warning": "If you didn't request this, you can safely ignore this email.",
@@ -99,9 +99,9 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.all_sessions_revoked.body": "All active sessions on your account have been revoked. You have been signed out of all devices.",
     "notification.all_sessions_revoked.warning": "If you did not initiate this action, please reset your password immediately.",
     # ── Footer / Shared ─────────────────────────────────────────
-    "notification.footer.legal": "\u00a9 2026 Iron Company \u00b7 Address",
-    "notification.footer.address": "Iron Service address",
-    "notification.footer.consent": "You received this email because you agreed to receive messages from Iron.",
+    "notification.footer.legal": "\u00a9 {company_year} {company_name}",
+    "notification.footer.address": "{company_address}",
+    "notification.footer.consent": "You received this email because you agreed to receive messages from {company_name}.",
     "notification.footer.unsubscribe": "Unsubscribe",
     "notification.footer.manage": "Manage notifications",
 }
