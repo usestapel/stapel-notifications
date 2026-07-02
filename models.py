@@ -98,7 +98,7 @@ class NotificationLog(models.Model):
         indexes = [
             models.Index(
                 fields=["user_id", "-created_at"],
-                name="notificatio_user_id_created_idx",
+                name="notif_user_created_idx",
             ),
         ]
 

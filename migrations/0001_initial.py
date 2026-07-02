@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
                 "verbose_name_plural": "Notification Logs",
                 "ordering": ["-created_at"],
                 "indexes": [
-                    models.Index(fields=["user_id", "-created_at"], name="notificatio_user_id_created_idx"),
+                    models.Index(fields=["user_id", "-created_at"], name="notif_user_created_idx"),
                 ],
             },
         ),
