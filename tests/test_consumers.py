@@ -21,9 +21,6 @@ from stapel_notifications.management.commands.consume_notifications import (
 from stapel_notifications.management.commands.consume_profiles import (
     Command as ProfilesCommand,
 )
-from stapel_notifications.management.commands.consume_translations import (
-    Command as TranslationsCommand,
-)
 from stapel_notifications.models import (
     NotificationLog,
     TranslationCache,
@@ -149,40 +146,137 @@ class TestConsumeProfiles:
 
 
 @pytest.mark.django_db
-class TestConsumeTranslations:
-    def test_caches_notification_keys(self):
-        TranslationsCommand().handle_event(
-            _event(
-                EventType.TRANSLATIONS_CHANGED,
-                {
-                    "key": "notification.otp_code.heading",
-                    "values": {"en": "Code", "de": "Kode"},
-                },
-            )
+class TestTranslationsChangedAction:
+    """@on_action("translations.changed"): thin invalidation + resolve pull."""
+
+    @pytest.fixture
+    def fake_resolve(self, function_registry_sandbox):
+        """Register a fake translate.resolve provider (exact loop contract:
+        {keys, language} → {"values": {key: text}}, missing keys omitted)."""
+        from stapel_core.comm import register_function
+
+        store = {
+            ("notification.otp_code.heading", "de"): "Kode",
+            ("notification.otp_code.heading", "en"): "Code",
+        }
+        calls = []
+
+        def resolve(payload):
+            calls.append(payload)
+            values = {
+                key: store[(key, payload["language"])]
+                for key in payload["keys"]
+                if (key, payload["language"]) in store
+            }
+            return {"values": values}
+
+        with function_registry_sandbox._lock:
+            function_registry_sandbox._providers.pop("translate.resolve", None)
+        register_function("translate.resolve", resolve)
+        return calls
+
+    def _deliver(self, payload):
+        from stapel_notifications.actions import handle_translations_changed
+
+        handle_translations_changed(_event("translations.changed", payload))
+
+    def test_pulls_values_and_merges_language(self, fake_resolve):
+        TranslationCache.objects.create(
+            key="notification.otp_code.heading", values={"en": "Code"}
+        )
+        self._deliver(
+            {"language": "de", "keys_changed": ["notification.otp_code.heading"]}
         )
         row = TranslationCache.objects.get(key="notification.otp_code.heading")
-        assert row.values == {"en": "Code", "de": "Kode"}
+        assert row.values == {"en": "Code", "de": "Kode"}  # merged, not replaced
 
-    def test_non_notification_keys_are_ignored(self):
-        TranslationsCommand().handle_event(
-            _event(
-                EventType.TRANSLATIONS_CHANGED,
-                {"key": "profile.title", "values": {"en": "x"}},
-            )
+    def test_non_notification_keys_are_filtered_out(self, fake_resolve):
+        self._deliver(
+            {
+                "language": "de",
+                "keys_changed": ["profile.title", "notification.otp_code.heading"],
+            }
+        )
+        (call_payload,) = fake_resolve
+        assert call_payload["keys"] == ["notification.otp_code.heading"]
+        assert TranslationCache.objects.count() == 1
+
+    def test_no_notification_keys_means_no_call(self, fake_resolve):
+        self._deliver({"language": "de", "keys_changed": ["profile.title"]})
+        assert fake_resolve == []
+        assert TranslationCache.objects.count() == 0
+
+    def test_keys_missing_in_translate_are_omitted(self, fake_resolve):
+        self._deliver(
+            {"language": "de", "keys_changed": ["notification.unknown.key"]}
         )
         assert TranslationCache.objects.count() == 0
 
-    def test_invalid_payload_is_ignored(self, caplog):
-        with caplog.at_level("WARNING"):
-            TranslationsCommand().handle_event(
-                _event(
-                    EventType.TRANSLATIONS_CHANGED,
-                    {"key": "notification.x", "values": "not-a-dict"},
-                )
-            )
-        assert TranslationCache.objects.count() == 0
-        assert any("Invalid translations-changed" in r.message for r in caplog.records)
+    def test_resolve_failure_propagates_for_retry(self, function_registry_sandbox):
+        from stapel_core.comm.exceptions import FunctionNotRegistered
 
-    def test_unknown_event_type_is_ignored(self):
-        TranslationsCommand().handle_event(_event("something.else", {}))
-        assert TranslationCache.objects.count() == 0
+        with function_registry_sandbox._lock:
+            function_registry_sandbox._providers.pop("translate.resolve", None)
+        with pytest.raises(FunctionNotRegistered):
+            self._deliver(
+                {"language": "de", "keys_changed": ["notification.otp_code.heading"]}
+            )
+
+
+@pytest.mark.django_db
+class TestUserDeletionInitiatedAction:
+    def test_soft_deactivates_contact_and_push_tokens(self):
+        import uuid as _uuid
+
+        from stapel_notifications.actions import handle_user_deletion_initiated
+        from stapel_notifications.models import DevicePushToken
+
+        uid = _uuid.uuid4()
+        UserContact.objects.create(user_id=uid, email="u@example.com", phone="+451")
+        DevicePushToken.objects.create(user_id=uid, token="tok-1", platform="ios")
+
+        handle_user_deletion_initiated(
+            _event("user.deletion_initiated", {"user_id": str(uid), "trigger": "manual"})
+        )
+        contact = UserContact.objects.get(user_id=uid)
+        assert contact.is_active is False
+        assert contact.email == "u@example.com"  # soft: PII kept until user.deleted
+        assert DevicePushToken.objects.get(token="tok-1").is_active is False
+
+    def test_missing_user_id_is_logged_and_ignored(self, caplog):
+        from stapel_notifications.actions import handle_user_deletion_initiated
+
+        with caplog.at_level("ERROR"):
+            handle_user_deletion_initiated(
+                _event("user.deletion_initiated", {"trigger": "manual"})
+            )
+        assert any("without user_id" in r.message for r in caplog.records)
+
+    def test_inactive_contact_is_not_used_as_recipient(self, user):
+        from django.test import override_settings
+
+        from stapel_notifications.services import process_notification
+
+        UserContact.objects.create(
+            user_id=user.id, email="u@example.com", is_active=False
+        )
+        with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": "mock"}):
+            process_notification(
+                notification_type="new_device_login",
+                user_id=str(user.id),
+                variables={},
+            )
+        # contact deactivated → no recipient resolved → nothing sent
+        assert NotificationLog.objects.get(channel="email").recipient == "unknown"
+
+    def test_contact_sync_reactivates(self):
+        import uuid as _uuid
+
+        uid = _uuid.uuid4()
+        UserContact.objects.create(user_id=uid, email="a@example.com", is_active=False)
+        ContactsCommand().handle_event(
+            _event(EventType.USER_CONTACT_CHANGED, {"user_id": str(uid), "email": "b@example.com"})
+        )
+        contact = UserContact.objects.get(user_id=uid)
+        assert contact.is_active is True
+        assert contact.email == "b@example.com"

@@ -37,9 +37,30 @@ def _get_keys_for_type(notification_type: str) -> list[str]:
 
 
 def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
-    """Resolve translation keys to translated strings."""
+    """Resolve translation keys to translated strings.
+
+    Cache misses are lazily pulled through the ``translate.resolve`` comm
+    Function and stored in TranslationCache; when translate is unreachable
+    (or the Function is not registered) rendering degrades to the built-in
+    ``en`` defaults exactly as before.
+    """
     translations = {}
     cached = {tc.key: tc.values for tc in TranslationCache.objects.filter(key__in=keys)}
+
+    missing = [k for k in keys if k not in cached]
+    if missing:
+        from .translations import resolve_and_cache
+
+        try:
+            resolved = resolve_and_cache(missing, lang)
+        except Exception as exc:
+            logger.debug(
+                "lazy translate.resolve failed for %d key(s), falling back to "
+                "built-in defaults: %s", len(missing), exc,
+            )
+        else:
+            for key, text in resolved.items():
+                cached[key] = {lang: text}
 
     for key in keys:
         if key in cached:
@@ -85,23 +106,39 @@ def process_notification(
     phone: str | None = None,
     language: str | None = None,
     event_id: str | None = None,
+    content_html: str | None = None,
+    content_text: str | None = None,
 ) -> None:
     """
     Process a notification request: resolve language, contacts, translations,
     and dispatch to all configured channels.
+
+    ``content_html`` / ``content_text`` are the raw-content escape hatch:
+    when given, the email body is rendered from them (wrapped in the base
+    brand layout) instead of a registered per-type template, and an
+    unregistered ``notification_type`` is allowed (group defaults to
+    "system", channels derived from the content given).
     """
     # Idempotency: skip if this event was already processed
     if event_id and NotificationLog.objects.filter(data__event_id=event_id, status="sent").exists():
         logger.info("Skipping duplicate event_id=%s", event_id)
         return
 
+    has_content = bool(content_html or content_text)
     routing = get_routing(notification_type)
     if not routing:
-        logger.error(
-            "Unknown notification type: %s (register it via "
-            "STAPEL_NOTIFICATIONS['TYPES'])", notification_type,
-        )
-        return
+        if not has_content:
+            logger.error(
+                "Unknown notification type: %s (register it via "
+                "STAPEL_NOTIFICATIONS['TYPES'] or pass content_html/"
+                "content_text)", notification_type,
+            )
+            return
+        # Ad-hoc notification: raw content, no registry entry required.
+        channels = ["email"]
+        if content_text:
+            channels += (["push"] if user_id else []) + (["sms"] if phone else [])
+        routing = {"channels": channels, "group": "system"}
 
     group = routing.get("group", "")
 
@@ -110,7 +147,7 @@ def process_notification(
     contact = None
     if user_id:
         settings_obj = UserNotificationSettings.objects.filter(user_id=user_id).first()
-        contact = UserContact.objects.filter(user_id=user_id).first()
+        contact = UserContact.objects.filter(user_id=user_id, is_active=True).first()
 
     # Language resolution: profile override > event language > auto-detected > English
     lang = "en"
@@ -157,6 +194,12 @@ def process_notification(
         str(notifications_settings.COMPANY_YEAR or datetime.date.today().year),
     )
 
+    # Brand colors — consumed by the email base layout (_base.html)
+    all_vars.setdefault("brand_primary", notifications_settings.BRAND_PRIMARY)
+    all_vars.setdefault("brand_primary_dark", notifications_settings.BRAND_PRIMARY_DARK)
+    all_vars.setdefault("brand_bg", notifications_settings.BRAND_BG)
+    all_vars.setdefault("brand_text", notifications_settings.BRAND_TEXT)
+
     # Add unsubscribe/manage URLs for non-auth groups
     frontend_url = notifications_settings.FRONTEND_URL
     if group != "auth" and user_id:
@@ -164,8 +207,9 @@ def process_notification(
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
         all_vars["manage_notifications_url"] = f"{frontend_url}/settings/notifications"
 
-    # Logo as inline CID attachment (referenced in email templates)
-    all_vars["logo_url"] = "cid:logo"
+    # Logo: configured URL wins; otherwise the packaged static logo is
+    # attached inline by the email channel and referenced as cid:logo.
+    all_vars["logo_url"] = notifications_settings.LOGO_URL or "cid:logo"
 
     # Format translation values with variables (e.g. "{code}" → "1234")
     # Uses _SafeFormatter to prevent attribute/index access in format strings
@@ -196,6 +240,8 @@ def process_notification(
                 channel, notification_type, group,
                 recipient_email, recipient_phone, user_id,
                 all_vars, lang,
+                content_html=content_html,
+                content_text=content_text,
             )
             NotificationLog.objects.create(
                 user_id=user_id,
@@ -233,16 +279,26 @@ def _dispatch(
     user_id: str | None,
     all_vars: dict,
     lang: str,
+    content_html: str | None = None,
+    content_text: str | None = None,
 ) -> None:
     """Dispatch to a specific channel."""
     if channel == "email":
         if not recipient_email:
             logger.debug("Skipping email channel for %s: no email address", notification_type)
             return
-        template = get_email_template(notification_type)
-        if not template:
-            raise ValueError(f"No email template for notification type: {notification_type}")
-        html = render_to_string(template, all_vars)
+        if content_html or content_text:
+            # Raw-content escape hatch: wrap the caller-provided body in the
+            # base brand layout instead of a registered per-type template.
+            html = render_to_string(
+                "notifications/email/_raw_content.html",
+                {**all_vars, "content_html": content_html, "content_text": content_text},
+            )
+        else:
+            template = get_email_template(notification_type)
+            if not template:
+                raise ValueError(f"No email template for notification type: {notification_type}")
+            html = render_to_string(template, all_vars)
         subject = all_vars.get("subject", f"{all_vars.get('company_name', '')} Notification".strip())
         headers = {}
         if group != "auth" and "unsubscribe_url" in all_vars:
@@ -254,7 +310,7 @@ def _dispatch(
         if not user_id:
             raise ValueError("No user_id for push notification")
         title = all_vars.get("push_title", all_vars.get("heading", all_vars.get("company_name", "")))
-        body = all_vars.get("push_body", all_vars.get("body", ""))
+        body = all_vars.get("push_body", all_vars.get("body", content_text or ""))
         data = {"notification_type": notification_type}
         # Add deep link data from variables
         for key in ("chat_url", "listing_url", "notifications_chat_url"):
@@ -268,7 +324,7 @@ def _dispatch(
         if not recipient_phone:
             logger.debug("Skipping sms channel for %s: no phone number", notification_type)
             return
-        sms_text = all_vars.get("sms", all_vars.get("body", ""))
+        sms_text = all_vars.get("sms", all_vars.get("body", content_text or ""))
         send_sms(recipient_phone, sms_text)
 
     else:

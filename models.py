@@ -43,6 +43,14 @@ class UserContact(models.Model):
     user_id = models.UUIDField(primary_key=True)
     email = models.CharField(max_length=255, blank=True, default="")
     phone = models.CharField(max_length=20, blank=True, default="")
+    is_active = models.BooleanField(
+        default=True,
+        help_text=(
+            "Soft-deactivated during an account-closure grace period "
+            "(user.deletion_initiated); reactivated by the next contact sync. "
+            "Inactive contacts are not used as notification recipients."
+        ),
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

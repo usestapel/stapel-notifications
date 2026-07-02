@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "translations.changed",
+  "description": "Thin invalidation from stapel-translate: one or more translation keys were updated for a language. Values are pulled through the translate.resolve comm Function.",
+  "type": "object",
+  "required": ["language", "keys_changed"],
+  "properties": {
+    "language":     { "type": "string" },
+    "keys_changed": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

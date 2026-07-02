@@ -57,6 +57,20 @@ notifications_settings = AppSettings(
         "COMPANY_ADDRESS": "",
         "COMPANY_YEAR": "",
         "FRONTEND_URL": "",
+        # Branding: logo + colors, threaded into every email template via
+        # the base layout (templates/notifications/email/_base.html).
+        # LOGO_URL set   → templates embed <img src="LOGO_URL"> and the
+        #                  inline CID attachment is skipped.
+        # LOGO_URL empty → current behavior: the packaged static logo is
+        #                  attached inline and referenced as cid:logo.
+        "LOGO_URL": "",
+        "BRAND_PRIMARY": "#00AEEF",        # logo/accent color
+        "BRAND_PRIMARY_DARK": "#2A90D9",   # buttons + links
+        "BRAND_BG": "#F5F5F6",             # page background
+        "BRAND_TEXT": "#1C1D20",           # headings + body copy
+        # Languages to prefetch with `manage.py sync_translations` (the
+        # lazy resolve-on-miss path covers anything not listed here).
+        "LANGUAGES": ["en"],
     },
 )
 

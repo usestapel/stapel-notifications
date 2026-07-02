@@ -1,0 +1,15 @@
+{% extends "notifications/email/_base.html" %}
+{% comment %}
+Raw-content escape hatch: request_notification(..., content_html=/content_text=)
+carries the body in the event payload; this template wraps it in the shared
+brand layout so ad-hoc notifications still look on-brand without a registered
+type/template.
+{% endcomment %}
+
+{% block content %}
+              {% if content_html %}{{ content_html|safe }}{% else %}
+              <p style="margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 22px; color: {{ brand_text|default:"#1C1D20" }};">
+                {{ content_text|linebreaksbr }}
+              </p>
+              {% endif %}
+{% endblock %}

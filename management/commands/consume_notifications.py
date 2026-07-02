@@ -45,4 +45,6 @@ class Command(BaseKafkaConsumerCommand):
             phone=payload.get("phone"),
             language=payload.get("language"),
             event_id=event_id,
+            content_html=payload.get("content_html"),
+            content_text=payload.get("content_text"),
         )

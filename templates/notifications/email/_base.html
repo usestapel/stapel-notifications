@@ -1,0 +1,87 @@
+{% comment %}
+Base email layout — shared shell (header/logo, body slot, footer) for every
+stapel-notifications email. Branding is driven by STAPEL_NOTIFICATIONS:
+LOGO_URL, BRAND_PRIMARY, BRAND_PRIMARY_DARK, BRAND_BG, BRAND_TEXT — threaded
+in as logo_url / brand_* template variables by services.process_notification.
+
+Type templates extend this and fill {% block content %}; override
+{% block preheader %} (defaults to the subject) or {% block footer %} when
+needed. The footer picks the unsubscribe variant automatically whenever an
+unsubscribe_url is present (non-auth groups).
+{% endcomment %}<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>{{ subject }}</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .button-link { padding: 12px 32px !important; }
+  </style>
+  <![endif]-->
+  <style type="text/css">
+    body, table, td, p, a, li { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
+    @media only screen and (max-width: 620px) {
+      .email-container { width: 100% !important; }
+      .email-body { padding: 24px 20px !important; }
+      .email-header { padding: 20px 20px !important; }
+      .email-footer { padding: 20px 20px !important; }
+      .button-td { padding: 24px 0 !important; }
+    }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body style="margin: 0; padding: 0; background-color: {{ brand_bg|default:"#F5F5F6" }}; font-family: Helvetica, Arial, sans-serif;">
+
+  <div style="display: none; max-height: 0; overflow: hidden;">
+    {% block preheader %}{{ subject }}{% endblock %} &#8199;&#65279;&#847;
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: {{ brand_bg|default:"#F5F5F6" }};">
+    <tr>
+      <td align="center" style="padding: 24px 16px;">
+        <table role="presentation" class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #FFFFFF; border-radius: 12px; overflow: hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td class="email-header" style="padding: 28px 32px 20px 32px; border-bottom: 1px solid #DADADB;">
+              <img src="{{ logo_url }}" alt="{{ company_name }}" width="96" style="display: block; height: auto; font-family: Helvetica, Arial, sans-serif; font-size: 24px; font-weight: bold; color: {{ brand_primary|default:"#00AEEF" }};">
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td class="email-body" style="padding: 32px 32px 40px 32px;">
+{% block content %}{% endblock %}
+            </td>
+          </tr>
+
+          {% block footer %}{% if unsubscribe_url %}{% include "notifications/email/_footer_unsubscribe.html" %}{% else %}
+          <!-- Footer (minimal — no unsubscribe) -->
+          <tr>
+            <td class="email-footer" style="padding: 24px 32px 28px 32px; border-top: 1px solid #DADADB; background-color: #FAFAFA;">
+              <p style="margin: 0 0 12px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; line-height: 18px; color: #7D7E81;">
+                {{ footer_legal }}
+              </p>
+              <p style="margin: 0 0 12px 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; line-height: 18px; color: #7D7E81;">
+                {{ footer_address }}
+              </p>
+              <p style="margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; line-height: 18px;">
+                <a href="{{ company_url }}" style="color: {{ brand_primary_dark|default:"#2A90D9" }}; text-decoration: underline;">{{ company_name }}</a>
+              </p>
+            </td>
+          </tr>
+          {% endif %}{% endblock %}
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

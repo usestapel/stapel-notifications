@@ -36,6 +36,17 @@ def _get_logo_data() -> bytes | None:
     return _logo_data
 
 
+def _inline_logo_data() -> bytes | None:
+    """Logo bytes for the inline cid:logo attachment, or None when
+    STAPEL_NOTIFICATIONS['LOGO_URL'] is set (templates then reference the
+    URL directly and no attachment is needed)."""
+    from stapel_notifications.conf import notifications_settings
+
+    if notifications_settings.LOGO_URL:
+        return None
+    return _get_logo_data()
+
+
 # ──────────────────────────────────────────────────────────────────
 # Provider classes
 # ──────────────────────────────────────────────────────────────────
@@ -61,7 +72,7 @@ class _ResendEmailProvider:
             "subject": subject,
             "html": html_body,
         }
-        logo = _get_logo_data()
+        logo = _inline_logo_data()
         if logo:
             payload["attachments"] = [{
                 "filename": "logo.png",
@@ -96,7 +107,7 @@ class _SMTPEmailProvider:
             headers=headers or {},
         )
         msg.content_subtype = 'html'
-        logo = _get_logo_data()
+        logo = _inline_logo_data()
         if logo:
             logo_mime = MIMEImage(logo, _subtype='png')
             logo_mime.add_header('Content-ID', '<logo>')

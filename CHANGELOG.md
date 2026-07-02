@@ -1,5 +1,56 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **translate→notifications loop fixed (comm seam).** New
+  `@on_action("translations.changed")` subscriber: the event is a thin
+  invalidation (`{language, keys_changed}`); values are pulled through the
+  `translate.resolve` comm Function and merged into `TranslationCache`
+  (declared in `schemas/consumes/translations.changed.json`).
+- `manage.py sync_translations [--languages de,fr]` — initial population of
+  the TranslationCache for all `NOTIFICATION_KEYS` across
+  `STAPEL_NOTIFICATIONS['LANGUAGES']`.
+- Lazy resolve-on-miss in the render path: a translation-cache miss calls
+  `translate.resolve`, stores the value and proceeds; translate being down
+  degrades to the built-in `en` fallback as before.
+- Branding settings: `LOGO_URL` (set → `<img src=URL>` and no inline CID
+  attachment; unset → packaged logo attached as `cid:logo` as before),
+  `BRAND_PRIMARY`, `BRAND_PRIMARY_DARK`, `BRAND_BG`, `BRAND_TEXT`.
+  All email templates now extend a single base layout
+  (`templates/notifications/email/_base.html`) that renders header/logo/
+  footer/colors from these settings — changing env vars restyles every
+  email type without editing templates.
+- `manage.py eject_notification_templates --out templates/ [--only a,b]
+  [--dry-run] [--force]` — copies the packaged email templates (incl. the
+  base layout) into the host project for on-site customization;
+  skip-if-exists unless `--force`; prints loader-order next steps.
+- `manage.py check_notifications [paths...]` — static AST lint over
+  `request_notification(...)` call sites: literal types must be registered
+  (built-ins + `STAPEL_NOTIFICATIONS['TYPES']`) unless the call passes
+  `content_html`/`content_text`; exit 1 on error; dynamic types are
+  warnings (cross-service literal call sites only — documented limitation).
+- Raw-content escape hatch: `notification.requested` payloads may carry
+  `content_html`/`content_text`; the body is rendered inside the base brand
+  layout instead of a registered per-type template, and an unregistered
+  type is then allowed (group defaults to `system`).
+- `@on_action("user.deletion_initiated")` — account-closure grace period
+  soft-deactivates the user's contact (`UserContact.is_active`, migration
+  `0004`) and push tokens; full erasure stays on `user.deleted`. A contact
+  sync or device re-registration reactivates them. **Known gap:** the gdpr
+  module emits no "closure cancelled" event, so an explicit cancellation
+  cannot proactively re-enable notifications — reactivation waits for the
+  next sync.
+
+### Removed
+- Legacy Kafka consumer `manage.py consume_translations`
+  (`TOPIC_TRANSLATIONS_CHANGED` / `EventType.TRANSLATIONS_CHANGED`,
+  fat `{key, values}` payload). The topic never matched what translate now
+  emits — replaced by the comm Action + Function pull above. The constants
+  remain in stapel-core (deprecated) for deployments pinning the old
+  contract.
+
+
 ## 0.3.0 — 2026-07-03
 
 No functional changes — version alignment with the Stapel 0.3

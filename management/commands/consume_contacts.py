@@ -40,6 +40,9 @@ class Command(BaseKafkaConsumerCommand):
             defaults["phone"] = payload["phone"] or ""
 
         if defaults:
+            # A fresh contact sync reactivates a contact that was soft-
+            # deactivated during an account-closure grace period.
+            defaults["is_active"] = True
             UserContact.objects.update_or_create(
                 user_id=user_id,
                 defaults=defaults,
