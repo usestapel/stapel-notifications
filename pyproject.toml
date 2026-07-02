@@ -30,7 +30,7 @@ package-dir = {"stapel_notifications" = "."}
 packages = ["stapel_notifications", "stapel_notifications.channels", "stapel_notifications.management", "stapel_notifications.management.commands", "stapel_notifications.migrations", "stapel_notifications.tests"]
 
 [tool.setuptools.package-data]
-stapel_notifications = ["migrations/*.py", "schemas/**/*.json", "templates/**/*", "static/**/*", "migrations/**/*.py"]
+stapel_notifications = ["py.typed", "migrations/*.py", "schemas/**/*.json", "templates/**/*", "static/**/*", "migrations/**/*.py"]
 
 [tool.pytest.ini_options]
 django_find_project = false

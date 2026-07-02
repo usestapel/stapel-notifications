@@ -5,6 +5,7 @@ Syncs notification translation keys from translate service.
 """
 
 import logging
+import os
 
 from stapel_core.bus import BaseBusConsumerCommand as BaseKafkaConsumerCommand, Event
 from stapel_core.kafka.events import EventType
@@ -19,7 +20,7 @@ class Command(BaseKafkaConsumerCommand):
     help = "Consume translations-changed events to sync notification translations"
 
     topics = [TOPIC_TRANSLATIONS_CHANGED]
-    consumer_group = "stapel.notifications.translations"
+    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP_TRANSLATIONS", "stapel.notifications.translations")
 
     def handle_event(self, event: Event):
         if event.event_type == EventType.TRANSLATIONS_CHANGED:

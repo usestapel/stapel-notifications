@@ -6,6 +6,7 @@ and dispatches to appropriate channels.
 """
 
 import logging
+import os
 
 from stapel_core.bus import BaseBusConsumerCommand as BaseKafkaConsumerCommand, Event
 from stapel_core.kafka.events import EventType
@@ -20,7 +21,7 @@ class Command(BaseKafkaConsumerCommand):
     help = "Consume notification request events from Kafka"
 
     topics = [TOPIC_NOTIFICATION_REQUESTED]
-    consumer_group = "stapel.notifications.processor"
+    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP", "stapel.notifications.processor")
 
     def handle_event(self, event: Event):
         if event.event_type == EventType.NOTIFICATION_REQUESTED:

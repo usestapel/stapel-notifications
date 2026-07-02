@@ -21,6 +21,14 @@ def pytest_configure(config):
             DEFAULT_AUTO_FIELD="django.db.models.BigAutoField",
             USE_TZ=True,
             ROOT_URLCONF="stapel_notifications.urls",
+            TEMPLATES=[
+                {
+                    "BACKEND": "django.template.backends.django.DjangoTemplates",
+                    "DIRS": [],
+                    "APP_DIRS": True,
+                    "OPTIONS": {"context_processors": []},
+                }
+            ],
             CACHES={
                 "default": {
                     "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -34,3 +42,42 @@ def pytest_configure(config):
                 "notifications": None,
             },
         )
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture
+def user(db):
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    return User.objects.create_user(
+        username="testuser",
+        email="testuser@example.com",
+        password="testpass123",
+    )
+
+
+@pytest.fixture
+def other_user(db):
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    return User.objects.create_user(
+        username="otheruser",
+        email="otheruser@example.com",
+        password="testpass123",
+    )
+
+
+@pytest.fixture
+def api_client():
+    from rest_framework.test import APIClient
+    return APIClient()
+
+
+@pytest.fixture
+def authed_client(user):
+    from rest_framework.test import APIClient
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client

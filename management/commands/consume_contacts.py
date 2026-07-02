@@ -5,6 +5,7 @@ Syncs user email and phone from auth service.
 """
 
 import logging
+import os
 
 from stapel_core.bus import BaseBusConsumerCommand as BaseKafkaConsumerCommand, Event
 from stapel_core.kafka.events import EventType
@@ -19,7 +20,7 @@ class Command(BaseKafkaConsumerCommand):
     help = "Consume user-contact-changed events to sync email/phone"
 
     topics = [TOPIC_USER_CONTACT_CHANGED]
-    consumer_group = "stapel.notifications.contacts"
+    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP_CONTACTS", "stapel.notifications.contacts")
 
     def handle_event(self, event: Event):
         if event.event_type == EventType.USER_CONTACT_CHANGED:

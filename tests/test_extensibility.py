@@ -22,12 +22,12 @@ def _reload_settings():
 def test_builtin_types_present():
     assert get_channels("otp_code") == ["email", "sms"]
     assert get_group("otp_code") == "auth"
-    assert get_email_template("otp_code") == "email/otp_code.html"
+    assert get_email_template("otp_code") == "notifications/email/otp_code.html"
 
 
 def test_workspace_invitation_registered():
     assert get_channels("workspace.invitation") == ["email"]
-    assert get_email_template("workspace.invitation") == "email/workspace_invitation.html"
+    assert get_email_template("workspace.invitation") == "notifications/email/workspace_invitation.html"
 
 
 def test_custom_type_via_settings():
@@ -57,7 +57,7 @@ def test_builtin_type_overridable():
     ):
         assert get_channels("new_message") == ["push"]
         # template falls back to the built-in when the override has none
-        assert get_email_template("new_message") == "email/new_message.html"
+        assert get_email_template("new_message") == "notifications/email/new_message.html"
 
 
 class _FakeProvider:

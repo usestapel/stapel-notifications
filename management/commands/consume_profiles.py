@@ -5,6 +5,7 @@ Syncs user notification preferences and language from profiles service.
 """
 
 import logging
+import os
 
 from stapel_core.bus import BaseBusConsumerCommand as BaseKafkaConsumerCommand, Event
 from stapel_core.kafka.events import EventType
@@ -19,7 +20,7 @@ class Command(BaseKafkaConsumerCommand):
     help = "Consume profile-changed events to sync notification preferences"
 
     topics = [TOPIC_PROFILE_CHANGED]
-    consumer_group = "stapel.notifications.profiles"
+    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP_PROFILES", "stapel.notifications.profiles")
 
     def handle_event(self, event: Event):
         if event.event_type == EventType.PROFILE_CHANGED:
@@ -41,7 +42,14 @@ class Command(BaseKafkaConsumerCommand):
             defaults["auto_detected_language"] = payload["auto_detected_language"] or ''
 
         # Sync notification preferences
-        for field in ("email_messages", "email_system", "push_messages", "push_system"):
+        for field in (
+            "email_messages",
+            "email_system",
+            "push_messages",
+            "push_system",
+            "sms_messages",
+            "sms_system",
+        ):
             if field in payload:
                 defaults[field] = payload[field]
 
