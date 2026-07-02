@@ -1,5 +1,8 @@
 """Views for stapel-notifications service."""
 
+import logging
+
+from django.db import transaction
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -21,6 +24,8 @@ from .serializers import (
     FeedItemResponseSerializer,
 )
 from .translation_keys import NOTIFICATION_KEYS
+
+logger = logging.getLogger(__name__)
 
 VALID_PLATFORMS = {"ios", "android", "web"}
 
@@ -44,20 +49,41 @@ class DeviceTokenView(APIView):
         serializer = DeviceTokenRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        token = serializer.validated_data["token"]
-        platform = serializer.validated_data["platform"]
+        # validated_data is a DeviceTokenRequest dataclass instance
+        token = serializer.validated_data.token
+        platform = serializer.validated_data.platform
 
         if platform not in VALID_PLATFORMS:
             return StapelErrorResponse(400, ERR_400_INVALID_PLATFORM)
 
-        DevicePushToken.objects.update_or_create(
-            token=token,
-            defaults={
-                "user_id": request.user.id,
-                "platform": platform,
-                "is_active": True,
-            },
-        )
+        with transaction.atomic():
+            # A device token identifies one physical device.  When another
+            # account registers the same token (device handed over, account
+            # switch), silently re-binding via update_or_create would move
+            # the token without a trace — remove the previous binding
+            # explicitly and leave an audit log line instead.
+            stale = DevicePushToken.objects.filter(token=token).exclude(
+                user_id=request.user.id
+            ).first()
+            if stale is not None:
+                logger.warning(
+                    "push token rebinding: token %s... moves from user %s "
+                    "to user %s (platform=%s) — previous binding removed",
+                    token[:20],
+                    stale.user_id,
+                    request.user.id,
+                    platform,
+                )
+                stale.delete()
+
+            DevicePushToken.objects.update_or_create(
+                token=token,
+                user_id=request.user.id,
+                defaults={
+                    "platform": platform,
+                    "is_active": True,
+                },
+            )
 
         dto = DeviceTokenResponse(token=token, platform=platform)
         return StapelResponse(

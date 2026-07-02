@@ -9,10 +9,14 @@ project extends or overrides it WITHOUT forking via the settings namespace::
             "invoice_ready": {
                 "channels": ["email", "push"],
                 "group": "system",
-                "template": "email/invoice_ready.html",
+                "template": "myapp/email/invoice_ready.html",
             },
             # override a built-in:
             "new_message": {"channels": ["push"], "group": "messages"},
+        },
+        # or map/override templates without touching the routing entry:
+        "EMAIL_TEMPLATES": {
+            "invoice_ready": "myapp/email/invoice_ready.html",
         },
     }
 
@@ -35,6 +39,11 @@ NOTIFICATION_ROUTING = {
     "suspicious_login":      {"channels": ["email"],                 "group": "auth"},
     "all_sessions_revoked":  {"channels": ["email"],                 "group": "auth"},
 
+    # Account lifecycle / GDPR (mandatory, no unsubscribe)
+    "gdpr.export_ready":       {"channels": ["email"], "group": "auth"},
+    "gdpr.inactivity_warning": {"channels": ["email"], "group": "auth"},
+    "gdpr.inactivity_closed":  {"channels": ["email"], "group": "auth"},
+
     # Group B: Messages (user can disable per channel)
     "new_message":           {"channels": ["push", "email"],        "group": "messages"},
 
@@ -42,29 +51,30 @@ NOTIFICATION_ROUTING = {
     "report_reviewed":       {"channels": ["push", "email"],        "group": "system"},
     "listing_expiring":      {"channels": ["push", "email"],        "group": "system"},
     "listing_blocked":       {"channels": ["push", "email"],        "group": "system"},
-    "workspace.invitation": {
-        "channels": ["email"],
-        "group": "system",
-        "template": "email/workspace_invitation.html",
-    },
+    "workspace.invitation":  {"channels": ["email"],                "group": "system"},
 }
 
 # Built-in email templates for types that do not carry their own
-# "template" key (kept separate for backward compatibility).
+# "template" key.  Namespaced under templates/notifications/email/ so
+# host projects' own "email/*" templates cannot collide.
 DEFAULT_EMAIL_TEMPLATES = {
-    "otp_code": "email/otp_code.html",
-    "auth_change_requested": "email/auth_change.html",
-    "auth_change_reminder": "email/auth_change.html",
-    "auth_change_urgent": "email/auth_change.html",
-    "auth_change_completed": "email/auth_change.html",
-    "new_message": "email/new_message.html",
-    "report_reviewed": "email/report_reviewed.html",
-    "listing_expiring": "email/listing_expiring.html",
-    "listing_blocked": "email/listing_blocked.html",
-    "magic_link_login": "email/magic_link_login.html",
-    "new_device_login": "email/new_device_login.html",
-    "suspicious_login": "email/suspicious_login.html",
-    "all_sessions_revoked": "email/all_sessions_revoked.html",
+    "otp_code": "notifications/email/otp_code.html",
+    "auth_change_requested": "notifications/email/auth_change.html",
+    "auth_change_reminder": "notifications/email/auth_change.html",
+    "auth_change_urgent": "notifications/email/auth_change.html",
+    "auth_change_completed": "notifications/email/auth_change.html",
+    "new_message": "notifications/email/new_message.html",
+    "report_reviewed": "notifications/email/report_reviewed.html",
+    "listing_expiring": "notifications/email/listing_expiring.html",
+    "listing_blocked": "notifications/email/listing_blocked.html",
+    "magic_link_login": "notifications/email/magic_link_login.html",
+    "new_device_login": "notifications/email/new_device_login.html",
+    "suspicious_login": "notifications/email/suspicious_login.html",
+    "all_sessions_revoked": "notifications/email/all_sessions_revoked.html",
+    "gdpr.export_ready": "notifications/email/gdpr_export_ready.html",
+    "gdpr.inactivity_warning": "notifications/email/gdpr_inactivity_warning.html",
+    "gdpr.inactivity_closed": "notifications/email/gdpr_inactivity_closed.html",
+    "workspace.invitation": "notifications/email/workspace_invitation.html",
 }
 
 
@@ -97,6 +107,15 @@ def get_group(notification_type: str) -> str:
 
 
 def get_email_template(notification_type: str) -> str | None:
-    """Template for a type: per-type "template" key wins, then built-ins."""
+    """Template for a type.
+
+    Precedence: per-type ``"template"`` key in the routing entry →
+    ``STAPEL_NOTIFICATIONS["EMAIL_TEMPLATES"]`` override → built-in default.
+    """
     routing = get_routing(notification_type) or {}
-    return routing.get("template") or DEFAULT_EMAIL_TEMPLATES.get(notification_type)
+    overrides = notifications_settings.EMAIL_TEMPLATES or {}
+    return (
+        routing.get("template")
+        or overrides.get(notification_type)
+        or DEFAULT_EMAIL_TEMPLATES.get(notification_type)
+    )

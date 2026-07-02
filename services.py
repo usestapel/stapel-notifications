@@ -50,7 +50,14 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
     return translations
 
 
-_VALID_PREF_FIELDS = {"email_messages", "email_system", "push_messages", "push_system"}
+_VALID_PREF_FIELDS = {
+    "email_messages",
+    "email_system",
+    "push_messages",
+    "push_system",
+    "sms_messages",
+    "sms_system",
+}
 
 
 def _should_send(group: str, channel: str, settings_obj: UserNotificationSettings | None) -> bool:

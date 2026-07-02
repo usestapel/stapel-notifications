@@ -8,12 +8,17 @@ Everything a host project previously had to fork is an override here::
             "invoice_ready": {
                 "channels": ["email", "push"],
                 "group": "system",
-                "template": "email/invoice_ready.html",
+                "template": "myapp/email/invoice_ready.html",
             },
+        },
+        # map/override email templates per type (merged over the built-ins)
+        "EMAIL_TEMPLATES": {
+            "new_message": "myapp/email/new_message.html",
         },
         # channel backends: built-in short name or any dotted path
         "EMAIL_PROVIDER": "myproject.email.SendgridProvider",
         "SMS_PROVIDER": "twilio",
+        "PUSH_PROVIDER": "fcm",
     }
 
 Resolution per key: STAPEL_NOTIFICATIONS dict → flat Django setting of the
@@ -26,12 +31,16 @@ notifications_settings = AppSettings(
     defaults={
         # Notification-type registry, merged OVER routing.NOTIFICATION_ROUTING.
         # {"<type>": {"channels": [...], "group": "auth|messages|system",
-        #             "template": "email/x.html"}}
+        #             "template": "myapp/email/x.html"}}
         "TYPES": {},
+        # Per-type email template overrides, merged over
+        # routing.DEFAULT_EMAIL_TEMPLATES.
+        "EMAIL_TEMPLATES": {},
         # Channel backends: short registry name or dotted path to a provider
         # class with .send(...)
         "EMAIL_PROVIDER": "mock",
         "SMS_PROVIDER": "mock",
+        "PUSH_PROVIDER": "fcm",
         # Provider credentials (read lazily, never frozen at import)
         "RESEND_API_KEY": "",
         "MAILGUN_API_KEY": "",

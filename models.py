@@ -25,6 +25,8 @@ class UserNotificationSettings(models.Model):
     email_system = models.BooleanField(default=True)
     push_messages = models.BooleanField(default=True)
     push_system = models.BooleanField(default=True)
+    sms_messages = models.BooleanField(default=True)
+    sms_system = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -94,7 +96,10 @@ class NotificationLog(models.Model):
         verbose_name_plural = "Notification Logs"
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["user_id", "-created_at"]),
+            models.Index(
+                fields=["user_id", "-created_at"],
+                name="notificatio_user_id_created_idx",
+            ),
         ]
 
     def __str__(self):
