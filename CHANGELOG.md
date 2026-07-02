@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-07-02
 
 ### Added
 - `STAPEL_NOTIFICATIONS` settings namespace (`stapel_notifications.conf`):
