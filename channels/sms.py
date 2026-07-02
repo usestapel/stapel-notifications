@@ -11,7 +11,6 @@ Unknown values fall back to mock with a warning.
 
 import logging
 
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +28,10 @@ class _GatewayAPISMSProvider:
     def send(self, phone: str, body: str) -> None:
         import requests as _http
 
-        token = getattr(settings, 'GATEWAYAPI_TOKEN', '')
-        sender = getattr(settings, 'GATEWAYAPI_SENDER', 'IronMemo')
+        from stapel_notifications.conf import notifications_settings
+
+        token = notifications_settings.GATEWAYAPI_TOKEN
+        sender = notifications_settings.GATEWAYAPI_SENDER
         if not token:
             raise RuntimeError("SMS_PROVIDER=gatewayapi requires GATEWAYAPI_TOKEN")
 
@@ -56,9 +57,11 @@ class _TwilioSMSProvider:
     def send(self, phone: str, body: str) -> None:
         from twilio.rest import Client
 
-        account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
-        auth_token  = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
-        from_number = getattr(settings, 'TWILIO_PHONE_NUMBER', '')
+        from stapel_notifications.conf import notifications_settings
+
+        account_sid = notifications_settings.TWILIO_ACCOUNT_SID
+        auth_token = notifications_settings.TWILIO_AUTH_TOKEN
+        from_number = notifications_settings.TWILIO_PHONE_NUMBER
         if not account_sid or not auth_token:
             raise RuntimeError("SMS_PROVIDER=twilio requires TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN")
 
@@ -79,13 +82,36 @@ _PROVIDERS: dict[str, type] = {
 }
 
 
-def _get_provider():
-    name = getattr(settings, 'SMS_PROVIDER', 'mock').lower()
-    cls = _PROVIDERS.get(name)
+
+
+def _resolve_provider(name_or_path: str, registry: dict, fallback: type, kind: str):
+    """Resolve a provider by built-in short name or dotted path.
+
+    The dotted-path escape hatch means new providers need no fork — same
+    pattern as stapel_core.captcha backends.
+    """
+    key = (name_or_path or "").strip()
+    cls = registry.get(key.lower())
+    if cls is None and "." in key:
+        try:
+            from django.utils.module_loading import import_string
+
+            cls = import_string(key)
+        except ImportError:
+            logger.warning("Cannot import %s provider %r", kind, key)
+            cls = None
     if cls is None:
-        logger.warning("Unknown SMS_PROVIDER=%r — falling back to mock", name)
-        cls = _MockSMSProvider
+        logger.warning("Unknown %s provider %r — falling back to mock", kind, key)
+        cls = fallback
     return cls()
+
+
+def _get_provider():
+    from stapel_notifications.conf import notifications_settings
+
+    return _resolve_provider(
+        notifications_settings.SMS_PROVIDER, _PROVIDERS, _MockSMSProvider, "SMS"
+    )
 
 
 def send_sms(phone: str, body: str) -> None:

@@ -49,7 +49,9 @@ class _ResendEmailProvider:
     def send(self, recipient: str, subject: str, html_body: str, headers: dict | None) -> None:
         import requests as _http
 
-        api_key = getattr(settings, 'RESEND_API_KEY', '')
+        from stapel_notifications.conf import notifications_settings
+
+        api_key = notifications_settings.RESEND_API_KEY
         if not api_key:
             raise RuntimeError("EMAIL_PROVIDER=resend requires RESEND_API_KEY")
 
@@ -108,8 +110,10 @@ class _MailgunEmailProvider:
     def send(self, recipient: str, subject: str, html_body: str, headers: dict | None) -> None:
         import requests as _http
 
-        api_key = getattr(settings, 'MAILGUN_API_KEY', '')
-        domain = getattr(settings, 'MAILGUN_DOMAIN', '')
+        from stapel_notifications.conf import notifications_settings
+
+        api_key = notifications_settings.MAILGUN_API_KEY
+        domain = notifications_settings.MAILGUN_DOMAIN
         if not api_key or not domain:
             raise RuntimeError("EMAIL_PROVIDER=mailgun requires MAILGUN_API_KEY and MAILGUN_DOMAIN")
 
@@ -141,12 +145,12 @@ _PROVIDERS: dict[str, type] = {
 
 
 def _get_provider():
-    name = getattr(settings, 'EMAIL_PROVIDER', 'mock').lower()
-    cls = _PROVIDERS.get(name)
-    if cls is None:
-        logger.warning("Unknown EMAIL_PROVIDER=%r — falling back to mock", name)
-        cls = _MockEmailProvider
-    return cls()
+    from stapel_notifications.channels.sms import _resolve_provider
+    from stapel_notifications.conf import notifications_settings
+
+    return _resolve_provider(
+        notifications_settings.EMAIL_PROVIDER, _PROVIDERS, _MockEmailProvider, "email"
+    )
 
 
 def send_email(
