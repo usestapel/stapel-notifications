@@ -30,11 +30,32 @@ logger = logging.getLogger(__name__)
 VALID_PLATFORMS = {"ios", "android", "web"}
 
 
+class SerializerSeamMixin:
+    """Overridable serializer seam for every notifications APIView.
+
+    Host projects can swap the request/response serializer of any view by
+    subclassing and setting ``request_serializer_class`` /
+    ``response_serializer_class`` (or overriding the getters for
+    per-request decisions) — no need to rewrite the HTTP method bodies.
+    """
+
+    request_serializer_class = None
+    response_serializer_class = None
+
+    def get_request_serializer_class(self):
+        return self.request_serializer_class
+
+    def get_response_serializer_class(self):
+        return self.response_serializer_class
+
+
 @extend_schema(tags=["Devices"])
-class DeviceTokenView(APIView):
+class DeviceTokenView(SerializerSeamMixin, APIView):
     """Register a push notification token."""
 
     permission_classes = [IsAuthenticated]
+    request_serializer_class = DeviceTokenRequestSerializer
+    response_serializer_class = DeviceTokenResponseSerializer
 
     @extend_schema(
         operation_id="register_device_token",
@@ -46,7 +67,7 @@ class DeviceTokenView(APIView):
         },
     )
     def post(self, request):
-        serializer = DeviceTokenRequestSerializer(data=request.data)
+        serializer = self.get_request_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         # validated_data is a DeviceTokenRequest dataclass instance
@@ -86,13 +107,12 @@ class DeviceTokenView(APIView):
             )
 
         dto = DeviceTokenResponse(token=token, platform=platform)
-        return StapelResponse(
-            DeviceTokenResponseSerializer(dto), status=status.HTTP_201_CREATED
-        )
+        response_cls = self.get_response_serializer_class()
+        return StapelResponse(response_cls(dto), status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Devices"])
-class DeviceTokenDeleteView(APIView):
+class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
     """Unregister a push notification token."""
 
     permission_classes = [IsAuthenticated]
@@ -118,7 +138,7 @@ class DeviceTokenDeleteView(APIView):
 
 
 @extend_schema(tags=["Translation Keys"])
-class NotificationKeysView(APIView):
+class NotificationKeysView(SerializerSeamMixin, APIView):
     """Expose notification translation keys for the translate service collector."""
 
     permission_classes = [IsStaffUser | IsServiceRequest]
@@ -139,11 +159,12 @@ class FeedPagination(CreatedAtAnchorPagination):
 
 
 @extend_schema(tags=["Feed"])
-class NotificationFeedView(APIView):
+class NotificationFeedView(SerializerSeamMixin, APIView):
     """User's notification feed (push notifications log)."""
 
     permission_classes = [IsAuthenticated]
     pagination_class = FeedPagination
+    response_serializer_class = FeedItemResponseSerializer
 
     @extend_schema(
         operation_id="get_notification_feed",
@@ -161,8 +182,9 @@ class NotificationFeedView(APIView):
         paginator = FeedPagination()
         page = paginator.paginate_queryset(queryset, request)
 
+        response_cls = self.get_response_serializer_class()
         items = [
-            FeedItemResponseSerializer(
+            response_cls(
                 FeedItemResponse(
                     id=entry.id,
                     notification_type=entry.notification_type,
