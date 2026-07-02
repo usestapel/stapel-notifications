@@ -47,6 +47,10 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.auth_change_completed.push_title": "{change_type} changed",
     "notification.auth_change_completed.push_body": "Your account {change_type} has been updated.",
     # ── New Message (B1) ────────────────────────────────────────
+    "notification.workspace.invitation.subject": "You are invited to {workspace_name}",
+    "notification.workspace.invitation.heading": "Workspace invitation",
+    "notification.workspace.invitation.body": "{inviter_name} invited you to join the workspace \u201c{workspace_name}\u201d.",
+    "notification.workspace.invitation.cta": "Accept invitation",
     "notification.new_message.subject": "New message from {sender_name}",
     "notification.new_message.heading": "New message from {sender_name}",
     "notification.new_message.body": "You have a new message about \u201c{listing_title}\u201d.",

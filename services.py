@@ -7,7 +7,6 @@ Resolves language, contact info, translations, and dispatches to channels.
 import logging
 import string
 
-from django.conf import settings
 from django.template.loader import render_to_string
 
 from stapel_core.notifications.tokens import generate_unsubscribe_token
@@ -18,30 +17,14 @@ from .models import (
     TranslationCache,
     NotificationLog,
 )
-from .routing import NOTIFICATION_ROUTING
+from .conf import notifications_settings
+from .routing import get_email_template, get_routing
 from .translation_keys import NOTIFICATION_KEYS
 from .channels.email import send_email
 from .channels.push import send_push
 from .channels.sms import send_sms
 
 logger = logging.getLogger(__name__)
-
-# Map notification_type to email template
-EMAIL_TEMPLATES = {
-    "otp_code": "email/otp_code.html",
-    "auth_change_requested": "email/auth_change.html",
-    "auth_change_reminder": "email/auth_change.html",
-    "auth_change_urgent": "email/auth_change.html",
-    "auth_change_completed": "email/auth_change.html",
-    "new_message": "email/new_message.html",
-    "report_reviewed": "email/report_reviewed.html",
-    "listing_expiring": "email/listing_expiring.html",
-    "listing_blocked": "email/listing_blocked.html",
-    "magic_link_login": "email/magic_link_login.html",
-    "new_device_login": "email/new_device_login.html",
-    "suspicious_login": "email/suspicious_login.html",
-    "all_sessions_revoked": "email/all_sessions_revoked.html",
-}
 
 
 def _get_keys_for_type(notification_type: str) -> list[str]:
@@ -105,12 +88,15 @@ def process_notification(
         logger.info("Skipping duplicate event_id=%s", event_id)
         return
 
-    routing = NOTIFICATION_ROUTING.get(notification_type)
+    routing = get_routing(notification_type)
     if not routing:
-        logger.error("Unknown notification type: %s", notification_type)
+        logger.error(
+            "Unknown notification type: %s (register it via "
+            "STAPEL_NOTIFICATIONS['TYPES'])", notification_type,
+        )
         return
 
-    group = routing["group"]
+    group = routing.get("group", "")
 
     # Resolve user settings and contact info
     settings_obj = None
@@ -156,13 +142,16 @@ def process_notification(
 
     # Company branding — used in templates and formatted translation strings
     import datetime
-    all_vars.setdefault("company_name", getattr(settings, 'COMPANY_NAME', 'Iron'))
-    all_vars.setdefault("company_url", getattr(settings, 'COMPANY_URL', ''))
-    all_vars.setdefault("company_address", getattr(settings, 'COMPANY_ADDRESS', ''))
-    all_vars.setdefault("company_year", str(getattr(settings, 'COMPANY_YEAR', datetime.date.today().year)))
+    all_vars.setdefault("company_name", notifications_settings.COMPANY_NAME)
+    all_vars.setdefault("company_url", notifications_settings.COMPANY_URL)
+    all_vars.setdefault("company_address", notifications_settings.COMPANY_ADDRESS)
+    all_vars.setdefault(
+        "company_year",
+        str(notifications_settings.COMPANY_YEAR or datetime.date.today().year),
+    )
 
     # Add unsubscribe/manage URLs for non-auth groups
-    frontend_url = getattr(settings, 'FRONTEND_URL', '')
+    frontend_url = notifications_settings.FRONTEND_URL
     if group != "auth" and user_id:
         token = generate_unsubscribe_token(user_id, group, "email")
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
@@ -243,7 +232,7 @@ def _dispatch(
         if not recipient_email:
             logger.debug("Skipping email channel for %s: no email address", notification_type)
             return
-        template = EMAIL_TEMPLATES.get(notification_type)
+        template = get_email_template(notification_type)
         if not template:
             raise ValueError(f"No email template for notification type: {notification_type}")
         html = render_to_string(template, all_vars)

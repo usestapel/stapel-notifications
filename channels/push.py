@@ -5,7 +5,6 @@ Push notification channel via Firebase Cloud Messaging (FCM).
 import logging
 import threading
 
-from django.conf import settings
 
 from stapel_notifications.models import DevicePushToken
 
@@ -29,7 +28,9 @@ def _ensure_firebase():
             import firebase_admin
             from firebase_admin import credentials
 
-            cred_path = getattr(settings, 'GOOGLE_APPLICATION_CREDENTIALS', None)
+            from stapel_notifications.conf import notifications_settings
+
+            cred_path = notifications_settings.GOOGLE_APPLICATION_CREDENTIALS
             if not cred_path:
                 logger.warning("GOOGLE_APPLICATION_CREDENTIALS not set, push disabled")
                 return False
