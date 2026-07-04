@@ -1,7 +1,6 @@
 # Changelog
 
-## Unreleased
-
+## 0.3.1 — 2026-07-04
 ### Added
 - **translate→notifications loop fixed (comm seam).** New
   `@on_action("translations.changed")` subscriber: the event is a thin
