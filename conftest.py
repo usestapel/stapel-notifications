@@ -57,7 +57,7 @@ def pytest_configure(config):
                 "users": None,
                 "notifications": None,
                 "translate": None,
-                "stapel_tasks": None,
+                "stapel_taskstore": None,
             },
         )
 
