@@ -12,3 +12,10 @@ htmlcov/
 
 # build/test stderr scratch
 *.err
+
+# artifact / cache / editor hygiene (align with stapel-tools template)
+coverage.xml
+junit.xml
+.ruff_cache/
+.mypy_cache/
+.DS_Store
