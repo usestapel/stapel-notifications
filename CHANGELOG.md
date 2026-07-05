@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2 — 2026-07-05
+
+### Fixed
+- `user_id` in comm schemas typed uuid, was integer — rejected valid
+  `user.deleted` events. `schemas/consumes/user.deleted.json` now types
+  `user_id` as `{"type": "string", "format": "uuid"}`, matching the
+  UUID-pk canonical user and the auth/gdpr producers.
+
+
 ## 0.3.1 — 2026-07-04
 ### Added
 - **translate→notifications loop fixed (comm seam).** New
