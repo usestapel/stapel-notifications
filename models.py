@@ -4,6 +4,10 @@ import uuid
 
 from django.db import models
 
+# The light declaration module, not the package root — models load during
+# app population (see stapel_core.django.outbox.models for the precedent).
+from stapel_core.access.declaration import access
+
 
 class UserNotificationSettings(models.Model):
     """Notification preferences synced from profiles via Kafka."""
@@ -61,6 +65,7 @@ class UserContact(models.Model):
         return f"Contact({self.user_id})"
 
 
+@access.ops  # pure sync cache: populated only by translate.resolve / sync_translations, never staff-authored (AS-5)
 class TranslationCache(models.Model):
     """Notification translation keys synced from translate via Kafka."""
 
@@ -80,6 +85,7 @@ class TranslationCache(models.Model):
         return self.key
 
 
+@access.ops  # delivery/audit journal: written by services.py, read-only in admin (AS-5)
 class NotificationLog(models.Model):
     """Tracks every notification sent/attempted. Also serves as feed for push."""
 
@@ -114,6 +120,7 @@ class NotificationLog(models.Model):
         return f"{self.notification_type}/{self.channel} → {self.recipient} ({self.status})"
 
 
+@access.secret  # bearer push token carrier; `token` field auto-masked by StapelModelAdmin (AS-5)
 class DevicePushToken(models.Model):
     """FCM tokens for push notifications (iOS, Android, Web)."""
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Added — admin-suite AS-5: `@access` category rollout + `StapelModelAdmin`
+
+Applies the `stapel_core.access` category decorators (admin-suite §0/AS-5
+sweep, docs/admin-suite.md) to this module's models and switches the
+affected `ModelAdmin`s to `stapel_core.django.admin.base.StapelModelAdmin`.
+
+- `@access.ops` (read-only journal, forbids add/change/delete for everyone
+  including superuser; view requires HIGH clearance): `NotificationLog` (a
+  passive delivery/audit journal — matches the doc's own worked example) and
+  `TranslationCache` (a pure sync cache populated only by
+  `translations.resolve_and_cache`/`sync_translations`/the
+  `translations.changed` subscriber, never hand-authored through the admin).
+- `@access.secret` (every operation superuser-only, sensitive fields masked):
+  `DevicePushToken` — carries a bearer FCM push-token string (`token`),
+  matches the doc's own worked example verbatim; the field name already
+  matches `StapelModelAdmin`'s auto-detect pattern, no `secret_fields` pin
+  needed.
+- `UserNotificationSettings`, `UserContact` stay undecorated (implicit
+  `@access.standard`) — per-user preference/contact business projections a
+  support operator legitimately looks up, the doc's own `Profile` shape.
+- Attribute-only change: no migrations (`makemigrations notifications
+  --check --dry-run` reports no changes).
+
 ## 0.3.6 — 2026-07-06
 
 ### Added — ru error catalog + bilingual error reference (i18n-shipping волна 2)

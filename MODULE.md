@@ -237,6 +237,43 @@ regenerate with `STAPEL_REGEN_ERROR_I18N=1 pytest
 tests/test_error_i18n.py::test_regen` and commit `translations/errors.ru.json`,
 `translations/.state.json`, `docs/errors.{en,ru}.md`.
 
+## Admin categories (`stapel_core.access`, admin-suite AS-5)
+
+Five models, reviewed against the doc's business/ops/secret cut:
+
+- `UserNotificationSettings`, `UserContact` — business (undecorated, implicit
+  `@access.standard`). Per-user preference/contact projections a support
+  operator legitimately looks up, same shape as the doc's own `Profile`
+  example — even though both are event-synced (§7), the sync mechanism is not
+  what the category tracks, staff-facing relevance is.
+- `TranslationCache` — `@access.ops`. Every row is written only by
+  `translations.resolve_and_cache` (initial `sync_translations` command, the
+  `translations.changed` subscriber, or the lazy resolve-on-miss path in
+  `services._resolve_translations`); no code path or staff workflow ever
+  hand-authors or edits a cache row through the admin — a pure sync cache,
+  the same "dedup/TTL-shaped machinery" family as the doc's own examples even
+  without a literal TTL field.
+- `NotificationLog` — `@access.ops`. A passive delivery/audit journal:
+  `services.process_notification` is the only writer (`sent`/`failed`/
+  `skipped` rows per channel attempt), plus a GDPR-erasure `update()` in
+  `gdpr.py`. Matches the doc's own worked example verbatim.
+- `DevicePushToken` — `@access.secret`. Carries a bearer FCM push-token
+  string (`token`, unique) that authorizes sending to a device; deactivated
+  automatically on delivery failure (`channels/push.py`), never staff-edited.
+  Matches the doc's own worked example verbatim. The `token` field name
+  already matches `StapelModelAdmin`'s auto-detect substring list — no
+  `secret_fields` pin needed.
+
+`admin.py`'s `TranslationCacheAdmin`, `NotificationLogAdmin`, and
+`DevicePushTokenAdmin` now subclass
+`stapel_core.django.admin.base.StapelModelAdmin` (was plain
+`admin.ModelAdmin`) so the category is enforced/rendered (read-only fields,
+masked `token`, HIGH/superuser view gating). `UserNotificationSettingsAdmin`
+and `UserContactAdmin` are unchanged.
+
+Attribute-only change: no migrations (`makemigrations notifications --check
+--dry-run` reports no changes).
+
 ## Anti-patterns (never fork for these)
 
 | Don't | Do instead |

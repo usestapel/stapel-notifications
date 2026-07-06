@@ -1,4 +1,7 @@
 from django.contrib import admin
+
+from stapel_core.django.admin.base import StapelModelAdmin
+
 from .models import (
     UserNotificationSettings,
     UserContact,
@@ -23,14 +26,14 @@ class UserContactAdmin(admin.ModelAdmin):
 
 
 @admin.register(TranslationCache)
-class TranslationCacheAdmin(admin.ModelAdmin):
+class TranslationCacheAdmin(StapelModelAdmin):
     list_display = ['key', 'updated_at']
     search_fields = ['key']
     readonly_fields = ['updated_at']
 
 
 @admin.register(NotificationLog)
-class NotificationLogAdmin(admin.ModelAdmin):
+class NotificationLogAdmin(StapelModelAdmin):
     list_display = ['id', 'notification_type', 'channel', 'status', 'recipient', 'language', 'created_at']
     list_filter = ['status', 'channel', 'notification_type']
     search_fields = ['user_id', 'recipient', 'notification_type']
@@ -39,7 +42,7 @@ class NotificationLogAdmin(admin.ModelAdmin):
 
 
 @admin.register(DevicePushToken)
-class DevicePushTokenAdmin(admin.ModelAdmin):
+class DevicePushTokenAdmin(StapelModelAdmin):
     list_display = ['user_id', 'platform', 'is_active', 'created_at', 'updated_at']
     list_filter = ['platform', 'is_active']
     search_fields = ['user_id', 'token']
