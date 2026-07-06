@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.3.5 — 2026-07-06
+
+### Added
+- **Declarative error registry + `docs/errors.json` codegen artifact.** The two
+  service error keys (`error.400.invalid_platform`, `error.404.token_not_found`)
+  now declare a machine-readable `remediation` hint (`fix_input` for both —
+  backend is canon, overriding the heuristic that would resolve a 404
+  `not_found` to `retry`) via `register_service_errors(..., remediation=...)`.
+- `docs/errors.json` — the language-agnostic error-key registry (43 entries:
+  core `COMMON_ERRORS` + cross-cutting verification/captcha keys + the two
+  service keys), emitted by `generate_error_keys` and consumed by the frontend
+  (`stapel-react` notifications pair) as the errors-bundle source.
+- `tests/test_error_keys.py` — byte-stable drift gate (regenerate-and-diff, same
+  discipline as schema.json/flow docs) plus artifact-shape and
+  declared-remediation assertions. Regenerate with
+  `STAPEL_REGEN_ERROR_KEYS=1 pytest tests/test_error_keys.py`.
+
+### Changed
+- Test settings (`conftest.py`) install `stapel_core.django.apps.CommonDjangoConfig`
+  so the `generate_error_keys` management command is discoverable for the drift
+  gate. No `@flow_step` flows exist in this module (0 flows is valid).
+
+
 ## 0.3.4 — 2026-07-06
 
 ### Changed
