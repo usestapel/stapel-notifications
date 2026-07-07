@@ -195,8 +195,8 @@ release train; stapel-core dependency now `>=0.3.0,<0.4`.
   updated). Hosts that referenced the old `email/...` paths directly must
   update to `notifications/email/...`.
 - Legacy branding leftovers removed: `COMPANY_NAME` default is `Stapel`,
-  GatewayAPI SMS sender default `legacy` → `Stapel`, bus consumer groups
-  `stapel.notifications.*` → `stapel.notifications.*` (overridable via the
+  GatewayAPI SMS sender default is now `Stapel`, bus consumer groups
+  renamed to `stapel.notifications.*` (overridable via the
   `NOTIFICATIONS_CONSUMER_GROUP[_CONTACTS|_PROFILES|_TRANSLATIONS]` env
   vars). Marketplace-specific types (`new_message`, `report_reviewed`,
   `listing_expiring`, `listing_blocked`) are kept in the defaults: other
