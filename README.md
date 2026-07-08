@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/usestapel/stapel-notifications/actions/workflows/ci.yml/badge.svg)](https://github.com/usestapel/stapel-notifications/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/usestapel/stapel-notifications/graph/badge.svg)](https://codecov.io/gh/usestapel/stapel-notifications)
+[![PyPI](https://img.shields.io/pypi/v/stapel-notifications.svg)](https://pypi.org/project/stapel-notifications/)
 
 > Notifications — push (Firebase), email, SMS channels with delivery logging
 
