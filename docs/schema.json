@@ -1,0 +1,379 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "",
+    "version": "0.0.0"
+  },
+  "paths": {
+    "/notifications/api/devices/": {
+      "post": {
+        "operationId": "register_device_token",
+        "description": "Register a push notification token.\n\n**Permissions:** `IsAuthenticated`",
+        "summary": "Register push token",
+        "tags": [
+          "Devices"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceTokenRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceTokenRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTCookieAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceTokenResponse"
+                },
+                "examples": {
+                  "DeviceTokenResponse": {
+                    "value": {
+                      "token": "eHh4eHg6dG9rZW4...",
+                      "platform": "ios"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/notifications/api/devices/{token}/": {
+      "delete": {
+        "operationId": "unregister_device_token",
+        "description": "Unregister a push notification token.\n\n**Permissions:** `IsAuthenticated`",
+        "summary": "Unregister push token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "Devices"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/notifications/api/feed/": {
+      "get": {
+        "operationId": "get_notification_feed",
+        "description": "Returns push notification log entries for the authenticated user, ordered by created_at desc.\n\n**Permissions:** `IsAuthenticated`",
+        "summary": "Get notification feed",
+        "parameters": [
+          {
+            "name": "anchor",
+            "required": false,
+            "in": "query",
+            "description": "Anchor value to paginate from (exclusive)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "direction",
+            "required": false,
+            "in": "query",
+            "description": "Pagination direction",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "next",
+                "prev",
+                "center"
+              ],
+              "default": "next"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items (default 20, max 50)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "tags": [
+          "Feed"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedFeedItemResponseList"
+                },
+                "examples": {
+                  "FeedItemResponse": {
+                    "value": {
+                      "id": "550e8400-e29b-41d4-a716-446655440000",
+                      "notification_type": "listing_blocked",
+                      "title": "Your listing has been blocked",
+                      "body": "Your listing was blocked for guideline violations.",
+                      "created_at": "2026-03-17T10:30:00Z"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/notifications/api/notification-keys/": {
+      "get": {
+        "operationId": "get_notification_keys",
+        "description": "Returns all notification translation keys with English defaults. Used by translate service to sync.\n\n**Permissions:** `OperandHolder`",
+        "summary": "Get notification translation keys",
+        "tags": [
+          "Translation Keys"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DeviceTokenRequest": {
+        "type": "object",
+        "description": "Register a push token.",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "FCM device token",
+            "example": "eHh4eHg6dG9rZW4..."
+          },
+          "platform": {
+            "type": "string",
+            "description": "Device platform",
+            "example": "ios"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "DeviceTokenResponse": {
+        "type": "object",
+        "description": "Push token registration result.",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Registered token",
+            "example": "eHh4eHg6dG9rZW4..."
+          },
+          "platform": {
+            "type": "string",
+            "description": "Device platform",
+            "example": "ios"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "FeedItemResponse": {
+        "type": "object",
+        "description": "Notification feed item.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Notification UUID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "notification_type": {
+            "type": "string",
+            "description": "Type",
+            "example": "listing_blocked"
+          },
+          "title": {
+            "type": "string",
+            "description": "Notification title",
+            "example": "Your listing has been blocked"
+          },
+          "body": {
+            "type": "string",
+            "description": "Notification body",
+            "example": "Your listing was blocked for guideline violations."
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Extra data (deep links etc)"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp",
+            "example": "2026-03-17T10:30:00Z"
+          }
+        },
+        "required": [
+          "body",
+          "created_at",
+          "data",
+          "id",
+          "notification_type",
+          "title"
+        ]
+      },
+      "PaginatedFeedItemResponseList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedItemResponse"
+            }
+          },
+          "next_anchor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Anchor value for next page"
+          },
+          "prev_anchor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Anchor value for previous page"
+          },
+          "has_next": {
+            "type": "boolean",
+            "description": "Whether there are more items after this page"
+          },
+          "has_prev": {
+            "type": "boolean",
+            "description": "Whether there are items before this page"
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of items in current page"
+          }
+        },
+        "required": [
+          "items",
+          "has_next",
+          "has_prev",
+          "count"
+        ]
+      },
+      "StapelError": {
+        "type": "object",
+        "description": "Structured error returned by all Stapel API endpoints.",
+        "properties": {
+          "localizable_error": {
+            "type": "string",
+            "description": "Translation key for client-side localization",
+            "example": "error.404.not_found"
+          },
+          "error": {
+            "type": "string",
+            "description": "Human-readable message in English",
+            "example": "Requested resource not found"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Context values for template placeholders",
+            "example": {
+              "retry_after": 30
+            }
+          }
+        },
+        "required": [
+          "error",
+          "localizable_error"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "JWTCookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "stapel_jwt",
+        "description": "JWT token stored in cookie. Login via /auth/admin/ to get the cookie."
+      }
+    }
+  }
+}
