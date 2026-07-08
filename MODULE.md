@@ -237,6 +237,50 @@ regenerate with `STAPEL_REGEN_ERROR_I18N=1 pytest
 tests/test_error_i18n.py::test_regen` and commit `translations/errors.ru.json`,
 `translations/.state.json`, `docs/errors.{en,ru}.md`.
 
+### Contract emission — the `schema` + `flows` + `errors` triad
+
+This module emits its **own** machine-readable API contract, per-module, so
+the frontend codegen reads a committed, version-pinned artifact instead of
+checking out the monolith aggregate at floating `main`
+(contract-pipeline.md §2, verdict **A**: contract = a reviewable commit). Copy
+of the `stapel-auth` reference implementation (its `MODULE.md`, "Contract
+emission" section, has the full rationale). The triad lives in `docs/`:
+
+```
+docs/schema.json   drf-spectacular OpenAPI, this module only, canonical /notifications/api/ prefix
+docs/flows.json    generate_flow_docs machine artifact — [] (no @flow_step here)
+docs/errors.json   generate_error_keys registry (the original per-module etalon)
+```
+
+**Harness** (`_codegen_settings.py` / `codegen_urls.py` / `_codegen.py`,
+`Makefile` `contract`/`contract-check`, `tests/test_contract.py`) — same
+three-file shape as auth's, wired to `stapel_notifications`'s own settings.
+`codegen_urls.py` mounts `stapel_notifications.urls` alone at
+`notifications/api/` (the monolith's mount, `svc-app/core/urls.py:39` — no
+sibling co-mount; the module's schema is fully self-contained: 4 paths,
+5-component closure `DeviceTokenRequest`/`DeviceTokenResponse`/
+`FeedItemResponse`/`PaginatedFeedItemResponseList`/`StapelError`).
+
+One non-obvious fact beyond auth's two (`SCHEMA_PATH_PREFIX` pinning,
+`SPECTACULAR_SETTINGS` being ignored — see auth's `MODULE.md`): **the
+`JWTCookieAuth` security scheme needs its drf-spectacular extension registered
+explicitly.** In the monolith, `stapel_gdpr.urls` (co-mounted alongside auth)
+calls `get_app_swagger_urls`, which registers the extension as a
+process-global side effect — by the time notifications' endpoints are
+introspected in that shared process, the registration has already leaked in.
+This single-module harness has no such sibling to piggyback on, so
+`_codegen.py` calls `stapel_core.django.openapi.swagger._register_jwt_auth_extension()`
+directly (idempotent per its own docstring) rather than diverge from the
+monolith slice — without it every operation is missing `security` and
+drf-spectacular warns "could not resolve authenticator".
+
+**Gate:** `make contract` re-emits; `make contract-check` regenerates into a
+temp dir and diffs. Regenerate after any serializer/view/url/error change:
+
+    make contract        # or: python -m stapel_notifications._codegen --out docs
+
+then commit `docs/{schema,flows,errors}.json`.
+
 ## Admin categories (`stapel_core.access`, admin-suite AS-5)
 
 Five models, reviewed against the doc's business/ops/secret cut:

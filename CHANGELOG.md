@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+### Added — per-module contract emission (contract-pipeline.md §2-3, Wave 1)
+
+This module now emits its **own** API contract triad — `docs/schema.json`
+(drf-spectacular OpenAPI), `docs/flows.json` (generate_flow_docs machine
+artifact) and `docs/errors.json` (generate_error_keys, already the etalon) —
+from a single-module `{notifications + core}` Django instance mounted at the
+canonical `/notifications/api/` prefix, copied byte-for-byte from
+stapel-auth's reference implementation.
+
+- `_codegen_settings.py` — extracted `settings.configure(...)` block, single
+  source of truth shared by `conftest.py` (bare test mount) and the new
+  `_codegen.py` harness (canonical-prefix mount, production `REST_FRAMEWORK`).
+  Adds `drf_spectacular` to `INSTALLED_APPS`. No test-behavior change.
+- `codegen_urls.py` — mounts `stapel_notifications.urls` at `notifications/api/`
+  (the monolith's mount, `svc-app/core/urls.py:39` — no sibling co-mount, unlike
+  auth+gdpr).
+- `_codegen.py` — entrypoint; pins `spectacular_settings.SCHEMA_PATH_PREFIX = "/"`
+  and explicitly registers the `JWTCookieAuth` drf-spectacular authentication
+  extension (`stapel_core.django.openapi.swagger._register_jwt_auth_extension`)
+  — in the monolith this registration happens as a process-global side effect
+  of importing `stapel_gdpr.urls` (which calls `get_app_swagger_urls`) before
+  notifications' endpoints are introspected; this single-module harness has no
+  such sibling to piggyback on, so it reproduces the registration directly
+  (idempotent) rather than diverge from the monolith slice (missing `security`
+  on every operation, and a spectacular "could not resolve authenticator"
+  warning).
+- `Makefile` (`contract` / `contract-check`) + `tests/test_contract.py`
+  (triad-committed, no-drift, deterministic, canonical-prefix, and — in the
+  workspace only — byte-identity vs the monolith aggregate's notifications
+  slice).
+- `docs/schema.json` + `docs/flows.json` (new): **byte-identical** to the
+  monolith aggregate's `/notifications/api/` slice (4 paths, 5-component
+  closure: `DeviceTokenRequest`, `DeviceTokenResponse`, `FeedItemResponse`,
+  `PaginatedFeedItemResponseList`, `StapelError` — fully self-contained, no
+  sibling-only `$ref`s, so no additional module needed installed in the
+  harness). This module has no `@flow_step` annotations (confirmed against the
+  monolith aggregate, which also carries zero notifications flows), so
+  `flows.json = []`. `docs/errors.json` unchanged (already committed, emission
+  is a no-op).
+
+Regenerate with `make contract`; gated by `tests/test_contract.py`.
+
 ### Added — admin-suite AS-5: `@access` category rollout + `StapelModelAdmin`
 
 Applies the `stapel_core.access` category decorators (admin-suite §0/AS-5

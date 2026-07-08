@@ -1,68 +1,14 @@
 def pytest_configure(config):
     from django.conf import settings
     if not settings.configured:
-        # The translate→notifications integration test (test_i18n_loop.py)
-        # runs both apps in one process when stapel_translate is installed;
-        # everything else works without it.
-        try:
-            import stapel_translate  # noqa: F401
-            _translate_apps = ["stapel_core.django.taskstore", "stapel_translate"]
-        except ImportError:
-            _translate_apps = []
+        # Single source of truth for this block lives in _codegen_settings.py
+        # so the test harness and the contract-emission harness (make
+        # contract) can never drift (contract-pipeline.md §3). Tests keep the
+        # bare mount + permissive REST_FRAMEWORK, exactly as before the
+        # extraction.
+        from stapel_notifications._codegen_settings import settings_kwargs
 
-        settings.configure(
-            SECRET_KEY="test-secret-key-not-for-production",
-            INSTALLED_APPS=[
-                "django.contrib.contenttypes",
-                "django.contrib.auth",
-                "django.contrib.sessions",
-                "django.contrib.messages",
-                # contrib.admin so the ModelAdmin registrations in admin.py
-                # are importable (and covered) in tests.
-                "django.contrib.admin",
-                # CommonDjangoConfig ships the stapel_core management commands
-                # (generate_error_keys, used by the errors.json drift gate).
-                "stapel_core.django.apps.CommonDjangoConfig",
-                "stapel_core.django.users",
-                "rest_framework",
-                "stapel_notifications",
-                *_translate_apps,
-            ],
-            AUTH_USER_MODEL="users.User",
-            DATABASES={
-                "default": {
-                    "ENGINE": "django.db.backends.sqlite3",
-                    "NAME": ":memory:",
-                }
-            },
-            DEFAULT_AUTO_FIELD="django.db.models.BigAutoField",
-            USE_TZ=True,
-            ROOT_URLCONF="stapel_notifications.urls",
-            TEMPLATES=[
-                {
-                    "BACKEND": "django.template.backends.django.DjangoTemplates",
-                    "DIRS": [],
-                    "APP_DIRS": True,
-                    "OPTIONS": {"context_processors": []},
-                }
-            ],
-            CACHES={
-                "default": {
-                    "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-                }
-            },
-            # In-memory bus — no Kafka/Redis broker needed
-            STAPEL_BUS_BACKEND="stapel_core.bus.backends.memory.MemoryBus",
-            # Deliver comm actions synchronously in-process (no outbox tables)
-            STAPEL_COMM={"OUTBOX_ENABLED": False, "ACTION_TRANSPORT": "inprocess"},
-            # Skip migrations — create tables directly from models
-            MIGRATION_MODULES={
-                "users": None,
-                "notifications": None,
-                "translate": None,
-                "stapel_taskstore": None,
-            },
-        )
+        settings.configure(**settings_kwargs())
 
 
 import pytest  # noqa: E402
