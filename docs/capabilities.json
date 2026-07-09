@@ -1,0 +1,99 @@
+{
+  "module": "stapel-notifications",
+  "version": "0.3.6",
+  "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
+  "axes": [
+    {
+      "key": "EMAIL_PROVIDER",
+      "kind": "enum",
+      "default": "mock",
+      "group": "notifications.providers",
+      "gates": {
+        "operations": [],
+        "co_gates": []
+      },
+      "curated": {
+        "summary": "Which service sends the emails: Resend, SMTP, Mailgun, a mock for development, or any custom provider class supplied by the host project.",
+        "business_label": "Email delivery service"
+      }
+    },
+    {
+      "key": "SMS_PROVIDER",
+      "kind": "enum",
+      "default": "mock",
+      "group": "notifications.providers",
+      "gates": {
+        "operations": [],
+        "co_gates": []
+      },
+      "curated": {
+        "summary": "Which service sends the text messages: GatewayAPI, Twilio, a mock for development, or any custom provider class supplied by the host project.",
+        "business_label": "SMS delivery service"
+      }
+    },
+    {
+      "key": "PUSH_PROVIDER",
+      "kind": "enum",
+      "default": "fcm",
+      "group": "notifications.providers",
+      "gates": {
+        "operations": [],
+        "co_gates": []
+      },
+      "curated": {
+        "summary": "Which service delivers mobile/web push: Firebase Cloud Messaging (default), a mock for development, or any custom provider class supplied by the host project.",
+        "business_label": "Push notification service"
+      }
+    }
+  ],
+  "extension_points": [
+    {
+      "name": "TYPES",
+      "kind": "merge_registry",
+      "summary": "Register new notification types (channels + group + template) or override built-ins entirely from settings — merged over the packaged routing catalog, no fork."
+    },
+    {
+      "name": "EMAIL_TEMPLATES",
+      "kind": "merge_registry",
+      "summary": "Remap any notification type to a host-project email template; merged over the packaged per-type template map."
+    },
+    {
+      "name": "channel_providers",
+      "kind": "dotted_path",
+      "summary": "The EMAIL/SMS/PUSH provider settings accept any dotted path to a class with the matching send() signature — add SendGrid, Postmark, APNs etc. as host-project classes, no fork."
+    },
+    {
+      "name": "template_overrides",
+      "kind": "django_templates",
+      "summary": "Packaged email templates live under a namespaced path and follow standard Django template-loader precedence; eject_notification_templates copies them into the host project for structural edits, and LOGO_URL/BRAND_*/COMPANY_* settings rebrand every email without touching a template."
+    },
+    {
+      "name": "serializer_seams",
+      "kind": "class_override",
+      "summary": "Every view declares request/response serializer seams (SerializerSeamMixin) — subclass the view, override the attribute, remount the URL."
+    }
+  ],
+  "operations_total": 4,
+  "requires": [
+    {
+      "module": "stapel-core",
+      "optional": false,
+      "reason": "comm bus (notification.requested input, translate.resolve calls), JWT authentication, GDPR provider registry, AppSettings config layer"
+    },
+    {
+      "module": "stapel-auth",
+      "optional": true,
+      "reason": "source of the user-contact sync (email/phone projections) and the user.deleted / user.deletion_initiated events this module consumes; decoupled via the comm bus"
+    },
+    {
+      "module": "stapel-profiles",
+      "optional": true,
+      "reason": "source of the notification-preferences and language sync (profile-changed events consumed into UserNotificationSettings); decoupled via the comm bus"
+    },
+    {
+      "module": "stapel-translate",
+      "optional": true,
+      "reason": "notification texts are localized through the translate.resolve comm Function with lazy caching; without it the built-in English defaults are used"
+    }
+  ]
+}

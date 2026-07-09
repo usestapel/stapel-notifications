@@ -59,26 +59,36 @@ if _PY != (3, 12):
 REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 TRIAD = ("schema.json", "flows.json", "errors.json")
+# The fourth artifact (capability-config.md §2): config axes over
+# STAPEL_NOTIFICATIONS, emitted from conf.py DEFAULTS + the urls.py gate
+# registry + schema.json + the curated docs/capabilities.meta.json.
+# Same emit/drift discipline.
+ARTIFACTS = TRIAD + ("capabilities.json",)
 
 
 def _emit(out_dir: Path) -> None:
-    subprocess.run(
-        [sys.executable, "-m", "stapel_notifications._codegen", "--out", str(out_dir)],
-        cwd=str(REPO),
-        check=True,
-        capture_output=True,
+    for module in ("stapel_notifications._codegen", "stapel_notifications._capabilities"):
+        subprocess.run(
+            [sys.executable, "-m", module, "--out", str(out_dir)],
+            cwd=str(REPO),
+            check=True,
+            capture_output=True,
+        )
+
+
+def test_contract_artifacts_committed():
+    for name in ARTIFACTS:
+        assert (DOCS / name).is_file(), f"missing docs/{name} — run `make contract`"
+    assert (DOCS / "capabilities.meta.json").is_file(), (
+        "missing docs/capabilities.meta.json — the curated layer is "
+        "hand-written and committed, not generated"
     )
 
 
-def test_contract_triad_committed():
-    for name in TRIAD:
-        assert (DOCS / name).is_file(), f"missing docs/{name} — run `make contract`"
-
-
 def test_contract_has_no_drift(tmp_path):
-    """Regenerate into a temp dir; committed triad must match byte-for-byte."""
+    """Regenerate into a temp dir; committed artifacts must match byte-for-byte."""
     _emit(tmp_path)
-    for name in TRIAD:
+    for name in ARTIFACTS:
         committed = (DOCS / name).read_bytes()
         regenerated = (tmp_path / name).read_bytes()
         assert committed == regenerated, (
@@ -91,7 +101,7 @@ def test_emission_is_deterministic(tmp_path):
     a, b = tmp_path / "a", tmp_path / "b"
     _emit(a)
     _emit(b)
-    for name in TRIAD:
+    for name in ARTIFACTS:
         assert (a / name).read_bytes() == (b / name).read_bytes()
 
 
@@ -189,3 +199,103 @@ def test_matches_monolith_notifications_slice():
         assert json.dumps(mine["components"]["schemas"][c], sort_keys=True) == json.dumps(
             mono["components"]["schemas"][c], sort_keys=True
         ), f"component {c} differs from monolith slice"
+
+
+# --- capabilities.json content sanity (capability-config.md §2) ---------------
+
+_EXPECTED_AXES = {"EMAIL_PROVIDER", "SMS_PROVIDER", "PUSH_PROVIDER"}
+
+
+def _capabilities() -> dict:
+    return json.loads((DOCS / "capabilities.json").read_text())
+
+
+def test_capabilities_axes_inventory():
+    """Three channel-provider selectors, all enum, all in notifications.providers."""
+    doc = _capabilities()
+    assert {a["key"] for a in doc["axes"]} == _EXPECTED_AXES
+    for axis in doc["axes"]:
+        assert axis["kind"] == "enum", axis["key"]
+        assert axis["group"] == "notifications.providers", axis["key"]
+
+
+def test_capabilities_every_axis_curated():
+    """Every axis carries non-empty curated business semantics."""
+    for axis in _capabilities()["axes"]:
+        assert axis["curated"]["summary"], axis["key"]
+        assert axis["curated"]["business_label"], axis["key"]
+
+
+def test_capabilities_provider_axes_gate_no_operations():
+    """Provider axes select backends; they never unmount endpoints."""
+    for axis in _capabilities()["axes"]:
+        assert axis["gates"]["operations"] == [], axis["key"]
+        assert axis["gates"]["co_gates"] == [], axis["key"]
+
+
+def test_capabilities_operations_total_matches_schema():
+    schema = json.loads((DOCS / "schema.json").read_text())
+    methods = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
+    total = sum(
+        1 for item in schema["paths"].values() for m in item if m in methods
+    )
+    assert _capabilities()["operations_total"] == total
+
+
+def test_capabilities_envelope():
+    doc = _capabilities()
+    import tomllib
+
+    pyproject = tomllib.loads((REPO / "pyproject.toml").read_text())
+    assert doc["module"] == pyproject["project"]["name"]
+    assert doc["version"] == pyproject["project"]["version"]
+    assert doc["provides"]
+    assert doc["extension_points"]
+    assert doc["requires"]
+
+
+def test_capabilities_meta_out_of_sync_fails_loudly():
+    """A curated-layer gap must be an emission ERROR, never a silent skip."""
+    from stapel_tools.capabilities import axis_group_rules, build_capabilities
+
+    from stapel_notifications.conf import DEFAULTS
+    from stapel_notifications.urls import GATE_REGISTRY
+
+    schema = json.loads((DOCS / "schema.json").read_text())
+    meta = json.loads((DOCS / "capabilities.meta.json").read_text())
+
+    def _build(broken_meta):
+        return build_capabilities(
+            module="stapel-notifications",
+            version="0.0.0",
+            defaults=DEFAULTS,
+            registry=GATE_REGISTRY,
+            schema=schema,
+            meta=broken_meta,
+            is_axis=lambda k: k in _EXPECTED_AXES,
+            axis_group=axis_group_rules(
+                suffix={"_PROVIDER": "notifications.providers"}
+            ),
+            canonical_prefix="/notifications/api",
+        )
+
+    # Baseline: intact meta builds.
+    assert _build(json.loads(json.dumps(meta)))["axes"]
+
+    # Missing axis entry → loud failure.
+    broken = json.loads(json.dumps(meta))
+    del broken["axes"]["SMS_PROVIDER"]
+    with pytest.raises(SystemExit, match="SMS_PROVIDER"):
+        _build(broken)
+
+    # Stale (unknown) axis entry → loud failure.
+    broken = json.loads(json.dumps(meta))
+    broken["axes"]["FAX_PROVIDER"] = {"summary": "x", "business_label": "x"}
+    with pytest.raises(SystemExit, match="FAX_PROVIDER"):
+        _build(broken)
+
+    # Empty business_label → loud failure.
+    broken = json.loads(json.dumps(meta))
+    broken["axes"]["EMAIL_PROVIDER"]["business_label"] = ""
+    with pytest.raises(SystemExit, match="business_label"):
+        _build(broken)
