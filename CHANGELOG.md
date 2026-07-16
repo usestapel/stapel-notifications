@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed — core ceiling raised for the 0.11 fleet re-pin (0.3.9)
+
+- `stapel-core` ceiling raised `>=0.10,<0.11` → `>=0.10,<0.12` (core 0.11 is
+  additive for modules: default bus, nav, config-checks, error
+  params/language).
+- `docs/schema.json` regenerated against core 0.11.2 — error object gained
+  `error_language` field and a reworded `error` description; no drift
+  otherwise.
+
 ### Added — per-module contract emission (contract-pipeline.md §2-3, Wave 1)
 
 This module now emits its **own** API contract triad — `docs/schema.json`
