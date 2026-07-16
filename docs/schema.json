@@ -5,7 +5,7 @@
     "version": "0.0.0"
   },
   "paths": {
-    "/notifications/api/devices/": {
+    "/notifications/api/v1/devices/": {
       "post": {
         "operationId": "register_device_token",
         "description": "Register a push notification token.\n\n**Permissions:** `IsAuthenticated`",
@@ -70,7 +70,7 @@
         }
       }
     },
-    "/notifications/api/devices/{token}/": {
+    "/notifications/api/v1/devices/{token}/": {
       "delete": {
         "operationId": "unregister_device_token",
         "description": "Unregister a push notification token.\n\n**Permissions:** `IsAuthenticated`",
@@ -110,7 +110,7 @@
         }
       }
     },
-    "/notifications/api/feed/": {
+    "/notifications/api/v1/feed/": {
       "get": {
         "operationId": "get_notification_feed",
         "description": "Returns push notification log entries for the authenticated user, ordered by created_at desc.\n\n**Permissions:** `IsAuthenticated`",
@@ -183,7 +183,7 @@
         }
       }
     },
-    "/notifications/api/notification-keys/": {
+    "/notifications/api/v1/notification-keys/": {
       "get": {
         "operationId": "get_notification_keys",
         "description": "Returns all notification translation keys with English defaults. Used by translate service to sync.\n\n**Permissions:** `OperandHolder`",

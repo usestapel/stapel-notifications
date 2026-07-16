@@ -21,7 +21,7 @@ class Command(BaseKafkaConsumerCommand):
     help = "Consume notification request events from Kafka"
 
     topics = [TOPIC_NOTIFICATION_REQUESTED]
-    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP", "stapel.notifications.processor")
+    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP", "stapel.notifications.processor")  # noqa: CFG001
 
     def handle_event(self, event: Event):
         if event.event_type == EventType.NOTIFICATION_REQUESTED:

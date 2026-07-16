@@ -20,7 +20,7 @@ class Command(BaseKafkaConsumerCommand):
     help = "Consume user-contact-changed events to sync email/phone"
 
     topics = [TOPIC_USER_CONTACT_CHANGED]
-    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP_CONTACTS", "stapel.notifications.contacts")
+    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP_CONTACTS", "stapel.notifications.contacts")  # noqa: CFG001
 
     def handle_event(self, event: Event):
         if event.event_type == EventType.USER_CONTACT_CHANGED:

@@ -66,7 +66,7 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
             400: StapelErrorSerializer,
         },
     )
-    def post(self, request):
+    def post(self, request):  # noqa: R007
         serializer = self.get_request_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -125,7 +125,7 @@ class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
             404: StapelErrorSerializer,
         },
     )
-    def delete(self, request, token):
+    def delete(self, request, token):  # noqa: R007
         deleted, _ = DevicePushToken.objects.filter(
             token=token,
             user_id=request.user.id,
@@ -149,7 +149,7 @@ class NotificationKeysView(SerializerSeamMixin, APIView):
         description="Returns all notification translation keys with English defaults. Used by translate service to sync.",
         responses={200: dict},
     )
-    def get(self, request):
+    def get(self, request):  # noqa: R007
         return StapelResponse(NOTIFICATION_KEYS)
 
 
@@ -172,7 +172,7 @@ class NotificationFeedView(SerializerSeamMixin, APIView):
         description="Returns push notification log entries for the authenticated user, ordered by created_at desc.",
         responses={200: FeedItemResponseSerializer(many=True)},
     )
-    def get(self, request):
+    def get(self, request):  # noqa: R007
         queryset = NotificationLog.objects.filter(
             user_id=request.user.id,
             status="sent",

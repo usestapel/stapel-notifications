@@ -20,7 +20,7 @@ class Command(BaseKafkaConsumerCommand):
     help = "Consume profile-changed events to sync notification preferences"
 
     topics = [TOPIC_PROFILE_CHANGED]
-    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP_PROFILES", "stapel.notifications.profiles")
+    consumer_group = os.getenv("NOTIFICATIONS_CONSUMER_GROUP_PROFILES", "stapel.notifications.profiles")  # noqa: CFG001
 
     def handle_event(self, event: Event):
         if event.event_type == EventType.PROFILE_CHANGED:

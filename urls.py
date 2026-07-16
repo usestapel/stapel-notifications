@@ -1,39 +1,15 @@
-"""URL configuration for notifications app."""
-from typing import NamedTuple
+"""Root URLconf for stapel-notifications — v1 canon mount (api-versioning.md §2, §6).
 
-from django.urls import path
+Canon: ``/<mod>/api/v1/...`` — the version segment sits right after ``api/``.
+Hosts keep mounting ``include('stapel_notifications.urls')`` under their
+``.../api/`` prefix; this module contributes the mandatory ``v1/``
+sub-prefix. The actual URL set (paths inside unchanged) and the gate
+registry live in ``urls_v1.py``; ``GATE_REGISTRY`` is re-exported here.
+"""
+from django.urls import include, path
 
-from .views import (
-    DeviceTokenView,
-    DeviceTokenDeleteView,
-    NotificationKeysView,
-    NotificationFeedView,
-)
+from stapel_notifications.urls_v1 import GATE_REGISTRY  # noqa: F401  (re-export)
 
 urlpatterns = [
-    path('devices/', DeviceTokenView.as_view(), name='device-token-register'),
-    path('devices/<str:token>/', DeviceTokenDeleteView.as_view(), name='device-token-delete'),
-    path('notification-keys/', NotificationKeysView.as_view(), name='notification-keys'),
-    path('feed/', NotificationFeedView.as_view(), name='notification-feed'),
+    path('v1/', include('stapel_notifications.urls_v1')),
 ]
-
-
-class GateEntry(NamedTuple):
-    """One gated URL block: which flags gate which url patterns (capability-config.md §2 p.2).
-
-    ``flags`` compose with OR — the block is mounted while ANY flag is on,
-    and disappears only when ALL of them are off. Empty flags = always on.
-    """
-    name: str
-    flags: tuple
-    patterns: tuple
-
-
-#: Gate registry (capability-config.md §2 p.2): notifications has no
-#: per-method config gates (the provider axes select backends, they never
-#: unmount endpoints) — the whole URL surface is a single always-on block.
-#: Declared as a registry entry (rather than left implicit) so the
-#: capabilities.json emitter has a uniform mechanism across every module.
-GATE_REGISTRY: dict = {
-    'notifications.api': GateEntry('notifications.api', (), tuple(urlpatterns)),
-}
