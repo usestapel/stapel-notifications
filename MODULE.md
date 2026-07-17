@@ -38,8 +38,8 @@ core so any module can request without importing this one),
 ### 1. Settings — the `STAPEL_NOTIFICATIONS` namespace (`conf.py`)
 
 `notifications_settings = AppSettings("STAPEL_NOTIFICATIONS", ...)`.
-Resolution per key: `settings.STAPEL_NOTIFICATIONS[key]` → flat Django setting
-of the same name (legacy) → environment variable → default. Values are read
+Resolution per key: `settings.STAPEL_NOTIFICATIONS[key]` → environment
+variable → default. Values are read
 lazily (never frozen at import) and reload on `setting_changed` in tests.
 
 | Key | Default | Purpose |

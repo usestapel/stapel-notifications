@@ -21,8 +21,7 @@ Everything a host project previously had to fork is an override here::
         "PUSH_PROVIDER": "fcm",
     }
 
-Resolution per key: STAPEL_NOTIFICATIONS dict → flat Django setting of the
-same name (legacy: EMAIL_PROVIDER, TWILIO_* keep working) → env → default.
+Resolution per key: STAPEL_NOTIFICATIONS dict → env → default.
 """
 from stapel_core.conf import AppSettings
 

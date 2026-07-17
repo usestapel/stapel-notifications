@@ -2,8 +2,7 @@
 Push notification channel.
 
 Dispatches to the provider configured via the ``PUSH_PROVIDER`` key of the
-``STAPEL_NOTIFICATIONS`` namespace (or the flat ``PUSH_PROVIDER`` setting /
-env var):
+``STAPEL_NOTIFICATIONS`` namespace (or the ``PUSH_PROVIDER`` env var):
 
   fcm   — Firebase Cloud Messaging (default)
   mock  — Log only, no real sending

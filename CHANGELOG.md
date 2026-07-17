@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Removed — legacy flat-setting compat scrub (0.3.10)
+
+- `tests/test_extensibility.py::test_legacy_flat_setting_still_works` deleted —
+  the module no longer pins or advertises the legacy flat Django setting
+  fallback (`EMAIL_PROVIDER`, `PUSH_PROVIDER`, `TWILIO_*` as top-level
+  settings). Configure via the `STAPEL_NOTIFICATIONS` namespace dict or
+  environment variables.
+- Docs scrubbed of the legacy flat-setting resolution step (`conf.py`
+  docstring, `channels/push.py` docstring, `MODULE.md` §1): documented
+  resolution is now `settings.STAPEL_NOTIFICATIONS[key]` → env → default.
+  The flat fallback mechanism itself lives in `stapel_core.conf.AppSettings`
+  (out of this repo's scope); this package no longer documents or tests it —
+  removing the mechanism is a stapel-core change.
+
 ### Changed — core ceiling raised for the 0.11 fleet re-pin (0.3.9)
 
 - `stapel-core` ceiling raised `>=0.10,<0.11` → `>=0.10,<0.12` (core 0.11 is

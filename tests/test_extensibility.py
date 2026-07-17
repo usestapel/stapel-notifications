@@ -86,9 +86,3 @@ def test_unknown_provider_falls_back_to_mock():
     with override_settings(STAPEL_NOTIFICATIONS={"SMS_PROVIDER": "does-not-exist"}):
         assert isinstance(_get_provider(), _MockSMSProvider)
 
-
-def test_legacy_flat_setting_still_works():
-    with override_settings(EMAIL_PROVIDER="smtp"):
-        from stapel_notifications.channels.email import _get_provider
-
-        assert type(_get_provider()).__name__ == "_SMTPEmailProvider"
