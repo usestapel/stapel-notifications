@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## [0.3.11] — 2026-07-17
+
+Fleet follow-up to stapel-core 0.12.0 (legacy shim sweep). No source
+changes needed — the `consume_*` management commands already import
+`stapel_core.bus.BaseBusConsumerCommand` (aliased locally as
+`BaseKafkaConsumerCommand`), not the removed kafka transport module. Full
+suite green against core 0.12.0.
+
+### Changed
+- `stapel-core` dependency ceiling `<0.12` → `<0.13`.
+
 ### Removed — legacy flat-setting compat scrub (0.3.10)
 
 - `tests/test_extensibility.py::test_legacy_flat_setting_still_works` deleted —
