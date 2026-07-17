@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## [0.3.12] — 2026-07-17
+
+Fix-up: 0.3.11's CI/publish failed on contract drift — `docs/capabilities.json`
+embeds the package version and wasn't regenerated for the 0.3.11 bump.
+Regenerated via `make contract`; no other diff.
+
 ## [0.3.11] — 2026-07-17
 
 Fleet follow-up to stapel-core 0.12.0 (legacy shim sweep). No source
