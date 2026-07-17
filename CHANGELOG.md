@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [0.3.13] — 2026-07-17
+
+Fix-up #2: 0.3.12's regen still baked the old version into
+`docs/capabilities.json` (`make contract` ran before the version bump
+landed). Re-ran with 0.3.13 already in `pyproject.toml`; verified match,
+suite green.
+
 ## [0.3.12] — 2026-07-17
 
 Fix-up: 0.3.11's CI/publish failed on contract drift — `docs/capabilities.json`

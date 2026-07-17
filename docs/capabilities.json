@@ -1,6 +1,6 @@
 {
   "module": "stapel-notifications",
-  "version": "0.3.11",
+  "version": "0.3.13",
   "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
   "axes": [
     {
