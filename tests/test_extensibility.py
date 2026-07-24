@@ -30,6 +30,38 @@ def test_workspace_invitation_registered():
     assert get_email_template("workspace.invitation") == "notifications/email/workspace_invitation.html"
 
 
+# ── Org program types (workspaces-org-program.md §F) ─────────────
+
+
+def test_workspace_invitation_new_user_registered():
+    """Clean routing-override: separate type, not an override of
+    "workspace.invitation", same group/channel shape."""
+    assert get_channels("workspace.invitation.new_user") == ["email"]
+    assert get_group("workspace.invitation.new_user") == "system"
+    assert (
+        get_email_template("workspace.invitation.new_user")
+        == "notifications/email/workspace_invitation_new_user.html"
+    )
+
+
+def test_workspace_provisioned_account_registered():
+    """Auth-class notification: mandatory, no unsubscribe (checked via
+    _should_send/group in test_services_pipeline-style tests)."""
+    assert get_channels("workspace.provisioned_account") == ["email"]
+    assert get_group("workspace.provisioned_account") == "auth"
+    assert (
+        get_email_template("workspace.provisioned_account")
+        == "notifications/email/workspace_provisioned_account.html"
+    )
+
+
+def test_workspace_mfa_suspension_and_restored_registered():
+    for t in ("workspace.mfa_suspension", "workspace.mfa_restored"):
+        assert get_channels(t) == ["email"]
+        assert get_group(t) == "auth"
+        assert get_email_template(t) == f"notifications/email/{t.replace('.', '_')}.html"
+
+
 def test_custom_type_via_settings():
     with override_settings(
         STAPEL_NOTIFICATIONS={

@@ -2,6 +2,57 @@
 
 ## Unreleased
 
+## [0.4.0] — org-program email notifications (workspaces-org-program.md §F)
+
+### Added
+- `workspace.invitation.new_user` notification type + email template
+  (`workspace_invitation_new_user.html`) — the invite variant for a
+  not-yet-registered recipient, where the acceptance link both creates the
+  account and joins the workspace. Kept as a separate type rather than an
+  override of `workspace.invitation`, a clean routing-override seam (group
+  `system`, channel `email`; vars: `workspace_name`, `inviter_name`,
+  `accept_url`, optional `role_name`).
+- `workspace.provisioned_account` notification type + email template — first
+  credentials for an org-provisioned (org-created) user. Auth-class routing
+  (group `auth`, mandatory, no unsubscribe — same treatment as
+  `new_device_login`/`suspicious_login`). Vars: `workspace_name`, `username`,
+  `login_url`, optional `initial_password`.
+- `workspace.mfa_suspension` / `workspace.mfa_restored` notification types +
+  email templates — org `require_mfa` policy suspending/restoring a member's
+  workspace access. Auth-class routing (group `auth`, no unsubscribe). Vars:
+  `workspace_name`, optional `security_url` / `workspace_url`.
+- `workspace.invitation`: additive `{role_name}` param — an optional role
+  line ("You're invited to join as {role_name}.") rendered only when the
+  caller passes `role_name`; omitting it keeps subject/heading/body/cta
+  byte-identical to before this change (new `role_line` translation key,
+  gated in the template by `{% if role_name %}`, not by reformatting the
+  existing keys).
+
+### Decision — password in the provisioned-account email
+`workspace.provisioned_account` embeds the org-issued `initial_password`
+directly in the template (credentials box, `{% if initial_password %}`)
+rather than only linking to a "set your password" flow. Precedent: this
+module already embeds a comparable one-time secret directly in an email —
+`otp_code.html` renders `{{ code }}` (the OTP) straight into the body. Since
+that canon exists, `provisioned_account` follows it instead of inventing a
+new exception. The variable stays optional (`{% if initial_password %}`) so
+a host that instead issues a "set password" link can omit it and just pass
+`login_url`.
+
+### Tests
+- `tests/test_org_program_notifications.py` (new): additive-`role_name`
+  rendering (with/without), the `new_user` variant's distinct copy +
+  routing (system group still carries `List-Unsubscribe` once a user_id is
+  known), the password-in-email precedent, and the auth-class (no
+  unsubscribe) behavior for `provisioned_account` / `mfa_suspension` /
+  `mfa_restored`, plus translation-key registry coverage for every new type.
+- `tests/test_extensibility.py` / `tests/test_features.py`: routing
+  registration + render-and-send coverage extended to the four new types,
+  alongside the existing `workspace.invitation` cases.
+- No `docs/{schema,flows,errors,capabilities}.json` drift — this wave adds
+  notification types/templates/keys only, no serializer/view/url surface
+  changed (`make contract-check` verified clean).
+
 ## [0.3.13] — 2026-07-17
 
 Fix-up #2: 0.3.12's regen still baked the old version into

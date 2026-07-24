@@ -52,6 +52,20 @@ NOTIFICATION_ROUTING = {
     "listing_expiring":      {"channels": ["push", "email"],        "group": "system"},
     "listing_blocked":       {"channels": ["push", "email"],        "group": "system"},
     "workspace.invitation":  {"channels": ["email"],                "group": "system"},
+    # Invite variant for a not-yet-registered recipient: the acceptance link
+    # both creates the account and joins the workspace. Kept as its own type
+    # (not an override of "workspace.invitation") so a host project can route
+    # or template it independently — a clean routing-override seam.
+    "workspace.invitation.new_user": {"channels": ["email"],        "group": "system"},
+
+    # Org-provisioned account (org creates a login/password user directly) —
+    # auth-class notification: mandatory, no unsubscribe, same as the other
+    # account-credential mails above.
+    "workspace.provisioned_account": {"channels": ["email"],        "group": "auth"},
+    # Org security policy (require_mfa) suspends/restores membership access —
+    # account-access notifications, same auth-class treatment.
+    "workspace.mfa_suspension":      {"channels": ["email"],        "group": "auth"},
+    "workspace.mfa_restored":         {"channels": ["email"],        "group": "auth"},
 }
 
 # Built-in email templates for types that do not carry their own
@@ -75,6 +89,10 @@ DEFAULT_EMAIL_TEMPLATES = {
     "gdpr.inactivity_warning": "notifications/email/gdpr_inactivity_warning.html",
     "gdpr.inactivity_closed": "notifications/email/gdpr_inactivity_closed.html",
     "workspace.invitation": "notifications/email/workspace_invitation.html",
+    "workspace.invitation.new_user": "notifications/email/workspace_invitation_new_user.html",
+    "workspace.provisioned_account": "notifications/email/workspace_provisioned_account.html",
+    "workspace.mfa_suspension": "notifications/email/workspace_mfa_suspension.html",
+    "workspace.mfa_restored": "notifications/email/workspace_mfa_restored.html",
 }
 
 

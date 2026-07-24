@@ -65,6 +65,38 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.workspace.invitation.heading": "Workspace invitation",
     "notification.workspace.invitation.body": "{inviter_name} invited you to join the workspace \u201c{workspace_name}\u201d.",
     "notification.workspace.invitation.cta": "Accept invitation",
+    # Additive: only rendered when the caller passes a "role_name" variable
+    # (see workspace_invitation.html {% if role_name %}); omitting it keeps
+    # subject/heading/body/cta byte-identical to before this key existed.
+    "notification.workspace.invitation.role_line": "You're invited to join as {role_name}.",
+    # ── Workspace invitation — unregistered recipient (§F) ──
+    # Same flow as "workspace.invitation" but the acceptance link both
+    # creates the account and joins the workspace — a separate type (not
+    # an override) so routing/templates can diverge cleanly per §F.
+    "notification.workspace.invitation.new_user.subject": "You are invited to {workspace_name}",
+    "notification.workspace.invitation.new_user.heading": "Workspace invitation",
+    "notification.workspace.invitation.new_user.body": "{inviter_name} invited you to join the workspace \u201c{workspace_name}\u201d. You don't have an account yet — the button below creates one and joins you to the workspace.",
+    "notification.workspace.invitation.new_user.cta": "Create account & join",
+    "notification.workspace.invitation.new_user.role_line": "You're invited to join as {role_name}.",
+    "notification.workspace.invitation.new_user.warning": "This link is personal — don't forward it. If you weren't expecting this invitation, you can safely ignore this email.",
+    # ── Org-provisioned account (§F) ──
+    "notification.workspace.provisioned_account.subject": "Your {workspace_name} account is ready",
+    "notification.workspace.provisioned_account.heading": "Your account is ready",
+    "notification.workspace.provisioned_account.body": "An account has been created for you in the workspace \u201c{workspace_name}\u201d. Use the credentials below to sign in.",
+    "notification.workspace.provisioned_account.username_label": "Username",
+    "notification.workspace.provisioned_account.password_label": "Temporary password",
+    "notification.workspace.provisioned_account.cta": "Sign in",
+    "notification.workspace.provisioned_account.warning": "For your security, you'll be asked to change this password or set up two-factor authentication the first time you sign in.",
+    # ── Org security: MFA-required suspension / restore (§F) ──
+    "notification.workspace.mfa_suspension.subject": "Your access to {workspace_name} has been suspended",
+    "notification.workspace.mfa_suspension.heading": "Access suspended — two-factor authentication required",
+    "notification.workspace.mfa_suspension.body": "Your access to the workspace \u201c{workspace_name}\u201d has been suspended because it now requires two-factor authentication (2FA) and your account doesn't have it enabled yet.",
+    "notification.workspace.mfa_suspension.cta": "Enable two-factor authentication",
+    "notification.workspace.mfa_suspension.warning": "Your access will be restored automatically once you enable 2FA — no need to contact anyone.",
+    "notification.workspace.mfa_restored.subject": "Your access to {workspace_name} has been restored",
+    "notification.workspace.mfa_restored.heading": "Access restored",
+    "notification.workspace.mfa_restored.body": "Two-factor authentication is now enabled on your account, and your access to the workspace \u201c{workspace_name}\u201d has been restored.",
+    "notification.workspace.mfa_restored.cta": "Go to workspace",
     "notification.new_message.subject": "New message from {sender_name}",
     "notification.new_message.heading": "New message from {sender_name}",
     "notification.new_message.body": "You have a new message about \u201c{listing_title}\u201d.",

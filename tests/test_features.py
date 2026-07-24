@@ -99,6 +99,37 @@ def test_gdpr_types_registered():
                 "accept_url": "https://x.example/accept/1",
             },
         ),
+        (
+            "workspace.invitation.new_user",
+            {
+                "workspace_name": "Acme",
+                "inviter_name": "Ada",
+                "accept_url": "https://x.example/invite/claim/1",
+            },
+        ),
+        (
+            "workspace.provisioned_account",
+            {
+                "workspace_name": "Acme",
+                "username": "acme/jdoe",
+                "initial_password": "Tr0ub4dor&3",
+                "login_url": "https://x.example/login",
+            },
+        ),
+        (
+            "workspace.mfa_suspension",
+            {
+                "workspace_name": "Acme",
+                "security_url": "https://x.example/security/mfa",
+            },
+        ),
+        (
+            "workspace.mfa_restored",
+            {
+                "workspace_name": "Acme",
+                "workspace_url": "https://x.example/workspaces/acme",
+            },
+        ),
     ],
 )
 def test_new_types_render_and_send(ntype, variables):
