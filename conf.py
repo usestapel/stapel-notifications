@@ -59,11 +59,18 @@ DEFAULTS = {
     "FRONTEND_URL": "",
     # Branding: logo + colors, threaded into every email template via
     # the base layout (templates/notifications/email/_base.html).
-    # LOGO_URL set   → templates embed <img src="LOGO_URL"> and the
-    #                  inline CID attachment is skipped.
-    # LOGO_URL empty → current behavior: the packaged static logo is
-    #                  attached inline and referenced as cid:logo.
+    # LOGO_URL set   → templates embed <img src="LOGO_URL">. Point it at an
+    #                  image you own, served over https. A data: URI does
+    #                  NOT work: Gmail and others block data: as an image
+    #                  source in mail (measured, meettoday 2026-07-28).
+    # LOGO_URL empty → no image at all; the header renders COMPANY_NAME as
+    #                  a text wordmark. This package ships no logo of its
+    #                  own — see channels/email.py for why.
     "LOGO_URL": "",
+    # SMTP connection/read timeout in seconds, used when the host has not
+    # set Django's EMAIL_TIMEOUT. Without one, a slow mail server hangs the
+    # request until the reverse proxy gives up.
+    "SMTP_TIMEOUT": 15,
     "BRAND_PRIMARY": "#00AEEF",        # logo/accent color
     "BRAND_PRIMARY_DARK": "#2A90D9",   # buttons + links
     "BRAND_BG": "#F5F5F6",             # page background

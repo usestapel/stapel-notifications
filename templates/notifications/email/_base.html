@@ -50,7 +50,7 @@ unsubscribe_url is present (non-auth groups).
           <!-- Header -->
           <tr>
             <td class="email-header" style="padding: 28px 32px 20px 32px; border-bottom: 1px solid #DADADB;">
-              <img src="{{ logo_url }}" alt="{{ company_name }}" width="96" style="display: block; height: auto; font-family: Helvetica, Arial, sans-serif; font-size: 24px; font-weight: bold; color: {{ brand_primary|default:"#00AEEF" }};">
+              {% if logo_url %}<img src="{{ logo_url }}" alt="{{ company_name }}" width="96" style="display: block; height: auto;">{% else %}<span style="display: block; font-family: Helvetica, Arial, sans-serif; font-size: 24px; font-weight: bold; color: {{ brand_primary|default:"#00AEEF" }};">{{ company_name }}</span>{% endif %}
             </td>
           </tr>
 
@@ -72,7 +72,7 @@ unsubscribe_url is present (non-auth groups).
                 {{ footer_address }}
               </p>
               <p style="margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; line-height: 18px;">
-                <a href="{{ company_url }}" style="color: {{ brand_primary_dark|default:"#2A90D9" }}; text-decoration: underline;">{{ company_name }}</a>
+                {% if company_url %}<a href="{{ company_url }}" style="color: {{ brand_primary_dark|default:"#2A90D9" }}; text-decoration: underline;">{{ company_name }}</a>{% else %}{{ company_name }}{% endif %}
               </p>
             </td>
           </tr>

@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+## [0.5.0] — 2026-07-28
+
+### Removed
+- **The bundled default logo.** This package shipped a 233 KB 512×512 PNG and
+  attached it inline to every email whose host had not set `LOGO_URL`. It was
+  one product's brand mark living inside a general-purpose OSS library — every
+  host that never configured branding sent mail carrying somebody else's logo.
+  It was also the single largest thing in a one-line OTP email, and slow enough
+  over SMTP to look like a hang.
+
+  **Breaking:** with `LOGO_URL` unset there is now no image at all; the header
+  renders `COMPANY_NAME` as a text wordmark. Hosts that want a picture set
+  `LOGO_URL` to one they own, served over https. A `data:` URI does not work —
+  Gmail and others block `data:` as an image source in mail (measured).
+
+### Fixed
+- **SMTP could hang forever.** `_SMTPEmailProvider` used Django's default
+  connection, which has no timeout unless the host sets `EMAIL_TIMEOUT` — while
+  the Resend and Mailgun providers next to it already passed `timeout=15`. A
+  slow mail server held the request until the reverse proxy returned 504. The
+  provider now opens its own connection with a timeout, configurable via
+  `SMTP_TIMEOUT` (default 15). A host that set `EMAIL_TIMEOUT` keeps it: we
+  supply a default where there was none, we do not overrule a decision.
+- **Header fallback no longer renders broken.** The logo `<img>` carried a
+  fixed `width="96"` intended to frame a square icon; when the image could not
+  load, that width also clipped the `alt` text, so a nine-character brand name
+  came out truncated inside a broken-image box. The fallback is now text, not
+  an image with hopeful styling.
+- **Footer company link is a link only when there is a URL.** `COMPANY_URL`
+  has no default, so the footer rendered `<a href="">` — underlined, coloured,
+  and inert. With no URL it is now plain text.
+
+All three email defects were found on a live mail server by meettoday
+(2026-07-28); none of them reproduced with an invalid password, because the
+server rejected the login before any of this ran.
+
+
 ## [0.4.0] — org-program email notifications (workspaces-org-program.md §F)
 
 ### Added

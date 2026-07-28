@@ -10,41 +10,30 @@ Dispatches to the provider configured via EMAIL_PROVIDER setting:
 Unknown values fall back to mock with a warning.
 """
 
-import base64
 import logging
-import os
 
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-_logo_data: bytes | None = None
-LOGO_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
-    'static', 'notifications', 'logo.png',
-)
-
-
-def _get_logo_data() -> bytes | None:
-    global _logo_data
-    if _logo_data is None:
-        try:
-            with open(LOGO_PATH, 'rb') as f:
-                _logo_data = f.read()
-        except FileNotFoundError:
-            logger.warning("Logo file not found: %s", LOGO_PATH)
-    return _logo_data
-
-
-def _inline_logo_data() -> bytes | None:
-    """Logo bytes for the inline cid:logo attachment, or None when
-    STAPEL_NOTIFICATIONS['LOGO_URL'] is set (templates then reference the
-    URL directly and no attachment is needed)."""
-    from stapel_notifications.conf import notifications_settings
-
-    if notifications_settings.LOGO_URL:
-        return None
-    return _get_logo_data()
+# There is deliberately NO bundled default logo here any more.
+#
+# This package used to ship a 233 KB 512x512 PNG and attach it inline to
+# every email whose host had not set LOGO_URL. Three things were wrong
+# with that, and they only became visible on a real mail server:
+#
+#   1. It was one product's brand mark, shipped inside a general-purpose
+#      OSS library. Every host that never configured branding sent mail
+#      carrying somebody else's logo.
+#   2. A quarter-megabyte base64 attachment on EVERY message — the single
+#      biggest thing in a one-line OTP email, and slow enough over SMTP to
+#      look like a hang (meettoday, 2026-07-28).
+#   3. It made "no logo configured" a state that still rendered an <img>,
+#      so a client that could not fetch it showed a broken-image icon.
+#
+# Unset LOGO_URL now means: no image at all, and the template renders the
+# company name as a text wordmark. Hosts that want a picture set LOGO_URL
+# to one they own and serve over https.
 
 
 # ──────────────────────────────────────────────────────────────────
@@ -72,14 +61,6 @@ class _ResendEmailProvider:
             "subject": subject,
             "html": html_body,
         }
-        logo = _inline_logo_data()
-        if logo:
-            payload["attachments"] = [{
-                "filename": "logo.png",
-                "content": base64.b64encode(logo).decode(),
-                "content_type": "image/png",
-                "content_id": "logo",
-            }]
         if headers:
             payload["headers"] = headers
 
@@ -96,8 +77,20 @@ class _ResendEmailProvider:
 
 class _SMTPEmailProvider:
     def send(self, recipient: str, subject: str, html_body: str, headers: dict | None) -> None:
-        from email.mime.image import MIMEImage
-        from django.core.mail import EmailMessage
+        from django.core.mail import EmailMessage, get_connection
+
+        from stapel_notifications.conf import notifications_settings
+
+        # Open the connection ourselves so a timeout is ALWAYS in force.
+        # Django's default SMTP backend blocks forever unless the host set
+        # EMAIL_TIMEOUT, and the sibling providers here already pass
+        # timeout=15 to their HTTP calls — SMTP was the one path where a
+        # slow server hung the request until nginx killed it with a 504
+        # (meettoday, 2026-07-28). A host that set EMAIL_TIMEOUT keeps it:
+        # we only supply a default where there was none.
+        timeout = getattr(settings, "EMAIL_TIMEOUT", None)
+        if timeout is None:
+            timeout = notifications_settings.SMTP_TIMEOUT
 
         msg = EmailMessage(
             subject=subject,
@@ -105,14 +98,9 @@ class _SMTPEmailProvider:
             from_email=settings.DEFAULT_FROM_EMAIL,
             to=[recipient],
             headers=headers or {},
+            connection=get_connection(timeout=timeout),
         )
         msg.content_subtype = 'html'
-        logo = _inline_logo_data()
-        if logo:
-            logo_mime = MIMEImage(logo, _subtype='png')
-            logo_mime.add_header('Content-ID', '<logo>')
-            logo_mime.add_header('Content-Disposition', 'inline', filename='logo.png')
-            msg.attach(logo_mime)
         msg.send(fail_silently=False)
         logger.info("Email sent to %s via SMTP", _mask(recipient))
 

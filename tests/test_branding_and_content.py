@@ -90,10 +90,26 @@ def test_brand_overrides_apply_across_types(capture_email):
 
 
 @pytest.mark.django_db
-def test_logo_defaults_to_cid_attachment(capture_email):
+def test_no_logo_configured_renders_a_text_wordmark(capture_email):
+    """This package ships no logo of its own. It used to bundle one
+    product's 233 KB brand mark and attach it to every email whose host
+    had not configured branding — see channels/email.py."""
     _process()
     (mail,) = capture_email
-    assert 'src="cid:logo"' in mail["html"]
+    assert "cid:logo" not in mail["html"]
+    assert "<img" not in mail["html"]
+    assert "Stapel" in mail["html"]  # COMPANY_NAME as text instead
+
+
+@pytest.mark.django_db
+def test_a_data_uri_logo_is_not_something_we_invent(capture_email):
+    """Whatever the host sets is what goes out — we do not substitute a
+    data: URI as a fallback. Gmail blocks data: as an image source in
+    mail, so a "helpful" default would render as a broken-image icon
+    (measured, meettoday 2026-07-28)."""
+    _process()
+    (mail,) = capture_email
+    assert "data:image" not in mail["html"]
 
 
 @pytest.mark.django_db
@@ -102,23 +118,24 @@ def test_logo_url_replaces_cid_reference(capture_email):
     (mail,) = capture_email
     assert 'src="https://cdn.example/logo.png"' in mail["html"]
     assert "cid:logo" not in mail["html"]
+    # No width attribute is applied to a fallback that is not an image.
+    assert 'alt="Stapel"' in mail["html"]
 
 
 @override_settings(
     EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
     DEFAULT_FROM_EMAIL="no-reply@example.com",
 )
-def test_smtp_skips_inline_attachment_when_logo_url_set():
+def test_smtp_never_attaches_anything():
     from django.core import mail
 
     from stapel_notifications.channels.email import _SMTPEmailProvider
 
-    with override_settings(
-        STAPEL_NOTIFICATIONS={"LOGO_URL": "https://cdn.example/logo.png"}
-    ):
+    with override_settings(STAPEL_NOTIFICATIONS={}):
         _SMTPEmailProvider().send("dest@example.com", "s", "<b>x</b>", None)
     (msg,) = mail.outbox
-    assert msg.attachments == []  # no cid:logo attachment
+    # Not "no attachment because LOGO_URL was set" — no attachment, ever.
+    assert msg.attachments == []
 
 
 @override_settings(
@@ -168,7 +185,7 @@ class TestRawContentEscapeHatch:
         assert '<p id="adhoc-body">Hello there</p>' in mail["html"]
         assert mail["subject"] == "Big news"
         # wrapped in the base brand layout, not sent bare
-        assert 'src="cid:logo"' in mail["html"]
+        assert "Stapel" in mail["html"]
         assert "#00AEEF" in mail["html"]
         log = NotificationLog.objects.get(notification_type="adhoc.announcement")
         assert log.status == "sent"
@@ -217,3 +234,71 @@ class TestRawContentEscapeHatch:
             )
         assert capture_email == []
         assert NotificationLog.objects.get(channel="email").status == "skipped"
+
+
+# ── SMTP timeout + footer link ──────────────────────────────────
+
+_LOCMEM = "django.core.mail.backends.locmem.EmailBackend"
+
+
+class TestSmtpAlwaysHasATimeout:
+    """A slow mail server must fail, not hang. Django's SMTP backend blocks
+    forever unless EMAIL_TIMEOUT is set, and the sibling providers here
+    already pass timeout=15 to their HTTP calls — SMTP was the one path
+    that could hang a request until nginx returned 504 (meettoday,
+    2026-07-28).
+
+    Asserted on what we hand to get_connection, not on the resulting
+    backend object: the locmem backend used in tests silently swallows
+    kwargs it does not know, so reading the attribute back would pass
+    whether or not we sent anything.
+    """
+
+    def _timeout_passed(self, monkeypatch):
+        import django.core.mail as dm
+
+        seen = {}
+        real = dm.get_connection
+
+        def spy(*args, **kwargs):
+            seen.update(kwargs)
+            kwargs.pop("timeout", None)
+            return real(*args, **kwargs)
+
+        monkeypatch.setattr(dm, "get_connection", spy)
+        from stapel_notifications.channels.email import _SMTPEmailProvider
+
+        _SMTPEmailProvider().send("dest@example.com", "s", "<b>x</b>", None)
+        return seen.get("timeout")
+
+    def test_library_supplies_a_default_when_the_host_set_none(self, monkeypatch):
+        with override_settings(EMAIL_BACKEND=_LOCMEM, DEFAULT_FROM_EMAIL="a@b.c",
+                               STAPEL_NOTIFICATIONS={}):
+            assert self._timeout_passed(monkeypatch) == 15
+
+    def test_configurable_without_touching_django_settings(self, monkeypatch):
+        with override_settings(EMAIL_BACKEND=_LOCMEM, DEFAULT_FROM_EMAIL="a@b.c",
+                               STAPEL_NOTIFICATIONS={"SMTP_TIMEOUT": 3}):
+            assert self._timeout_passed(monkeypatch) == 3
+
+    def test_a_host_that_set_email_timeout_keeps_it(self, monkeypatch):
+        """We fill a gap; we do not overrule a host that already decided."""
+        with override_settings(EMAIL_BACKEND=_LOCMEM, DEFAULT_FROM_EMAIL="a@b.c",
+                               EMAIL_TIMEOUT=42, STAPEL_NOTIFICATIONS={}):
+            assert self._timeout_passed(monkeypatch) == 42
+
+
+@pytest.mark.django_db
+def test_footer_company_link_is_text_when_no_url_is_configured(capture_email):
+    """COMPANY_URL has no default. Rendering <a href=""> gave a footer that
+    looks like a link, is styled like a link, and does nothing."""
+    _process()
+    (mail,) = capture_email
+    assert 'href=""' not in mail["html"]
+
+
+@pytest.mark.django_db
+def test_footer_company_link_is_a_link_when_a_url_is_configured(capture_email):
+    _process(extra_settings={"COMPANY_URL": "https://example.test"})
+    (mail,) = capture_email
+    assert 'href="https://example.test"' in mail["html"]

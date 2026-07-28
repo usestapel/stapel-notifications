@@ -207,9 +207,10 @@ def process_notification(
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
         all_vars["manage_notifications_url"] = f"{frontend_url}/settings/notifications"
 
-    # Logo: configured URL wins; otherwise the packaged static logo is
-    # attached inline by the email channel and referenced as cid:logo.
-    all_vars["logo_url"] = notifications_settings.LOGO_URL or "cid:logo"
+    # Logo: whatever the host configured, or nothing. There is no packaged
+    # fallback image any more — an empty value makes the header render the
+    # company name as text instead of an <img> that cannot load.
+    all_vars["logo_url"] = notifications_settings.LOGO_URL
 
     # Format translation values with variables (e.g. "{code}" → "1234")
     # Uses _SafeFormatter to prevent attribute/index access in format strings

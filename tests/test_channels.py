@@ -54,7 +54,7 @@ class TestSMTPEmail:
         EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
         DEFAULT_FROM_EMAIL="no-reply@example.com",
     )
-    def test_sends_html_with_headers_and_inline_logo(self):
+    def test_sends_html_with_headers_and_no_attachment(self):
         from django.core import mail
 
         from stapel_notifications.channels.email import _SMTPEmailProvider
@@ -72,7 +72,7 @@ class TestSMTPEmail:
         assert msg.body == "<b>hi</b>"
         assert msg.content_subtype == "html"
         assert msg.extra_headers["List-Unsubscribe"] == "<https://u>"
-        assert len(msg.attachments) == 1  # inline cid:logo
+        assert msg.attachments == []  # this package ships no logo of its own
 
 
 class TestResendEmail:
@@ -86,7 +86,7 @@ class TestResendEmail:
         STAPEL_NOTIFICATIONS={"RESEND_API_KEY": "re_key"},
         DEFAULT_FROM_EMAIL="no-reply@example.com",
     )
-    def test_posts_payload_with_logo_and_headers(self, fake_requests):
+    def test_posts_payload_with_headers_and_no_attachment(self, fake_requests):
         from stapel_notifications.channels.email import _ResendEmailProvider
 
         _ResendEmailProvider().send(
@@ -100,7 +100,7 @@ class TestResendEmail:
         assert payload["subject"] == "Subj"
         assert payload["html"] == "<b>x</b>"
         assert payload["headers"] == {"List-Unsubscribe": "<u>"}
-        assert payload["attachments"][0]["content_id"] == "logo"
+        assert "attachments" not in payload
 
     @override_settings(STAPEL_NOTIFICATIONS={"RESEND_API_KEY": "re_key"})
     def test_api_error_raises(self, fake_requests):
