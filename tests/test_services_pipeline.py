@@ -154,8 +154,25 @@ class TestLanguageResolution:
         )
         assert self._process(user) == "es"
 
-    def test_defaults_to_english(self, capture_email):
-        assert self._process() == "en"
+    def test_falls_back_to_the_active_language_not_a_hardcoded_en(
+        self, capture_email
+    ):
+        """The gap meettoday found: an anonymous request has no user_id, so
+        there is no saved preference and nothing auto-detected, and the
+        chain used to fall straight through to a literal "en" — discarding
+        the language Django had already resolved for the request."""
+        from django.utils import translation
+
+        with translation.override("ru"):
+            assert self._process() == "ru"
+
+    def test_still_english_when_nothing_at_all_is_known(self, capture_email):
+        """With no active translation and no preferences, English remains
+        the last resort — the project's LANGUAGE_CODE if it has one."""
+        from django.utils import translation
+
+        with translation.override(None):
+            assert self._process().startswith("en")
 
 
 @pytest.mark.django_db
@@ -388,3 +405,24 @@ def test_sms_channel_sends_formatted_text(user):
         ("+4512345678", "Your Stapel code: 4321. Expires in 3 min.")
     ]
     assert NotificationLog.objects.get(channel="sms").status == "sent"
+
+
+@pytest.mark.django_db
+def test_last_resort_language_follows_the_project_not_a_hardcoded_en(
+    capture_email, settings
+):
+    """A service built for a Russian-speaking market wants `ru` as its
+    last resort; every English string it falls back to is a defect."""
+    from django.utils import translation
+
+    settings.STAPEL_LANGUAGE = {"DEFAULT": "ru"}
+    with translation.override(None):
+        process_notification(
+            notification_type="new_device_login",
+            user_id=None,
+            variables={},
+            email="dest@example.com",
+        )
+    assert NotificationLog.objects.get(
+        notification_type="new_device_login"
+    ).language == "ru"

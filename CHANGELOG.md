@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## [0.5.1] — 2026-07-29
+
+### Fixed
+- **Anonymous notifications are no longer silently anglicised.** The language
+  chain ended in a hardcoded `"en"`: an anonymous request has no `user_id`, so
+  there is no saved preference and nothing auto-detected, and every OTP email,
+  workspace invitation and GDPR notice went out in English regardless of the
+  caller's locale — while Django had already resolved the request's language.
+  The chain now falls through to the process's active language and then to the
+  **project's** fallback (`stapel_core.language.default_language()`:
+  `STAPEL_LANGUAGE["DEFAULT"]` → `settings.LANGUAGE_CODE`), because "en" as the
+  final answer is a product assumption a library has no business making — a
+  service for a Russian-speaking market wants `ru` there.
+
+  Callers that pass `language` explicitly are unaffected. `stapel-auth` 0.14.4
+  started passing it for OTP; this fixes every caller that does not, without
+  each of them having to be found first.
+
+
 ## [0.5.0] — 2026-07-28
 
 ### Removed

@@ -98,6 +98,32 @@ def _should_send(group: str, channel: str, settings_obj: UserNotificationSetting
     return getattr(settings_obj, pref_field, True)
 
 
+def default_language() -> str:
+    """The project's fallback language — never a hardcoded "en".
+
+    A service built for a Russian-speaking market wants `ru` as its last
+    resort, and every English string it falls back to is a defect. Reads
+    STAPEL_LANGUAGE["DEFAULT"], then Django's LANGUAGE_CODE.
+    """
+    from stapel_core.language import default_language as _core_default
+
+    return _core_default()
+
+
+def _active_language() -> str | None:
+    """The language this process currently has active, if any.
+
+    In a web process LocaleMiddleware has already resolved it from the
+    request; in a consumer process there is usually nothing active and
+    this returns the project's LANGUAGE_CODE. Either way it beats a
+    hardcoded "en" as a last resort. Returns None when translations are
+    deactivated entirely, so the caller can fall through.
+    """
+    from django.utils.translation import get_language
+
+    return get_language()
+
+
 def process_notification(
     notification_type: str,
     user_id: str | None,
@@ -149,14 +175,21 @@ def process_notification(
         settings_obj = UserNotificationSettings.objects.filter(user_id=user_id).first()
         contact = UserContact.objects.filter(user_id=user_id, is_active=True).first()
 
-    # Language resolution: profile override > event language > auto-detected > English
-    lang = "en"
-    if settings_obj and settings_obj.language:
-        lang = settings_obj.language
-    elif language:
-        lang = language
-    elif settings_obj and settings_obj.auto_detected_language:
-        lang = settings_obj.auto_detected_language
+    # Language: saved preference > what the caller resolved > last seen for
+    # this user > whatever this process currently has active > English.
+    #
+    # The last-but-one step is the one that was missing. An anonymous OTP
+    # request has no user_id, so there is no saved preference and no
+    # auto-detected language, and the chain fell straight through to a
+    # hardcoded "en" — even though Django had already resolved the
+    # request's language (found live by meettoday, 2026-07-28: OTP codes
+    # arrived in English regardless of locale). Callers that pass
+    # `language` explicitly are unaffected; callers that do not — every
+    # workspace invitation and GDPR notice among them — stop being
+    # silently anglicised.
+    saved = settings_obj.language if settings_obj else None
+    remembered = settings_obj.auto_detected_language if settings_obj else None
+    lang = saved or language or remembered or _active_language() or default_language()
 
     # Resolve recipient contact info
     recipient_email = email or (contact.email if contact else None)
