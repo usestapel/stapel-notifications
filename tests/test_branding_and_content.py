@@ -302,3 +302,56 @@ def test_footer_company_link_is_a_link_when_a_url_is_configured(capture_email):
     _process(extra_settings={"COMPANY_URL": "https://example.test"})
     (mail,) = capture_email
     assert 'href="https://example.test"' in mail["html"]
+
+
+# ── Translation fallbacks + which instance sent this ────────────────
+
+
+@pytest.mark.django_db
+class TestTranslationFallback:
+    """A host that shipped locale/ru/LC_MESSAGES has already done the
+    standard Django thing; until now this package could not see it."""
+
+    def test_gettext_catalogue_is_consulted(self, capture_email, monkeypatch):
+        import stapel_notifications.services as svc
+
+        monkeypatch.setattr(
+            svc, "_gettext_default",
+            lambda default, lang: "Ваш код подтверждения" if lang == "ru" else None,
+        )
+        _process(extra_settings={}, language="ru")
+        (mail,) = capture_email
+        assert "Ваш код подтверждения" in mail["html"]
+
+    def test_falling_back_to_english_is_reported_not_silent(self, caplog):
+        """"You asked for ru and are getting English" is what an operator
+        needs to see; it otherwise looks like success — the mail sends."""
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            _process(language="ru")
+        assert any(
+            "no ru translation" in r.getMessage() for r in caplog.records
+        ), [r.getMessage() for r in caplog.records]
+
+    def test_english_request_does_not_warn(self, caplog):
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            _process(language="en")
+        assert not [r for r in caplog.records if "English" in r.getMessage()]
+
+
+@pytest.mark.django_db
+class TestFooterIdentifiesTheInstance:
+    def test_link_text_is_the_host_not_the_brand_again(self, capture_email):
+        """One brand can run many instances; a footer repeating the brand
+        for the third time says nothing about which one wrote to you."""
+        _process(extra_settings={"COMPANY_URL": "https://3571.meettoday.app"})
+        (mail,) = capture_email
+        assert ">3571.meettoday.app</a>" in mail["html"]
+
+    def test_bare_domain_without_scheme_still_parses(self, capture_email):
+        _process(extra_settings={"COMPANY_URL": "example.test"})
+        (mail,) = capture_email
+        assert ">example.test</a>" in mail["html"]

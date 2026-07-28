@@ -36,13 +36,38 @@ def _get_keys_for_type(notification_type: str) -> list[str]:
     return keys
 
 
+def _gettext_default(default: str, lang: str) -> str | None:
+    """The host's own gettext catalogue, asked under ``lang``.
+
+    A host that shipped `locale/ru/LC_MESSAGES/django.po` has already done
+    the standard Django thing, and until now this package could not see
+    it: its strings live in NOTIFICATION_KEYS and its only route to
+    another language was a translate service. So a correctly-internationalised
+    project still sent English email and nothing said why (meettoday,
+    2026-07-29).
+
+    The English default doubles as the msgid, which is exactly how
+    gettext is meant to be used. Returns None when the catalogue has no
+    entry — gettext echoes the msgid back, and echoing is not translating.
+    """
+    from django.utils import translation
+
+    with translation.override(lang):
+        translated = translation.gettext(default)
+    return translated if translated != default else None
+
+
 def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
     """Resolve translation keys to translated strings.
 
-    Cache misses are lazily pulled through the ``translate.resolve`` comm
-    Function and stored in TranslationCache; when translate is unreachable
-    (or the Function is not registered) rendering degrades to the built-in
-    ``en`` defaults exactly as before.
+    Four sources, in order: the local TranslationCache, a lazy pull
+    through the ``translate.resolve`` comm Function, the host's gettext
+    catalogue, and finally this package's built-in English defaults.
+
+    The gettext step is what makes the library usable without a translate
+    service: hosts that already ship .po files get translated notifications
+    for free. The last step is a genuine fallback and is now reported as
+    such — see the warning below.
     """
     translations = {}
     cached = {tc.key: tc.values for tc in TranslationCache.objects.filter(key__in=keys)}
@@ -55,18 +80,41 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
             resolved = resolve_and_cache(missing, lang)
         except Exception as exc:
             logger.debug(
-                "lazy translate.resolve failed for %d key(s), falling back to "
-                "built-in defaults: %s", len(missing), exc,
+                "lazy translate.resolve failed for %d key(s), trying the "
+                "host's gettext catalogue next: %s", len(missing), exc,
             )
         else:
             for key, text in resolved.items():
                 cached[key] = {lang: text}
 
+    untranslated = []
     for key in keys:
+        default = NOTIFICATION_KEYS.get(key, key)
         if key in cached:
-            translations[key] = cached[key].get(lang) or cached[key].get("en") or NOTIFICATION_KEYS.get(key, key)
-        else:
-            translations[key] = NOTIFICATION_KEYS.get(key, key)
+            text = cached[key].get(lang)
+            if text:
+                translations[key] = text
+                continue
+        text = _gettext_default(default, lang)
+        if text:
+            translations[key] = text
+            continue
+        translations[key] = (
+            (cached.get(key) or {}).get("en") or default
+        )
+        untranslated.append(key)
+
+    if untranslated and lang.split("-")[0] != "en":
+        # Not debug: "you asked for ru and are getting English" is the
+        # thing an operator needs to see. It looks like success otherwise
+        # — the mail sends, it is just in the wrong language.
+        logger.warning(
+            "notifications: %d/%d string(s) had no %s translation — sent in "
+            "the built-in English. Ship a locale/%s catalogue or wire the "
+            "translate service. Keys: %s",
+            len(untranslated), len(keys), lang, lang.split("-")[0],
+            ", ".join(untranslated[:5]),
+        )
 
     return translations
 
@@ -221,6 +269,19 @@ def process_notification(
     import datetime
     all_vars.setdefault("company_name", notifications_settings.COMPANY_NAME)
     all_vars.setdefault("company_url", notifications_settings.COMPANY_URL)
+
+    # The footer link shows the HOST, not the brand name again. A brand can
+    # run many instances (3571.meettoday.app, meettoday.app, a customer's
+    # own deployment), and a footer reading "meettoday" for the third time
+    # in one email tells the reader nothing about which one wrote to them.
+    company_url = all_vars.get("company_url") or ""
+    if company_url:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(company_url if "//" in company_url else f"//{company_url}")
+        all_vars.setdefault("company_host", parsed.netloc or company_url)
+    else:
+        all_vars.setdefault("company_host", "")
     all_vars.setdefault("company_address", notifications_settings.COMPANY_ADDRESS)
     all_vars.setdefault(
         "company_year",

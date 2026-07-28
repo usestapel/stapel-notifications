@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+## [0.5.2] — 2026-07-29
+
+### Fixed
+- **A correctly-internationalised host still got English email.** Resolving the
+  language was only half the job: this package ships English defaults and its
+  only route to another language was a `translate` service. A project that had
+  done the standard Django thing — `locale/ru/LC_MESSAGES/django.po` — got
+  nothing from it. `_resolve_translations` now consults the host's **gettext
+  catalogue** (the English default doubles as the msgid, which is how gettext
+  is meant to be used) before falling back to the built-in string. Hosts with
+  `.po` files get translated notifications with no extra infrastructure.
+- **Falling back to English is now reported.** It was `logger.debug`, i.e.
+  invisible: the mail sends, so it looks like success — it is just in the wrong
+  language. A request for a non-English language that ends up on the built-in
+  defaults now logs a **warning** naming the language, the count and the first
+  few keys. Found live by meettoday (2026-07-29): OTP arrived in English after
+  the language-resolution fix, and nothing in the logs said why.
+
+### Changed
+- **The footer link shows the host, not the brand name a third time.** One
+  brand can run many instances (`3571.meettoday.app`, `meettoday.app`, a
+  customer's own deployment); a footer reading the same word again tells the
+  reader nothing about which one wrote to them. `company_host` is derived from
+  `COMPANY_URL` and used as the link text.
+
+
 ## [0.5.1] — 2026-07-29
 
 ### Fixed
