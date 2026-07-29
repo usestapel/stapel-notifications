@@ -5,6 +5,7 @@ Resolves language, contact info, translations, and dispatches to channels.
 """
 
 import logging
+import re
 import string
 
 from django.template.loader import render_to_string
@@ -87,6 +88,18 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
             for key, text in resolved.items():
                 cached[key] = {lang: text}
 
+    def _has_nothing_to_translate(s: str) -> bool:
+        """True for a string that is the same in every language.
+
+        "© {company_year} {company_name}" and "{company_address}" carry no
+        translatable words — only placeholders and punctuation. gettext
+        echoes such a msgid back unchanged, which is indistinguishable
+        from "not in the catalogue", so without this they would be
+        reported as missing on every single email. A warning that fires
+        when nothing is wrong stops being read.
+        """
+        return not re.search(r"[^\W\d_]", re.sub(r"\{[^}]*\}", "", s))
+
     untranslated = []
     for key in keys:
         default = NOTIFICATION_KEYS.get(key, key)
@@ -102,7 +115,8 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
         translations[key] = (
             (cached.get(key) or {}).get("en") or default
         )
-        untranslated.append(key)
+        if not _has_nothing_to_translate(default):
+            untranslated.append(key)
 
     if untranslated and lang.split("-")[0] != "en":
         # Not debug: "you asked for ru and are getting English" is the

@@ -1,0 +1,444 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: stapel-notifications\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: notification.otp_code.subject
+msgid "Your {company_name} verification code: {code}"
+msgstr "Ваш код подтверждения {company_name}: {code}"
+
+#: notification.otp_code.heading
+msgid "Your verification code"
+msgstr "Ваш код подтверждения"
+
+#: notification.otp_code.body
+msgid "Use the code below to verify your identity:"
+msgstr "Введите код ниже, чтобы подтвердить, что это вы:"
+
+#: notification.otp_code.warning
+msgid "Don't share this code with anyone. If you didn't request this, you can safely ignore this email."
+msgstr "Никому не сообщайте этот код. Если вы его не запрашивали, просто проигнорируйте это письмо."
+
+#: notification.otp_code.expiry
+msgid "This code expires in {expiry_minutes} minutes."
+msgstr "Код действует {expiry_minutes} мин."
+
+#: notification.otp_code.sms
+msgid "Your {company_name} code: {code}. Expires in {expiry_minutes} min."
+msgstr "Код {company_name}: {code}. Действует {expiry_minutes} мин."
+
+#: notification.auth_change_requested.subject
+msgid "Authenticator change requested"
+msgstr "Запрошена смена способа входа"
+
+#: notification.auth_change_requested.heading
+msgid "Change requested"
+msgstr "Запрошена смена"
+
+#: notification.auth_change_requested.body
+msgid "Your {change_type} change has been requested. New {change_type}: {masked_new_value}. Change will complete on: {scheduled_date}."
+msgstr "Запрошена смена: {change_type}. Новое значение: {masked_new_value}. Смена произойдёт {scheduled_date}."
+
+#: notification.auth_change_requested.warning
+msgid "If you did not request this change, please contact support immediately."
+msgstr "Если вы этого не запрашивали, немедленно обратитесь в поддержку."
+
+#: notification.auth_change_requested.sms
+msgid "{company_name}: Your {change_type} change has been requested. Completes {scheduled_date}. Contact support if unexpected."
+msgstr "{company_name}: запрошена смена {change_type}. Произойдёт {scheduled_date}. Если это не вы — обратитесь в поддержку."
+
+#: notification.auth_change_requested.push_body
+msgid "Your {change_type} change will complete on {scheduled_date}."
+msgstr "Смена {change_type} произойдёт {scheduled_date}."
+
+#: notification.auth_change_reminder.subject
+msgid "Reminder: {change_type} change in {days_remaining} days"
+msgstr "Напоминание: смена {change_type} через {days_remaining} дн."
+
+#: notification.auth_change_reminder.heading
+msgid "Change reminder"
+msgstr "Напоминание о смене"
+
+#: notification.auth_change_reminder.body
+msgid "Your {change_type} will be changed to {masked_new_value} in {days_remaining} days."
+msgstr "Ваш {change_type} будет изменён на {masked_new_value} через {days_remaining} дн."
+
+#: notification.auth_change_reminder.warning
+msgid "If you did not request this, please contact support."
+msgstr "Если вы этого не запрашивали, обратитесь в поддержку."
+
+#: notification.auth_change_reminder.sms
+msgid "{company_name}: Your {change_type} changes in {days_remaining} days to {masked_new_value}. Contact support if unexpected."
+msgstr "{company_name}: смена {change_type} через {days_remaining} дн. на {masked_new_value}. Если это не вы — обратитесь в поддержку."
+
+#: notification.auth_change_reminder.push_title
+msgid "{change_type} change in {days_remaining} days"
+msgstr "Смена {change_type} через {days_remaining} дн."
+
+#: notification.auth_change_reminder.push_body
+msgid "Your {change_type} will be changed to {masked_new_value}."
+msgstr "Ваш {change_type} будет изменён на {masked_new_value}."
+
+#: notification.auth_change_urgent.subject
+msgid "URGENT: {change_type} change tomorrow"
+msgstr "СРОЧНО: смена {change_type} завтра"
+
+#: notification.auth_change_urgent.heading
+msgid "Change tomorrow"
+msgstr "Смена завтра"
+
+#: notification.auth_change_urgent.body
+msgid "Your {change_type} will be changed TOMORROW ({scheduled_date}). This is your last chance to cancel."
+msgstr "Ваш {change_type} будет изменён ЗАВТРА ({scheduled_date}). Это последняя возможность отменить."
+
+#: notification.auth_change_urgent.warning
+msgid "After this change, you will need the new {change_type} to log in."
+msgstr "После смены для входа понадобится новый {change_type}."
+
+#: notification.auth_change_urgent.sms
+msgid "URGENT: {company_name} {change_type} changes tomorrow ({scheduled_date}). Last chance to cancel!"
+msgstr "СРОЧНО: {company_name} — смена {change_type} завтра ({scheduled_date}). Последняя возможность отменить!"
+
+#: notification.auth_change_urgent.push_body
+msgid "Last chance to cancel your {change_type} change."
+msgstr "Последняя возможность отменить смену {change_type}."
+
+#: notification.auth_change_completed.subject
+msgid "{change_type} successfully changed"
+msgstr "{change_type} изменён"
+
+#: notification.auth_change_completed.heading
+msgid "Change completed"
+msgstr "Смена завершена"
+
+#: notification.auth_change_completed.body
+msgid "Your account {change_type} has been successfully changed."
+msgstr "{change_type} вашей учётной записи успешно изменён."
+
+#: notification.auth_change_completed.warning
+msgid "If you did not authorize this change, contact support immediately."
+msgstr "Если вы не подтверждали эту смену, немедленно обратитесь в поддержку."
+
+#: notification.auth_change_completed.sms
+msgid "{company_name}: Your {change_type} has been changed. Contact support if unexpected."
+msgstr "{company_name}: ваш {change_type} изменён. Если это не вы — обратитесь в поддержку."
+
+#: notification.auth_change_completed.push_title
+msgid "{change_type} changed"
+msgstr "{change_type} изменён"
+
+#: notification.auth_change_completed.push_body
+msgid "Your account {change_type} has been updated."
+msgstr "{change_type} вашей учётной записи обновлён."
+
+#: notification.gdpr.export_ready.subject
+msgid "Your data export is ready"
+msgstr "Выгрузка ваших данных готова"
+
+#: notification.gdpr.export_ready.body
+msgid "The copy of your personal data you requested is ready to download. The download link is valid for a limited time."
+msgstr "Копия ваших персональных данных готова к скачиванию. Ссылка действует ограниченное время."
+
+#: notification.gdpr.export_ready.cta
+msgid "Download my data"
+msgstr "Скачать мои данные"
+
+#: notification.gdpr.export_ready.warning
+msgid "If you did not request this export, please contact support immediately."
+msgstr "Если вы не запрашивали выгрузку, немедленно обратитесь в поддержку."
+
+#: notification.gdpr.inactivity_warning.subject
+msgid "Your account will be closed in {days_remaining} days"
+msgstr "Учётная запись будет закрыта через {days_remaining} дн."
+
+#: notification.gdpr.inactivity_warning.heading
+msgid "We miss you"
+msgstr "Нам вас не хватает"
+
+#: notification.gdpr.inactivity_warning.body
+msgid "Your account has been inactive for a long time. It will be closed and your data deleted in {days_remaining} days unless you sign in again."
+msgstr "Вы давно не заходили. Через {days_remaining} дн. учётная запись будет закрыта, а данные удалены — если вы не войдёте снова."
+
+#: notification.gdpr.inactivity_warning.warning
+msgid "Signing in once is enough to keep your account active."
+msgstr "Достаточно один раз войти, чтобы сохранить учётную запись."
+
+#: notification.gdpr.inactivity_closed.subject
+msgid "Your account has been closed"
+msgstr "Ваша учётная запись закрыта"
+
+#: notification.gdpr.inactivity_closed.body
+msgid "Your account was closed due to prolonged inactivity and your personal data has been deleted, as required by our data retention policy."
+msgstr "Учётная запись закрыта из-за длительного бездействия, персональные данные удалены согласно политике хранения данных."
+
+#: notification.gdpr.inactivity_closed.warning
+msgid "If you believe this was a mistake, please contact our support team."
+msgstr "Если это ошибка, напишите в нашу поддержку."
+
+#: notification.workspace.invitation.subject
+msgid "You are invited to {workspace_name}"
+msgstr "Вас пригласили в {workspace_name}"
+
+#: notification.workspace.invitation.heading
+msgid "Workspace invitation"
+msgstr "Приглашение в рабочее пространство"
+
+#: notification.workspace.invitation.body
+msgid "{inviter_name} invited you to join the workspace “{workspace_name}”."
+msgstr "{inviter_name} приглашает вас в рабочее пространство «{workspace_name}»."
+
+#: notification.workspace.invitation.cta
+msgid "Accept invitation"
+msgstr "Принять приглашение"
+
+#: notification.workspace.invitation.role_line
+msgid "You're invited to join as {role_name}."
+msgstr "Вас приглашают с ролью {role_name}."
+
+#: notification.workspace.invitation.new_user.body
+msgid "{inviter_name} invited you to join the workspace “{workspace_name}”. You don't have an account yet — the button below creates one and joins you to the workspace."
+msgstr "{inviter_name} приглашает вас в рабочее пространство «{workspace_name}». Учётной записи у вас пока нет — кнопка ниже создаст её и добавит вас в пространство."
+
+#: notification.workspace.invitation.new_user.cta
+msgid "Create account & join"
+msgstr "Создать аккаунт и войти"
+
+#: notification.workspace.invitation.new_user.warning
+msgid "This link is personal — don't forward it. If you weren't expecting this invitation, you can safely ignore this email."
+msgstr "Ссылка персональная — не пересылайте её. Если вы не ждали приглашения, просто проигнорируйте это письмо."
+
+#: notification.workspace.provisioned_account.subject
+msgid "Your {workspace_name} account is ready"
+msgstr "Ваша учётная запись в {workspace_name} готова"
+
+#: notification.workspace.provisioned_account.heading
+msgid "Your account is ready"
+msgstr "Учётная запись готова"
+
+#: notification.workspace.provisioned_account.body
+msgid "An account has been created for you in the workspace “{workspace_name}”. Use the credentials below to sign in."
+msgstr "Для вас создана учётная запись в рабочем пространстве «{workspace_name}». Войдите, используя данные ниже."
+
+#: notification.workspace.provisioned_account.username_label
+msgid "Username"
+msgstr "Логин"
+
+#: notification.workspace.provisioned_account.password_label
+msgid "Temporary password"
+msgstr "Временный пароль"
+
+#: notification.workspace.provisioned_account.cta
+msgid "Sign in"
+msgstr "Войти"
+
+#: notification.workspace.provisioned_account.warning
+msgid "For your security, you'll be asked to change this password or set up two-factor authentication the first time you sign in."
+msgstr "В целях безопасности при первом входе вас попросят сменить пароль или включить двухфакторную аутентификацию."
+
+#: notification.workspace.mfa_suspension.subject
+msgid "Your access to {workspace_name} has been suspended"
+msgstr "Доступ к {workspace_name} приостановлен"
+
+#: notification.workspace.mfa_suspension.heading
+msgid "Access suspended — two-factor authentication required"
+msgstr "Доступ приостановлен — нужна двухфакторная аутентификация"
+
+#: notification.workspace.mfa_suspension.body
+msgid "Your access to the workspace “{workspace_name}” has been suspended because it now requires two-factor authentication (2FA) and your account doesn't have it enabled yet."
+msgstr "Доступ к рабочему пространству «{workspace_name}» приостановлен: теперь оно требует двухфакторную аутентификацию (2FA), а у вас она пока не включена."
+
+#: notification.workspace.mfa_suspension.cta
+msgid "Enable two-factor authentication"
+msgstr "Включить двухфакторную аутентификацию"
+
+#: notification.workspace.mfa_suspension.warning
+msgid "Your access will be restored automatically once you enable 2FA — no need to contact anyone."
+msgstr "Доступ восстановится автоматически, как только вы включите 2FA — обращаться никуда не нужно."
+
+#: notification.workspace.mfa_restored.subject
+msgid "Your access to {workspace_name} has been restored"
+msgstr "Доступ к {workspace_name} восстановлен"
+
+#: notification.workspace.mfa_restored.heading
+msgid "Access restored"
+msgstr "Доступ восстановлен"
+
+#: notification.workspace.mfa_restored.body
+msgid "Two-factor authentication is now enabled on your account, and your access to the workspace “{workspace_name}” has been restored."
+msgstr "Двухфакторная аутентификация включена, доступ к рабочему пространству «{workspace_name}» восстановлен."
+
+#: notification.workspace.mfa_restored.cta
+msgid "Go to workspace"
+msgstr "Перейти в пространство"
+
+#: notification.new_message.subject
+msgid "New message from {sender_name}"
+msgstr "Новое сообщение от {sender_name}"
+
+#: notification.new_message.body
+msgid "You have a new message about “{listing_title}”."
+msgstr "У вас новое сообщение по «{listing_title}»."
+
+#: notification.new_message.cta
+msgid "Open Chat"
+msgstr "Открыть чат"
+
+#: notification.new_message.push_body
+msgid "{sender_name}: {message_preview}"
+msgstr "{sender_name}: {message_preview}"
+
+#: notification.report_reviewed.subject
+msgid "Your report has been reviewed"
+msgstr "Ваша жалоба рассмотрена"
+
+#: notification.report_reviewed.body
+msgid "You reported a listing. After checking it, we have taken action."
+msgstr "Вы пожаловались на объявление. Мы проверили его и приняли меры."
+
+#: notification.report_reviewed.cta
+msgid "View Details"
+msgstr "Подробнее"
+
+#: notification.report_reviewed.push_title
+msgid "Report reviewed"
+msgstr "Жалоба рассмотрена"
+
+#: notification.report_reviewed.push_body
+msgid "Your report has been reviewed and action was taken."
+msgstr "Ваша жалоба рассмотрена, меры приняты."
+
+#: notification.listing_expiring.subject
+msgid "Your listing will expire soon"
+msgstr "Ваше объявление скоро снимется с публикации"
+
+#: notification.listing_expiring.heading
+msgid "Your listing is expiring"
+msgstr "Срок объявления истекает"
+
+#: notification.listing_expiring.body
+msgid "Your listing “{listing_title}” will be unpublished in {days_remaining} days. You can turn on auto-republish to keep it active."
+msgstr "Объявление «{listing_title}» будет снято с публикации через {days_remaining} дн. Включите автопродление, чтобы оно осталось активным."
+
+#: notification.listing_expiring.cta
+msgid "View Listing"
+msgstr "Открыть объявление"
+
+#: notification.listing_expiring.push_title
+msgid "Listing expiring"
+msgstr "Срок объявления истекает"
+
+#: notification.listing_expiring.push_body
+msgid "“{listing_title}” expires in {days_remaining} days."
+msgstr "«{listing_title}» снимется с публикации через {days_remaining} дн."
+
+#: notification.listing_blocked.subject
+msgid "Your listing has been blocked"
+msgstr "Ваше объявление заблокировано"
+
+#: notification.listing_blocked.body
+msgid "Your listing “{listing_title}” has been blocked for violating {company_name} guidelines."
+msgstr "Объявление «{listing_title}» заблокировано за нарушение правил {company_name}."
+
+#: notification.listing_blocked.cta
+msgid "Learn More"
+msgstr "Подробнее"
+
+#: notification.listing_blocked.push_title
+msgid "Listing blocked"
+msgstr "Объявление заблокировано"
+
+#: notification.listing_blocked.push_body
+msgid "“{listing_title}” was blocked for guideline violations."
+msgstr "«{listing_title}» заблокировано за нарушение правил."
+
+#: notification.magic_link_login.subject
+msgid "Your {company_name} sign-in link"
+msgstr "Ссылка для входа в {company_name}"
+
+#: notification.magic_link_login.heading
+msgid "Sign in to {company_name}"
+msgstr "Вход в {company_name}"
+
+#: notification.magic_link_login.body
+msgid "Click the button below to sign in. This link expires in 15 minutes and can only be used once."
+msgstr "Нажмите кнопку ниже, чтобы войти. Ссылка действует 15 минут и только один раз."
+
+#: notification.magic_link_login.warning
+msgid "If you didn't request this, you can safely ignore this email."
+msgstr "Если вы этого не запрашивали, просто проигнорируйте это письмо."
+
+#: notification.new_device_login.subject
+msgid "New sign-in to your account"
+msgstr "Вход в вашу учётную запись с нового устройства"
+
+#: notification.new_device_login.heading
+msgid "New sign-in detected"
+msgstr "Обнаружен новый вход"
+
+#: notification.new_device_login.body
+msgid "Your account was signed in from a new device.\n\nDevice: {device_name}\nIP: {ip_address}"
+msgstr "В вашу учётную запись вошли с нового устройства.\n\nУстройство: {device_name}\nIP: {ip_address}"
+
+#: notification.new_device_login.cta
+msgid "Secure my account"
+msgstr "Защитить учётную запись"
+
+#: notification.new_device_login.warning
+msgid "If this was you, no action is needed. If you don't recognise this sign-in, secure your account immediately."
+msgstr "Если это вы — делать ничего не нужно. Если вход вам незнаком, немедленно защитите учётную запись."
+
+#: notification.suspicious_login.subject
+msgid "Suspicious sign-in detected"
+msgstr "Обнаружен подозрительный вход"
+
+#: notification.suspicious_login.body
+msgid "A sign-in from an unrecognised location was detected on your account.\n\nDevice: {device_name}\nIP: {ip_address}"
+msgstr "В вашу учётную запись вошли из незнакомого места.\n\nУстройство: {device_name}\nIP: {ip_address}"
+
+#: notification.suspicious_login.cta
+msgid "This wasn't me — revoke all sessions"
+msgstr "Это не я — завершить все сеансы"
+
+#: notification.suspicious_login.warning
+msgid "If this was you, no action is needed. If not, click the button above immediately to revoke all sessions."
+msgstr "Если это вы — делать ничего не нужно. Если нет — немедленно нажмите кнопку выше, чтобы завершить все сеансы."
+
+#: notification.all_sessions_revoked.subject
+msgid "All sessions revoked"
+msgstr "Все сеансы завершены"
+
+#: notification.all_sessions_revoked.heading
+msgid "All sessions have been revoked"
+msgstr "Все сеансы завершены"
+
+#: notification.all_sessions_revoked.body
+msgid "All active sessions on your account have been revoked. You have been signed out of all devices."
+msgstr "Все активные сеансы вашей учётной записи завершены. Вы вышли на всех устройствах."
+
+#: notification.all_sessions_revoked.warning
+msgid "If you did not initiate this action, please reset your password immediately."
+msgstr "Если вы этого не делали, немедленно смените пароль."
+
+#: notification.footer.legal
+msgid "© {company_year} {company_name}"
+msgstr "© {company_year} {company_name}"
+
+#: notification.footer.address
+msgid "{company_address}"
+msgstr "{company_address}"
+
+#: notification.footer.consent
+msgid "You received this email because you agreed to receive messages from {company_name}."
+msgstr "Вы получили это письмо, потому что согласились получать сообщения от {company_name}."
+
+#: notification.footer.unsubscribe
+msgid "Unsubscribe"
+msgstr "Отписаться"
+
+#: notification.footer.manage
+msgid "Manage notifications"
+msgstr "Настроить уведомления"

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.5.2"
+version = "0.5.3"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -44,7 +44,7 @@ package-dir = {"stapel_notifications" = "."}
 packages = ["stapel_notifications", "stapel_notifications.channels", "stapel_notifications.management", "stapel_notifications.management.commands", "stapel_notifications.migrations"]
 
 [tool.setuptools.package-data]
-stapel_notifications = ["py.typed", "migrations/*.py", "schemas/**/*.json", "templates/**/*", "static/**/*", "migrations/**/*.py"]
+stapel_notifications = ["py.typed", "migrations/*.py", "schemas/**/*.json", "templates/**/*", "static/**/*", "locale/**/*.po", "locale/**/*.mo", "migrations/**/*.py"]
 
 [tool.ruff]
 target-version = "py311"

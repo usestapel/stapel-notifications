@@ -328,10 +328,12 @@ class TestTranslationFallback:
         needs to see; it otherwise looks like success — the mail sends."""
         import logging
 
+        # A language the package does NOT ship — ru is now covered by the
+        # bundled catalogue, so it would (correctly) stay quiet.
         with caplog.at_level(logging.WARNING):
-            _process(language="ru")
+            _process(language="de")
         assert any(
-            "no ru translation" in r.getMessage() for r in caplog.records
+            "no de translation" in r.getMessage() for r in caplog.records
         ), [r.getMessage() for r in caplog.records]
 
     def test_english_request_does_not_warn(self, caplog):
@@ -355,3 +357,32 @@ class TestFooterIdentifiesTheInstance:
         _process(extra_settings={"COMPANY_URL": "example.test"})
         (mail,) = capture_email
         assert ">example.test</a>" in mail["html"]
+
+
+@pytest.mark.django_db
+class TestShippedRussianCatalogue:
+    """The library owns these strings, so it owns their translations.
+
+    A host should not have to re-type stapel-notifications' own English
+    defaults into its .po just to get Russian email.
+    """
+
+    def test_russian_email_renders_from_the_packaged_catalogue(self, capture_email):
+        _process(language="ru")
+        (mail,) = capture_email
+        assert "Ваш код подтверждения" in mail["html"]
+        assert "verification code" not in mail["html"]
+
+    def test_placeholders_survive_translation(self, capture_email):
+        """A translated string that lost its {code} would render an email
+        with no code in it — worse than an English one."""
+        _process(language="ru")
+        (mail,) = capture_email
+        assert "1234" in mail["html"]
+
+    def test_no_fallback_warning_when_the_catalogue_covers_it(self, caplog):
+        import logging
+
+        with caplog.at_level(logging.WARNING):
+            _process(language="ru")
+        assert not [r for r in caplog.records if "no ru translation" in r.getMessage()]

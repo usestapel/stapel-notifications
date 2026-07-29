@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+## [0.5.3] — 2026-07-29
+
+### Added
+- **A Russian catalogue ships with the package** — `locale/ru/LC_MESSAGES`,
+  109 msgids covering all 123 notification strings. The library owns these
+  strings, so it owns their translations: a host should not have to re-type
+  this package's own English defaults into its `.po` just to get Russian mail.
+  Tests assert the rendered email is Russian and that `{placeholders}` survived
+  the translation — a translated subject that lost `{code}` would be worse than
+  an English one.
+
+### Fixed
+- The "fell back to English" warning no longer fires on strings that have
+  nothing to translate. `"© {company_year} {company_name}"` and
+  `"{company_address}"` are the same in every language; gettext echoes such a
+  msgid back unchanged, which is indistinguishable from "not in the catalogue",
+  so every single email reported two false misses. A warning that fires when
+  nothing is wrong stops being read.
+- `locale/**` added to the wheel's package data — without it the catalogue
+  exists in the repository and is absent from the installed package, which is
+  the same silent-failure shape this release is trying to remove.
+
+
 ## [0.5.2] — 2026-07-29
 
 ### Fixed
