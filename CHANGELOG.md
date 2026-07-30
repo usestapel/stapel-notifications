@@ -2,6 +2,55 @@
 
 ## Unreleased
 
+## [0.6.0] — 2026-07-30
+
+### Fixed (BREAKING for anonymous callers) — a guest session could take a device's push routing away from a real account (#168)
+
+`stapel-core` 0.16 turns the `AUTH_ANONYMOUS` axis into a question this
+module never answered — and answering it surfaced a live defect rather than
+just a missing declaration.
+
+`DeviceTokenView` deliberately **removes another account's binding** when the
+same token arrives under a different user; that is the correct behaviour for
+a handed-over device, and it is logged as a rebinding. But a guest session is
+`is_authenticated`, so the bare `IsAuthenticated` gate admitted it, and the
+following sequence needed no attacker at all:
+
+1. a real user's device is registered for push;
+2. the user logs out and the app mints an anonymous session (`AUTH_ANONYMOUS`);
+3. the app re-registers the same device token;
+4. the rebinding branch deletes the real account's row and binds the device to
+   a throwaway identity nobody will ever log into again.
+
+The real account silently stops receiving push, and nothing in the source said
+this was possible.
+
+`POST /devices/` and `DELETE /devices/{token}/` now carry `IsNotAnonymousUser`
+— **403** where an anonymous session previously got 201/204. Nothing is lost:
+an anonymous account has no durable identity worth notifying, so a guest
+could only ever have registered a device it should not hold.
+
+### Changed — the feed stays open, deliberately
+
+`GET /feed/` declares `stapel_anonymous_access = ANONYMOUS_ALLOWED`. It reads
+`NotificationLog` filtered by `request.user.id`, so a guest's answer is an
+empty page — the truth, and cheaper for a bell icon that renders for every
+session than a 403 it would have to special-case.
+
+Minor, not patch: for a deployment with `AUTH_ANONYMOUS` on this is a
+behaviour change on a live surface, visible in the published contract
+(`docs/schema.json` now documents `IsNotAnonymousUser` on the two device
+operations). Deployments without guest sessions are unaffected — an ordinary
+authenticated user passes `IsNotAnonymousUser` exactly as before.
+
+New `tests/test_guest_surface.py` writes the shared-device scenario out as a
+regression test.
+
+### Changed
+
+- Minimum `stapel-core` raised to `>=0.16` (the release that added
+  `ANONYMOUS_ALLOWED` / `ANONYMOUS_DENIED`).
+
 ## [0.5.4] — 2026-07-30
 
 ### Fixed

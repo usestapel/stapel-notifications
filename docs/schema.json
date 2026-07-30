@@ -8,7 +8,7 @@
     "/notifications/api/v1/devices/": {
       "post": {
         "operationId": "register_device_token",
-        "description": "Register a push notification token.\n\n**Permissions:** `IsAuthenticated`",
+        "description": "Register a push notification token.\n\n**Permissions:** `IsNotAnonymousUser`",
         "summary": "Register push token",
         "tags": [
           "Devices"
@@ -73,7 +73,7 @@
     "/notifications/api/v1/devices/{token}/": {
       "delete": {
         "operationId": "unregister_device_token",
-        "description": "Unregister a push notification token.\n\n**Permissions:** `IsAuthenticated`",
+        "description": "Unregister a push notification token.\n\n**Permissions:** `IsNotAnonymousUser`",
         "summary": "Unregister push token",
         "parameters": [
           {

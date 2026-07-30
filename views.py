@@ -1,4 +1,31 @@
-"""Views for stapel-notifications service."""
+"""Views for stapel-notifications service.
+
+Guest (anonymous session) stance
+--------------------------------
+With ``AUTH_ANONYMOUS`` on, a guest session is ``is_authenticated``, so a bare
+``IsAuthenticated`` says nothing about whether guests belong on a view
+(``stapel_core.adoption`` E001/W002). All three views here answer, along this
+line:
+
+    **a guest may read its own notification feed — which is empty — and may
+    not touch the device-token registry.**
+
+The registry is the sharp half, and not merely because pushing to a throwaway
+account is pointless. A device token identifies one *physical device*, and
+``DeviceTokenView`` deliberately **removes another account's binding** when
+the same token arrives under a new user (the hand-over case, logged as a
+rebinding). With guest sessions on, that turns into a live defect on any
+shared device: a user logs out, the app mints an anonymous session, the app
+re-registers the same device token — and the previous, real account silently
+stops receiving push. Requiring a real account on both the register and the
+unregister side closes that path, and costs nothing: an anonymous session has
+no durable identity worth notifying.
+
+The feed is the opposite case. It reads ``NotificationLog`` filtered by
+``request.user.id``, so a guest's answer is an empty page — which is the
+truth, and cheaper for a caller (a bell that renders for every session) than
+a 403 it would have to special-case.
+"""
 
 import logging
 
@@ -13,7 +40,12 @@ from stapel_core.django.api.errors import (
     StapelResponse,
 )
 from stapel_core.django.api.pagination import CreatedAtAnchorPagination
-from stapel_core.django.api.permissions import IsServiceRequest, IsStaffUser
+from stapel_core.django.api.permissions import (
+    ANONYMOUS_ALLOWED,
+    IsNotAnonymousUser,
+    IsServiceRequest,
+    IsStaffUser,
+)
 
 from .dto import DeviceTokenResponse, FeedItemResponse
 from .errors import ERR_400_INVALID_PLATFORM, ERR_404_TOKEN_NOT_FOUND
@@ -53,7 +85,11 @@ class SerializerSeamMixin:
 class DeviceTokenView(SerializerSeamMixin, APIView):
     """Register a push notification token."""
 
-    permission_classes = [IsAuthenticated]
+    # A token is a physical device, and the rebinding branch below DELETES a
+    # previous account's binding for it. A guest session must not be able to
+    # take a device's notification routing away from the real account that
+    # last held it — see the module header for the shared-device scenario.
+    permission_classes = [IsNotAnonymousUser]
     request_serializer_class = DeviceTokenRequestSerializer
     response_serializer_class = DeviceTokenResponseSerializer
 
@@ -115,7 +151,10 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
 class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
     """Unregister a push notification token."""
 
-    permission_classes = [IsAuthenticated]
+    # Mirror of DeviceTokenView: a session that cannot register a device has
+    # no binding of its own to remove (this deletes only rows already owned by
+    # the caller, so a guest could only ever have got a 404 here).
+    permission_classes = [IsNotAnonymousUser]
 
     @extend_schema(
         operation_id="unregister_device_token",
@@ -163,6 +202,10 @@ class NotificationFeedView(SerializerSeamMixin, APIView):
     """User's notification feed (push notifications log)."""
 
     permission_classes = [IsAuthenticated]
+    # Own log only (`user_id=request.user.id`); for a guest the page is
+    # necessarily empty, and an empty feed is the truth. A bell icon rendered
+    # for every session gets an answer instead of an error to special-case.
+    stapel_anonymous_access = ANONYMOUS_ALLOWED
     pagination_class = FeedPagination
     response_serializer_class = FeedItemResponseSerializer
 
