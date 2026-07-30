@@ -408,6 +408,39 @@ def test_sms_channel_sends_formatted_text(user):
 
 
 @pytest.mark.django_db
+def test_channel_with_no_address_is_skipped_not_reported_as_sent():
+    """A channel with nobody to deliver to must never be logged "sent".
+
+    The shape that exposed this is the commonest one in the whole library:
+    an OTP requested for an EMAIL ONLY (an unauthenticated or anonymous
+    guest signing in — no account, no phone). ``otp_code`` routes to
+    email+sms, ``_dispatch`` found no phone number, returned silently at
+    DEBUG level, and the caller stamped the row ``sent`` to recipient
+    ``"unknown"``. Nothing was sent to anybody, the audit trail said
+    otherwise, and ``process_notification``'s own idempotency guard (which
+    keys on status="sent") then treated that non-delivery as a completed
+    one. A delivery log that cannot distinguish "delivered" from "there was
+    no address" is worse than no log.
+    """
+    _CapturingSMSProvider.sent = []
+    with override_settings(
+        STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": "mock", "SMS_PROVIDER": CAPTURE_SMS}
+    ):
+        process_notification(
+            notification_type="otp_code",
+            user_id=None,
+            variables={"code": "4321", "expiry_minutes": 3},
+            email="guest@example.com",
+        )
+    assert _CapturingSMSProvider.sent == []
+    sms = NotificationLog.objects.get(channel="sms")
+    assert sms.status == "skipped", sms.status
+    assert "no sms address" in sms.error_message
+    # The channel that DID have an address is unaffected.
+    assert NotificationLog.objects.get(channel="email").status == "sent"
+
+
+@pytest.mark.django_db
 def test_last_resort_language_follows_the_project_not_a_hardcoded_en(
     capture_email, settings
 ):

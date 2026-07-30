@@ -345,13 +345,36 @@ def process_notification(
             continue
 
         try:
-            _dispatch(
+            delivered = _dispatch(
                 channel, notification_type, group,
                 recipient_email, recipient_phone, user_id,
                 all_vars, lang,
                 content_html=content_html,
                 content_text=content_text,
             )
+            if not delivered:
+                # Nothing was handed to a provider — there was no address on
+                # this channel for this recipient. Recording that as "sent"
+                # (which it was, for years) made the delivery log lie about
+                # the single most common shape in the library: an OTP for an
+                # email-only recipient still wrote an sms row reading
+                # "sent → unknown". It also fed the idempotency guard above,
+                # which keys on status="sent", so a retry that COULD have
+                # delivered was suppressed by a delivery that never happened.
+                logger.warning(
+                    "Skipped %s/%s: no %s address for this recipient",
+                    notification_type, channel, channel,
+                )
+                NotificationLog.objects.create(
+                    user_id=user_id,
+                    notification_type=notification_type,
+                    channel=channel,
+                    status="skipped",
+                    language=lang,
+                    recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
+                    error_message=f"no {channel} address for this recipient",
+                )
+                continue
             NotificationLog.objects.create(
                 user_id=user_id,
                 notification_type=notification_type,
@@ -390,12 +413,19 @@ def _dispatch(
     lang: str,
     content_html: str | None = None,
     content_text: str | None = None,
-) -> None:
-    """Dispatch to a specific channel."""
+) -> bool:
+    """Dispatch to a specific channel.
+
+    Returns True when the message was handed to the channel's provider, and
+    False when there was nothing to deliver it TO — no email address / no
+    phone number for this recipient. That distinction is the caller's to
+    log: "no address" is not a delivery and must not be recorded as one
+    (see ``process_notification``). A provider that is reached and then
+    fails raises, as before.
+    """
     if channel == "email":
         if not recipient_email:
-            logger.debug("Skipping email channel for %s: no email address", notification_type)
-            return
+            return False
         if content_html or content_text:
             # Raw-content escape hatch: wrap the caller-provided body in the
             # base brand layout instead of a registered per-type template.
@@ -414,6 +444,7 @@ def _dispatch(
             headers["List-Unsubscribe"] = f"<{all_vars['unsubscribe_url']}>"
             headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
         send_email(recipient_email, subject, html, headers)
+        return True
 
     elif channel == "push":
         if not user_id:
@@ -428,13 +459,14 @@ def _dispatch(
         sent_count = send_push(user_id, title, body, data)
         if sent_count == 0:
             logger.warning("No active push tokens for user %s, notification_type=%s", user_id, notification_type)
+        return True
 
     elif channel == "sms":
         if not recipient_phone:
-            logger.debug("Skipping sms channel for %s: no phone number", notification_type)
-            return
+            return False
         sms_text = all_vars.get("sms", all_vars.get("body", content_text or ""))
         send_sms(recipient_phone, sms_text)
+        return True
 
     else:
         raise ValueError(f"Unknown channel: {channel}")

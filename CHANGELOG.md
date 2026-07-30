@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## [0.5.4] — 2026-07-30
+
+### Fixed
+- **A channel with no address is logged `skipped`, not `sent`.** `_dispatch`
+  returned silently (at DEBUG level) when a recipient had no email address /
+  no phone number, and `process_notification` then wrote a `NotificationLog`
+  row reading `sent → unknown`. The commonest shape in the whole library hit
+  it: an OTP requested for an email only — an unauthenticated or anonymous
+  guest signing in, no account and no phone — routes to email+sms and always
+  produced a phantom "sent" SMS. Two consequences beyond the wrong audit
+  trail: nobody grepping for failures could see it, and the idempotency guard
+  keys on `status="sent"`, so a retry that could have delivered was suppressed
+  by a delivery that never happened. `_dispatch` now returns whether it
+  reached a provider; the caller logs `skipped` with a reason
+  (`"no <channel> address for this recipient"`) at WARNING level. A provider
+  that IS reached and then fails still raises and is logged `failed`, as
+  before.
+
 ## [0.5.3] — 2026-07-29
 
 ### Added
