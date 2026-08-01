@@ -211,6 +211,42 @@ msgstr "Создать аккаунт и войти"
 msgid "This link is personal — don't forward it. If you weren't expecting this invitation, you can safely ignore this email."
 msgstr "Ссылка персональная — не пересылайте её. Если вы не ждали приглашения, просто проигнорируйте это письмо."
 
+#: notification.workspace.invitation.reminder.subject
+msgid "Reminder: your invitation to {workspace_name}"
+msgstr "Напоминание: вас ждёт приглашение в {workspace_name}"
+
+#: notification.workspace.invitation.reminder.heading
+msgid "Invitation reminder"
+msgstr "Напоминание о приглашении"
+
+#: notification.workspace.invitation.reminder.body
+msgid "{inviter_name} invited you to join the workspace “{workspace_name}”, and the invitation is still waiting for you. The button below carries a fresh link; the link from the earlier email no longer works."
+msgstr "{inviter_name} приглашает вас в рабочее пространство «{workspace_name}» — приглашение всё ещё ждёт вас. Кнопка ниже ведёт по новой ссылке; ссылка из прошлого письма больше не работает."
+
+#: notification.workspace.invitation.reminder.warning
+msgid "If you don't want to join, you can simply ignore this email."
+msgstr "Если вы не хотите присоединяться, просто проигнорируйте это письмо."
+
+#: notification.workspace.member_password_reset.subject
+msgid "Your {workspace_name} password was reset"
+msgstr "Ваш пароль в {workspace_name} сброшен"
+
+#: notification.workspace.member_password_reset.heading
+msgid "Your password was reset"
+msgstr "Ваш пароль сброшен"
+
+#: notification.workspace.member_password_reset.body
+msgid "Your password for the workspace “{workspace_name}” was reset by {actor_name}, and your active sessions have been signed out. Your new password is not in this email — {actor_name} will give it to you directly."
+msgstr "Ваш пароль в рабочем пространстве «{workspace_name}» сброшен администратором {actor_name}, активные сессии завершены. Нового пароля в этом письме нет — {actor_name} передаст его вам напрямую."
+
+#: notification.workspace.member_password_reset.cta
+msgid "Go to sign in"
+msgstr "Перейти ко входу"
+
+#: notification.workspace.member_password_reset.warning
+msgid "If you weren't expecting this, contact {actor_name} or your workspace administrator immediately — a password reset you didn't ask for can mean someone is trying to take over your account."
+msgstr "Если вы этого не ждали, немедленно свяжитесь с {actor_name} или администратором рабочего пространства — сброс пароля, которого вы не просили, может означать попытку захвата учётной записи."
+
 #: notification.workspace.provisioned_account.subject
 msgid "Your {workspace_name} account is ready"
 msgstr "Ваша учётная запись в {workspace_name} готова"

@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+## [0.6.1] — 2026-08-01
+
+### Added — the two workspace letters whose emitters already existed (#193)
+
+Both call sites were live in `stapel-workspaces` and best-effort, so nothing
+failed — the letters simply never went out (`process_notification` drops an
+unregistered type with a logged error the caller never sees). The types now
+exist where every other library-emitted type lives: built-in routing entry,
+packaged default template, English defaults in `translation_keys.py`, ru
+catalogue entries — with the usual host-override seams (`TYPES` /
+`EMAIL_TEMPLATES` / `eject_notification_templates`) untouched.
+
+- **`workspace.member_password_reset`** (`workspace_name`, `actor_name`,
+  `login_url`) — an org admin reset the member's password (workspaces #110).
+  Auth-class: mandatory, no unsubscribe — a reset performed by somebody
+  other than the account's owner is indistinguishable from a takeover until
+  the owner is told. The letter names the workspace and the admin, states
+  that live sessions were signed out, and explicitly does **not** carry the
+  new password (the admin hands it over out of band).
+- **`workspace.invitation.reminder`** (`workspace_name`, `inviter_name`,
+  `accept_url`, optional `role_name`) — re-delivery of a pending invitation
+  (workspaces #109 resend). Previously the resend path reused
+  `workspace.invitation`, presenting a reminder as a first invitation; its
+  own type by the same rule as `.new_user` — a different message a host may
+  route or template independently. The body honestly says the earlier link
+  no longer works, because the workspaces side rotates the token on resend.
+
+`stapel-workspaces` >= 0.14.1 emits the reminder type from its resend path.
+
 ## [0.6.0] — 2026-07-30
 
 ### Fixed (BREAKING for anonymous callers) — a guest session could take a device's push routing away from a real account (#168)

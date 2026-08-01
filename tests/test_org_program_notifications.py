@@ -217,6 +217,100 @@ def test_mfa_restored_is_auth_group_no_unsubscribe(user, capture_email):
     assert "Acme" in mail["html"]
 
 
+# ── workspace.invitation.reminder (admin resend, #109) ───────────
+
+
+@pytest.mark.django_db
+def test_invitation_reminder_is_distinct_type_and_template(capture_email):
+    """A resend is "you are being reminded", not "you are being invited":
+    its own type (same rule as .new_user), and the letter honestly says the
+    old link is dead — the workspaces side rotates the token on resend."""
+    with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        process_notification(
+            notification_type="workspace.invitation.reminder",
+            user_id=None,
+            variables={
+                "workspace_name": "Acme",
+                "inviter_name": "Ada",
+                "accept_url": "https://x.example/invite/2",
+            },
+            email="dest@example.com",
+        )
+    (mail,) = capture_email
+    assert "Reminder" in mail["subject"]
+    assert "no longer works" in mail["html"]
+    assert "https://x.example/invite/2" in mail["html"]
+    log = NotificationLog.objects.get(
+        notification_type="workspace.invitation.reminder"
+    )
+    assert log.status == "sent"
+
+
+@pytest.mark.django_db
+def test_invitation_reminder_is_system_group_gets_unsubscribe_with_user(
+    user, capture_email
+):
+    """Same group as its parent: a reminder is still not a security letter."""
+    UserContact.objects.create(user_id=user.id, email="u@example.com")
+    with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        process_notification(
+            notification_type="workspace.invitation.reminder",
+            user_id=str(user.id),
+            variables={
+                "workspace_name": "Acme",
+                "inviter_name": "Ada",
+                "accept_url": "https://x.example/invite/2",
+            },
+        )
+    (mail,) = capture_email
+    assert "List-Unsubscribe" in mail["headers"]
+
+
+# ── workspace.member_password_reset (#110) ───────────────────────
+
+
+@pytest.mark.django_db
+def test_member_password_reset_names_workspace_and_actor(capture_email):
+    """The letter's whole job is the security signal: who did it, where —
+    and explicitly NOT the credential (the admin hands that over out of
+    band, see stapel-workspaces reset_member_password)."""
+    with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        process_notification(
+            notification_type="workspace.member_password_reset",
+            user_id=None,
+            variables={
+                "workspace_name": "Acme",
+                "actor_name": "Ada Admin",
+                "login_url": "https://x.example/login",
+            },
+            email="dest@example.com",
+        )
+    (mail,) = capture_email
+    assert "Acme" in mail["html"]
+    assert "Ada Admin" in mail["html"]
+    assert "https://x.example/login" in mail["html"]
+    assert "not in this email" in mail["html"]
+
+
+@pytest.mark.django_db
+def test_member_password_reset_is_auth_group_no_unsubscribe(user, capture_email):
+    UserContact.objects.create(user_id=user.id, email="u@example.com")
+    with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        process_notification(
+            notification_type="workspace.member_password_reset",
+            user_id=str(user.id),
+            variables={
+                "workspace_name": "Acme",
+                "actor_name": "Ada Admin",
+                "login_url": "https://x.example/login",
+            },
+        )
+    (mail,) = capture_email
+    assert "List-Unsubscribe" not in mail["headers"]
+    assert "unsubscribe_url" not in mail["html"]
+    assert "/unsubscribe/" not in mail["html"]
+
+
 # ── Translation-key registry coverage ────────────────────────────
 
 
@@ -245,6 +339,14 @@ def test_mfa_restored_is_auth_group_no_unsubscribe(user, capture_email):
             ("subject", "heading", "body", "cta", "warning"),
         ),
         ("workspace.mfa_restored", ("subject", "heading", "body", "cta")),
+        (
+            "workspace.invitation.reminder",
+            ("subject", "heading", "body", "cta", "role_line", "warning"),
+        ),
+        (
+            "workspace.member_password_reset",
+            ("subject", "heading", "body", "cta", "warning"),
+        ),
     ],
 )
 def test_translation_keys_registered_for_type(ntype, required_suffixes):

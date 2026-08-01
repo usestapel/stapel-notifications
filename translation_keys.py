@@ -79,6 +79,16 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.workspace.invitation.new_user.cta": "Create account & join",
     "notification.workspace.invitation.new_user.role_line": "You're invited to join as {role_name}.",
     "notification.workspace.invitation.new_user.warning": "This link is personal — don't forward it. If you weren't expecting this invitation, you can safely ignore this email.",
+    # ── Workspace invitation reminder (admin resend, #109) ──
+    # Re-delivery of a still-pending invitation: the workspaces side rotates
+    # the token and restarts the TTL, so the letter says "reminder + fresh
+    # link", and the old link is honestly declared dead.
+    "notification.workspace.invitation.reminder.subject": "Reminder: your invitation to {workspace_name}",
+    "notification.workspace.invitation.reminder.heading": "Invitation reminder",
+    "notification.workspace.invitation.reminder.body": "{inviter_name} invited you to join the workspace “{workspace_name}”, and the invitation is still waiting for you. The button below carries a fresh link; the link from the earlier email no longer works.",
+    "notification.workspace.invitation.reminder.cta": "Accept invitation",
+    "notification.workspace.invitation.reminder.role_line": "You're invited to join as {role_name}.",
+    "notification.workspace.invitation.reminder.warning": "If you don't want to join, you can simply ignore this email.",
     # ── Org-provisioned account (§F) ──
     "notification.workspace.provisioned_account.subject": "Your {workspace_name} account is ready",
     "notification.workspace.provisioned_account.heading": "Your account is ready",
@@ -97,6 +107,15 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.workspace.mfa_restored.heading": "Access restored",
     "notification.workspace.mfa_restored.body": "Two-factor authentication is now enabled on your account, and your access to the workspace \u201c{workspace_name}\u201d has been restored.",
     "notification.workspace.mfa_restored.cta": "Go to workspace",
+    # ── Org admin reset a member's password (#110) ──
+    # Auth-class security signal: names the workspace and the admin, never
+    # carries the password (the admin hands it over out of band), and says
+    # what actually happened to live sessions.
+    "notification.workspace.member_password_reset.subject": "Your {workspace_name} password was reset",
+    "notification.workspace.member_password_reset.heading": "Your password was reset",
+    "notification.workspace.member_password_reset.body": "Your password for the workspace “{workspace_name}” was reset by {actor_name}, and your active sessions have been signed out. Your new password is not in this email — {actor_name} will give it to you directly.",
+    "notification.workspace.member_password_reset.cta": "Go to sign in",
+    "notification.workspace.member_password_reset.warning": "If you weren't expecting this, contact {actor_name} or your workspace administrator immediately — a password reset you didn't ask for can mean someone is trying to take over your account.",
     "notification.new_message.subject": "New message from {sender_name}",
     "notification.new_message.heading": "New message from {sender_name}",
     "notification.new_message.body": "You have a new message about \u201c{listing_title}\u201d.",

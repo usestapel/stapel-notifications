@@ -57,6 +57,12 @@ NOTIFICATION_ROUTING = {
     # (not an override of "workspace.invitation") so a host project can route
     # or template it independently — a clean routing-override seam.
     "workspace.invitation.new_user": {"channels": ["email"],        "group": "system"},
+    # Re-delivery of a pending invitation (admin "resend"): the token is
+    # rotated and the TTL restarted on the workspaces side, so this letter's
+    # job is "you are being reminded — here is a fresh link", not "you are
+    # being invited". Its own type by the same rule as ".new_user": a
+    # different message a host may route or template independently.
+    "workspace.invitation.reminder": {"channels": ["email"],        "group": "system"},
 
     # Org-provisioned account (org creates a login/password user directly) —
     # auth-class notification: mandatory, no unsubscribe, same as the other
@@ -66,6 +72,12 @@ NOTIFICATION_ROUTING = {
     # account-access notifications, same auth-class treatment.
     "workspace.mfa_suspension":      {"channels": ["email"],        "group": "auth"},
     "workspace.mfa_restored":         {"channels": ["email"],        "group": "auth"},
+    # An org admin reset the member's password (#110). A reset performed by
+    # somebody other than the account's owner is indistinguishable from a
+    # takeover until the owner is told, so this is auth-class: mandatory, no
+    # unsubscribe. The letter never carries the new password — it names the
+    # workspace and the admin who did it.
+    "workspace.member_password_reset": {"channels": ["email"],       "group": "auth"},
 }
 
 # Built-in email templates for types that do not carry their own
@@ -90,9 +102,11 @@ DEFAULT_EMAIL_TEMPLATES = {
     "gdpr.inactivity_closed": "notifications/email/gdpr_inactivity_closed.html",
     "workspace.invitation": "notifications/email/workspace_invitation.html",
     "workspace.invitation.new_user": "notifications/email/workspace_invitation_new_user.html",
+    "workspace.invitation.reminder": "notifications/email/workspace_invitation_reminder.html",
     "workspace.provisioned_account": "notifications/email/workspace_provisioned_account.html",
     "workspace.mfa_suspension": "notifications/email/workspace_mfa_suspension.html",
     "workspace.mfa_restored": "notifications/email/workspace_mfa_restored.html",
+    "workspace.member_password_reset": "notifications/email/workspace_member_password_reset.html",
 }
 
 

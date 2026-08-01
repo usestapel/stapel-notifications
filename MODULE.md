@@ -17,7 +17,7 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 | Area | Details |
 |---|---|
 | Multi-channel dispatch | `services.process_notification` resolves language → contacts → translations → templates and dispatches to `email` / `sms` / `push` channels, with per-channel `NotificationLog` rows (`sent` / `failed` / `skipped`) and `event_id` idempotency |
-| Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (17 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*`, `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `workspace.invitation`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
+| Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (23 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*`, `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `workspace.invitation` + `.new_user`/`.reminder`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
 | User preferences | `UserNotificationSettings` (per channel×group booleans + language), enforced in `services._should_send`; `auth` group always sends |
 | Contact projection | `UserContact` (email/phone synced from auth via bus; `is_active` soft-off during account-closure grace period) |
 | Push tokens + feed | `DevicePushToken` model; REST API: `POST/DELETE devices/`, `GET feed/` (push log as feed), `GET notification-keys/` (translation-key export for the translate collector) |
