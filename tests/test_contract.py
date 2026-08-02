@@ -61,7 +61,10 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # STAPEL_NOTIFICATIONS, emitted from conf.py DEFAULTS + the urls.py gate
 # registry + schema.json + the curated docs/capabilities.meta.json.
 # Same emit/drift discipline.
-ARTIFACTS = TRIAD + ("capabilities.json",)
+# The fifth artifact (badge-canon §3): docs/llms.txt, the module's own
+# context slice for an agent, rendered from capabilities.json + the triad by
+# stapel_tools.llms_txt. Same emit/drift discipline as the rest.
+ARTIFACTS = TRIAD + ("capabilities.json", "llms.txt")
 
 
 def _emit(out_dir: Path) -> None:
@@ -72,6 +75,17 @@ def _emit(out_dir: Path) -> None:
             check=True,
             capture_output=True,
         )
+    # llms_txt renders from the freshly emitted triad + capabilities.json
+    # sitting flat in out_dir (this module's own convention, not <repo>/docs/),
+    # so render in-process from those files rather than shelling out to the
+    # CLI (which only ever reads <repo>/docs/*.json).
+    from stapel_tools.llms_txt import render
+
+    inputs = {"capabilities": json.loads((out_dir / "capabilities.json").read_text())}
+    for key, name in (("schema", "schema.json"), ("errors", "errors.json"), ("flows", "flows.json")):
+        path = out_dir / name
+        inputs[key] = json.loads(path.read_text()) if path.is_file() else None
+    (out_dir / "llms.txt").write_text(render(inputs))
 
 
 def test_contract_artifacts_committed():

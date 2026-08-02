@@ -1,0 +1,89 @@
+# stapel-notifications 0.6.1
+
+Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
+
+Contract: axes 3 · extension points 5 · operations 4 · error codes 43.
+Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
+
+## Configuration axes — what a product switches on
+Settings keys; `default` is what you get by saying nothing. Turning an axis off unmounts the operations it gates.
+- EMAIL_PROVIDER [enum, default "mock"] — Email delivery service
+  Which service sends the emails: Resend, SMTP, Mailgun, a mock for development, or any custom provider class supplied by the host project.
+- PUSH_PROVIDER [enum, default "fcm"] — Push notification service
+  Which service delivers mobile/web push: Firebase Cloud Messaging (default), a mock for development, or any custom provider class supplied by the host project.
+- SMS_PROVIDER [enum, default "mock"] — SMS delivery service
+  Which service sends the text messages: GatewayAPI, Twilio, a mock for development, or any custom provider class supplied by the host project.
+
+## Extension points — what a product replaces, fork-free
+- EMAIL_TEMPLATES [merge_registry]
+  Remap any notification type to a host-project email template; merged over the packaged per-type template map.
+- TYPES [merge_registry]
+  Register new notification types (channels + group + template) or override built-ins entirely from settings — merged over the packaged routing catalog, no fork.
+- channel_providers [dotted_path]
+  The EMAIL/SMS/PUSH provider settings accept any dotted path to a class with the matching send() signature — add SendGrid, Postmark, APNs etc. as host-project classes, no fork.
+- serializer_seams [class_override]
+  Every view declares request/response serializer seams (SerializerSeamMixin) — subclass the view, override the attribute, remount the URL.
+- template_overrides [django_templates]
+  Packaged email templates live under a namespaced path and follow standard Django template-loader precedence; eject_notification_templates copies them into the host project for structural edits, and LOGO_URL/BRAND_*/COMPANY_* settings rebrand every email without touching a template.
+
+## Fits with — fleet dependencies
+- stapel-auth (optional) — source of the user-contact sync (email/phone projections) and the user.deleted / user.deletion_initiated events this module consumes; decoupled via the comm bus
+- stapel-core (required) — comm bus (notification.requested input, translate.resolve calls), JWT authentication, GDPR provider registry, AppSettings config layer
+- stapel-profiles (optional) — source of the notification-preferences and language sync (profile-changed events consumed into UserNotificationSettings); decoupled via the comm bus
+- stapel-translate (optional) — notification texts are localized through the translate.resolve comm Function with lazy caching; without it the built-in English defaults are used
+
+## HTTP operations (4) — call by operationId, never by a typed path
+Paths are relative to `/notifications/api/v1/`.
+### Devices
+- POST /devices/ — register_device_token
+- DELETE /devices/{token}/ — unregister_device_token
+### Feed
+- GET /feed/ — get_notification_feed
+### Translation Keys
+- GET /notification-keys/ — get_notification_keys
+
+## Error codes (43) — the StapelError envelope
+Render `t(code, params)`; branch UX on the remediation. Localized text lives in docs/errors.<lang>.md, not here.
+- error.400.bad_request [400] fix_input
+- error.400.captcha_invalid [400] retry
+- error.400.captcha_required [400] retry
+- error.400.expected_list [400] fix_input
+- error.400.field.blank [400] fix_input {field}
+- error.400.field.does_not_exist [400] fix_input {field}
+- error.400.field.invalid [400] fix_input {field}
+- error.400.field.invalid_choice [400] fix_input {field}
+- error.400.field.max_length [400] fix_input {field,max_length}
+- error.400.field.max_value [400] fix_input {field,max_value}
+- error.400.field.min_length [400] fix_input {field,min_length}
+- error.400.field.min_value [400] fix_input {field,min_value}
+- error.400.field.null [400] fix_input {field}
+- error.400.field.required [400] fix_input {field}
+- error.400.field.unique [400] fix_input {field}
+- error.400.invalid_ad_id [400] fix_input
+- error.400.invalid_platform [400] fix_input
+- error.400.validation_error [400] fix_input
+- error.400.verification_failed [400] verify
+- error.400.verification_invalid_factor [400] verify
+- error.401.unauthorized [401] reauthenticate
+- error.402.payment_required [402] retry
+- error.403.forbidden [403] retry
+- error.403.network_blocked [403] contact_support
+- error.403.verification_enrollment_required [403] verify
+- error.403.verification_required [403] verify
+- error.404.ad_not_found [404] retry
+- error.404.not_found [404] retry
+- error.404.token_not_found [404] fix_input
+- error.404.verification_challenge_not_found [404] verify
+- error.405.method_not_allowed [405] retry
+- error.406.not_acceptable [406] retry
+- error.408.request_timeout [408] retry
+- error.409.conflict [409] fix_input
+- error.410.gone [410] retry
+- error.413.payload_too_large [413] retry
+- error.415.unsupported_media_type [415] retry
+- error.422.unprocessable_entity [422] wait_and_retry
+- error.423.locked [423] wait_and_retry
+- error.423.verification_locked [423] wait_and_retry
+- error.429.rate_limit [429] wait_and_retry {retry_after_minutes}
+- error.429.too_many_requests [429] wait_and_retry
+- error.500.internal [500] contact_support

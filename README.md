@@ -6,6 +6,7 @@
 [![downloads](https://static.pepy.tech/badge/stapel-notifications/month)](https://pepy.tech/project/stapel-notifications)
 [![python](https://img.shields.io/pypi/pyversions/stapel-notifications?logo=python&logoColor=white)](https://pypi.org/project/stapel-notifications/)
 [![license](https://img.shields.io/github/license/usestapel/stapel-notifications)](https://github.com/usestapel/stapel-notifications/blob/main/LICENSE)
+[![llms.txt](https://img.shields.io/badge/llms.txt-blue)](https://github.com/usestapel/stapel-notifications/blob/main/docs/llms.txt)
 
 > Notifications — push (Firebase), email, SMS channels with delivery logging
 
