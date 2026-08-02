@@ -1,8 +1,11 @@
 # stapel-notifications
 
-[![CI](https://github.com/usestapel/stapel-notifications/actions/workflows/ci.yml/badge.svg)](https://github.com/usestapel/stapel-notifications/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/usestapel/stapel-notifications/graph/badge.svg)](https://codecov.io/gh/usestapel/stapel-notifications)
-[![PyPI](https://img.shields.io/pypi/v/stapel-notifications.svg)](https://pypi.org/project/stapel-notifications/)
+[![CI](https://img.shields.io/github/actions/workflow/status/usestapel/stapel-notifications/ci.yml?branch=main&logo=github&label=CI)](https://github.com/usestapel/stapel-notifications/actions/workflows/ci.yml?query=branch%3Amain)
+[![coverage](https://img.shields.io/codecov/c/github/usestapel/stapel-notifications?branch=main&logo=codecov&label=coverage)](https://app.codecov.io/gh/usestapel/stapel-notifications)
+[![pypi](https://img.shields.io/pypi/v/stapel-notifications?logo=pypi&logoColor=white&label=pypi)](https://pypi.org/project/stapel-notifications/)
+[![downloads](https://static.pepy.tech/badge/stapel-notifications/month)](https://pepy.tech/project/stapel-notifications)
+[![python](https://img.shields.io/pypi/pyversions/stapel-notifications?logo=python&logoColor=white)](https://pypi.org/project/stapel-notifications/)
+[![license](https://img.shields.io/github/license/usestapel/stapel-notifications)](https://github.com/usestapel/stapel-notifications/blob/main/LICENSE)
 
 > Notifications — push (Firebase), email, SMS channels with delivery logging
 
