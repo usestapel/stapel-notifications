@@ -64,7 +64,15 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # The fifth artifact (badge-canon §3): docs/llms.txt, the module's own
 # context slice for an agent, rendered from capabilities.json + the triad by
 # stapel_tools.llms_txt. Same emit/drift discipline as the rest.
+#
+# The usage surface (services.py + routing.py + the 23 packaged email
+# templates — the dispatch entry point, the routing readers and one line per
+# ready-made letter) does not fit the generator's default 4000-token budget.
+# Same exception stapel-auth and stapel-workspaces already take: raise the
+# ceiling to 4500 for this module, do not shorten intents to fit. The budget
+# stays enforced, just at 4500 — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "llms.txt")
+LLMS_TXT_BUDGET = 4500
 
 
 def _emit(out_dir: Path) -> None:
@@ -85,7 +93,7 @@ def _emit(out_dir: Path) -> None:
     for key, name in (("schema", "schema.json"), ("errors", "errors.json"), ("flows", "flows.json")):
         path = out_dir / name
         inputs[key] = json.loads(path.read_text()) if path.is_file() else None
-    (out_dir / "llms.txt").write_text(render(inputs))
+    (out_dir / "llms.txt").write_text(render(inputs, budget=LLMS_TXT_BUDGET))
 
 
 def test_contract_artifacts_committed():

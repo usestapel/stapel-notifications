@@ -73,6 +73,210 @@
       "summary": "Every view declares request/response serializer seams (SerializerSeamMixin) — subclass the view, override the attribute, remount the URL."
     }
   ],
+  "surface": [
+    {
+      "name": "get_channels",
+      "kind": "factory",
+      "path": "stapel_notifications.routing.get_channels",
+      "intent": "The channels a type is routed to after host overrides — read this rather than the settings dict when a caller has to know whether a type reaches SMS or push at all (an empty list means the type is unregistered).",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
+      "name": "get_email_template",
+      "kind": "factory",
+      "path": "stapel_notifications.routing.get_email_template",
+      "intent": "The email template a type actually renders with, resolving the whole precedence chain (the routing entry's \"template\" key → the EMAIL_TEMPLATES override → the packaged default). Reach for it instead of hardcoding a template path, which silently ignores the host's remap.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
+      "name": "get_group",
+      "kind": "factory",
+      "path": "stapel_notifications.routing.get_group",
+      "intent": "The preference group of a type: \"auth\" is mandatory and carries no unsubscribe, \"messages\" and \"system\" are user-mutable per channel. This is the value that decides whether a user may switch the notification off, so read it before a UI promises an opt-out — and before classifying a new type, because putting a marketing message in the auth group is how a deployment loses its List-Unsubscribe compliance.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
+      "name": "get_routing",
+      "kind": "factory",
+      "path": "stapel_notifications.routing.get_routing",
+      "intent": "The effective routing entry ({channels, group, template}) of a type, with STAPEL_NOTIFICATIONS[\"TYPES\"] merged over the packaged catalog — the primitive the other readers sit on. Prefer get_channels/get_group/get_email_template when the question is narrower, and never merge the settings dict over routing.NOTIFICATION_ROUTING by hand: an override replaces a built-in wholesale, which a naive dict update gets wrong.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
+      "name": "registered_types",
+      "kind": "factory",
+      "path": "stapel_notifications.routing.registered_types",
+      "intent": "Every notification type this deployment knows, built-ins plus the host's TYPES registrations — ask it before requesting a type you are not sure exists, because an unregistered type without content_html/content_text is dropped with a logged error rather than delivered. `manage.py check_notifications` is the CI-time form of the same question over literal call sites.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
+      "name": "default_language",
+      "kind": "factory",
+      "path": "stapel_notifications.services.default_language",
+      "intent": "The project's fallback language — STAPEL_LANGUAGE[\"DEFAULT\"], then Django's LANGUAGE_CODE — and never a hardcoded \"en\": a service built for a non-English market gets every English string as a defect. A module-local alias of stapel_core.language.default_language; outside this package reach for the core one directly.",
+      "instead_of": [
+        "django.conf.settings.LANGUAGE_CODE"
+      ]
+    },
+    {
+      "name": "process_notification",
+      "kind": "factory",
+      "path": "stapel_notifications.services.process_notification",
+      "intent": "THE dispatch entry point: give it a notification_type plus variables and it resolves the recipient's language, their contacts and preferences, the translations, the branded template and every configured channel, then writes one NotificationLog row per channel with event_id idempotency. Call it in-process (it is what the notification.requested consumer calls); across a service boundary publish through stapel_core.notifications.request_notification instead, which lands here. Do not assemble an email and a log row yourself — the language chain alone (saved preference → caller's language → remembered → the request's active language → project default) is four fallbacks deep, and every level of it was added because a product shipped English OTP codes to a non-English locale.",
+      "instead_of": [
+        "django.core.mail.send_mail",
+        "django.core.mail.EmailMultiAlternatives"
+      ]
+    },
+    {
+      "name": "notifications/email/_base.html",
+      "kind": "template",
+      "path": "templates/notifications/email/_base.html",
+      "intent": "The shared email shell every packaged letter extends: header/logo, body slot, footer, and the logo_url/brand_*/company_* variables process_notification threads into every render. A host template for a new type should extend this and fill the `content` block (plus `preheader`/`footer`/`head_extra` as needed) rather than start from a blank HTML document — that is what makes a product's own letter look like the rest of the mail the deployment sends, and what makes the branding settings apply to it for free."
+    },
+    {
+      "name": "notifications/email/_footer_unsubscribe.html",
+      "kind": "template",
+      "path": "templates/notifications/email/_footer_unsubscribe.html",
+      "intent": "The unsubscribe / manage-preferences footer that _base.html switches to whenever `unsubscribe_url` is present, i.e. on every non-auth group. Do not write an unsubscribe line into a custom template by hand: the URL, its signed token and the matching one-click List-Unsubscribe headers are produced together by process_notification, and a hand-written link stops working the moment the token scheme moves."
+    },
+    {
+      "name": "notifications/email/_raw_content.html",
+      "kind": "template",
+      "path": "templates/notifications/email/_raw_content.html",
+      "intent": "The raw-content wrapper that puts a caller-supplied content_html/content_text inside the brand layout — what makes the request_notification(..., content_html=...) escape hatch possible for a type that is deliberately not registered. Reach for the escape hatch, not for this template directly."
+    },
+    {
+      "name": "notifications/email/all_sessions_revoked.html",
+      "kind": "template",
+      "path": "templates/notifications/email/all_sessions_revoked.html",
+      "intent": "The \"all sessions have been revoked\" notice — notification_type `all_sessions_revoked`, auth group, email only. Send it after a global logout so an owner who did not trigger it finds out."
+    },
+    {
+      "name": "notifications/email/auth_change.html",
+      "kind": "template",
+      "path": "templates/notifications/email/auth_change.html",
+      "intent": "One template serving the whole authenticator-change sequence — notification_types `auth_change_requested`, `auth_change_reminder`, `auth_change_urgent` and `auth_change_completed` (auth group; email, SMS and push). Four stages of a single flow share it, so one EMAIL_TEMPLATES remap re-skins all of them."
+    },
+    {
+      "name": "notifications/email/gdpr_export_ready.html",
+      "kind": "template",
+      "path": "templates/notifications/email/gdpr_export_ready.html",
+      "intent": "\"Your data export is ready\" — notification_type `gdpr.export_ready`, auth group, email only: the letter a subject-access export has to end with."
+    },
+    {
+      "name": "notifications/email/gdpr_inactivity_closed.html",
+      "kind": "template",
+      "path": "templates/notifications/email/gdpr_inactivity_closed.html",
+      "intent": "\"Your account has been closed\" — notification_type `gdpr.inactivity_closed`, auth group, email only: the terminal notice of a retention closure."
+    },
+    {
+      "name": "notifications/email/gdpr_inactivity_warning.html",
+      "kind": "template",
+      "path": "templates/notifications/email/gdpr_inactivity_warning.html",
+      "intent": "\"Your account will be closed in N days\" — notification_type `gdpr.inactivity_warning`, auth group, email only: the warning a retention-driven closure owes the account before it happens."
+    },
+    {
+      "name": "notifications/email/listing_blocked.html",
+      "kind": "template",
+      "path": "templates/notifications/email/listing_blocked.html",
+      "intent": "\"Your listing has been blocked\" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner."
+    },
+    {
+      "name": "notifications/email/listing_expiring.html",
+      "kind": "template",
+      "path": "templates/notifications/email/listing_expiring.html",
+      "intent": "\"Your listing is expiring\" — notification_type `listing_expiring`, system group, push and email: the marketplace lifecycle reminder."
+    },
+    {
+      "name": "notifications/email/magic_link_login.html",
+      "kind": "template",
+      "path": "templates/notifications/email/magic_link_login.html",
+      "intent": "The passwordless sign-in link letter — notification_type `magic_link_login`, auth group, email only."
+    },
+    {
+      "name": "notifications/email/new_device_login.html",
+      "kind": "template",
+      "path": "templates/notifications/email/new_device_login.html",
+      "intent": "The \"new sign-in to your account\" security notice — notification_type `new_device_login`, auth group, email only: the letter to send when a session appears from a device the account has not used before."
+    },
+    {
+      "name": "notifications/email/new_message.html",
+      "kind": "template",
+      "path": "templates/notifications/email/new_message.html",
+      "intent": "The user-to-user message letter — notification_type `new_message`, messages group (the user can switch it off per channel), routed to push first and email second."
+    },
+    {
+      "name": "notifications/email/otp_code.html",
+      "kind": "template",
+      "path": "templates/notifications/email/otp_code.html",
+      "intent": "The one-time-code letter — notification_type `otp_code`, auth group (mandatory, no unsubscribe), routed to email and SMS. Request the type instead of composing a verification-code mail: the code formatting, the branding and the language resolution are already handled."
+    },
+    {
+      "name": "notifications/email/report_reviewed.html",
+      "kind": "template",
+      "path": "templates/notifications/email/report_reviewed.html",
+      "intent": "\"Your report has been reviewed\" — notification_type `report_reviewed`, system group, push and email: the moderation-outcome letter for the person who reported."
+    },
+    {
+      "name": "notifications/email/suspicious_login.html",
+      "kind": "template",
+      "path": "templates/notifications/email/suspicious_login.html",
+      "intent": "The \"suspicious sign-in detected\" security notice — notification_type `suspicious_login`, auth group, email only. The sharper sibling of new_device_login, for a sign-in the risk logic actually distrusts."
+    },
+    {
+      "name": "notifications/email/workspace_invitation.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_invitation.html",
+      "intent": "The workspace invitation letter for an invitee who already has an account — notification_type `workspace.invitation`, system group, email only. stapel-workspaces requests it from create_invitation; nothing else should be minting invitation mail, because the single-use token and its TTL belong to that flow."
+    },
+    {
+      "name": "notifications/email/workspace_invitation_new_user.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_invitation_new_user.html",
+      "intent": "The invitation letter for a recipient with no account yet — notification_type `workspace.invitation.new_user`. Its own type rather than an override of `workspace.invitation`, because the link both creates the account and joins the workspace and the copy has to say so."
+    },
+    {
+      "name": "notifications/email/workspace_invitation_reminder.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_invitation_reminder.html",
+      "intent": "The re-delivery of a pending invitation — notification_type `workspace.invitation.reminder`. An admin resend rotates the token and restarts the TTL, so this is \"you are being reminded, here is a fresh link\", a different message from the original invitation rather than a repeat of it."
+    },
+    {
+      "name": "notifications/email/workspace_member_password_reset.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_member_password_reset.html",
+      "intent": "\"Your password was reset\" — notification_type `workspace.member_password_reset`, auth group. It names the workspace and the admin who did it and never carries the new password: a reset performed by somebody other than the account's owner is indistinguishable from a takeover until the owner is told, which is why this one is mandatory."
+    },
+    {
+      "name": "notifications/email/workspace_mfa_restored.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_mfa_restored.html",
+      "intent": "\"Access restored\" — notification_type `workspace.mfa_restored`, auth group: the counterpart sent when the member enrols or the policy is lifted."
+    },
+    {
+      "name": "notifications/email/workspace_mfa_suspension.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_mfa_suspension.html",
+      "intent": "\"Access suspended — two-factor authentication required\" — notification_type `workspace.mfa_suspension`, auth group: sent when a workspace's require_mfa sweep suspends a member who has not enrolled."
+    },
+    {
+      "name": "notifications/email/workspace_provisioned_account.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_provisioned_account.html",
+      "intent": "\"Your account is ready\" for a member an organization provisioned directly — notification_type `workspace.provisioned_account`, auth group: credentials mail is mandatory and carries no unsubscribe, like every other account-credential letter here."
+    }
+  ],
   "operations_total": 4,
   "requires": [
     {
