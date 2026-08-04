@@ -441,6 +441,93 @@ def test_channel_with_no_address_is_skipped_not_reported_as_sent():
 
 
 @pytest.mark.django_db
+class TestUndeliverableIsLoud:
+    """A caller that queues a notification gets no synchronous signal at
+    all — dispatch happens later, off a Kafka consumer, with nothing to
+    hand a failure back to. Before this, "nobody could be reached" sat at
+    WARNING on a per-channel NotificationLog row that nothing ever read:
+    a workspace invitation got its 201, the invite was created, and the
+    letter never left the building — found live on the meettoday sandbox.
+    process_notification now escalates to ERROR, with a distinct greppable
+    prefix, whenever NONE of a notification's routed channels reached the
+    recipient for a reachability reason (as opposed to the recipient
+    having opted out, which is the system working as designed)."""
+
+    def test_total_delivery_failure_is_escalated_to_error(self, user, caplog):
+        with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+            process_notification(
+                notification_type="otp_code",  # routes to email + sms
+                user_id=str(user.id),
+                variables={"code": "1234", "expiry_minutes": 3},
+            )
+        assert any(
+            "NOTIFICATION UNDELIVERABLE" in r.getMessage() for r in caplog.records
+        ), [r.getMessage() for r in caplog.records]
+        # Both channels really did end up with nobody to deliver to.
+        statuses = {log.channel: log.status for log in NotificationLog.objects.all()}
+        assert statuses == {"email": "skipped", "sms": "skipped"}
+
+    def test_partial_delivery_is_not_escalated(self, user, caplog):
+        """One reachable channel is enough to stay quiet — the recipient
+        WAS told, just not on every channel the type could have used."""
+        UserContact.objects.create(user_id=user.id, email="u@example.com")
+        with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+            process_notification(
+                notification_type="otp_code",
+                user_id=str(user.id),
+                variables={"code": "1234", "expiry_minutes": 3},
+            )
+        assert not [
+            r for r in caplog.records if "UNDELIVERABLE" in r.getMessage()
+        ]
+        assert NotificationLog.objects.get(channel="email").status == "sent"
+
+    def test_preference_opt_out_alone_is_not_escalated(self, user, caplog):
+        """Every channel skipped by the recipient's OWN preference (not a
+        missing address) must never look like a delivery failure."""
+        UserNotificationSettings.objects.create(
+            user_id=user.id, email_system=False, push_system=False
+        )
+        UserContact.objects.create(user_id=user.id, email="u@example.com")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": "mock", "PUSH_PROVIDER": "mock"}
+        ):
+            with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+                process_notification(
+                    notification_type="report_reviewed",  # system: push + email
+                    user_id=str(user.id),
+                    variables={},
+                )
+        assert not [
+            r for r in caplog.records if "UNDELIVERABLE" in r.getMessage()
+        ]
+        statuses = {log.channel: log.status for log in NotificationLog.objects.all()}
+        assert statuses == {"email": "skipped", "push": "skipped"}
+
+    def test_dispatch_exception_alone_is_also_escalated(self, user, caplog):
+        """A provider that raises (not merely "no address") counts toward
+        the same total-failure signal."""
+        UserContact.objects.create(user_id=user.id, email="u@example.com")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": FAILING}
+        ):
+            with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+                process_notification(
+                    notification_type="workspace.invitation",
+                    user_id=str(user.id),
+                    variables={
+                        "workspace_name": "Acme",
+                        "inviter_name": "Ada",
+                        "accept_url": "https://app.example.com/invite/tok",
+                    },
+                )
+        assert any(
+            "NOTIFICATION UNDELIVERABLE" in r.getMessage() for r in caplog.records
+        ), [r.getMessage() for r in caplog.records]
+        assert NotificationLog.objects.get(channel="email").status == "failed"
+
+
+@pytest.mark.django_db
 def test_last_resort_language_follows_the_project_not_a_hardcoded_en(
     capture_email, settings
 ):

@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+## [0.6.3] — 2026-08-05
+
+### Fixed — a total delivery failure could stay silent forever
+
+`process_notification` already recorded a per-channel `NotificationLog` row
+as `skipped` (0.6.1's own fix) when a channel had no address to deliver
+to, and logged it at WARNING. Nobody ever read that row or that log line:
+`request_notification` is a fire-and-forget bus publish, so the calling
+service has no synchronous signal at all — a workspace invitation got its
+201, the row was created, and the letter simply never left the building
+(found live: meettoday sandbox, 2026-08).
+
+`process_notification` now tracks, across the whole channel loop, whether
+ANY routed channel actually delivered and whether ANY of them failed for a
+reachability reason (no address, or the provider raised) — as opposed to
+the recipient's own preference switching a channel off, which is the
+system working as designed and stays quiet. When every routed channel
+failed to reach the recipient, it logs a single `NOTIFICATION
+UNDELIVERABLE` line at ERROR with the notification type, the channels
+tried, and the identifying fields — a distinct, greppable signal that
+log-based alerting (Sentry issue capture, a CloudWatch/Loki alarm on the
+string) can catch. A notification that reaches at least one channel, or
+that the recipient opted out of entirely, is unaffected.
+
 ## [0.6.2] — 2026-08-02
 
 ### Changed — packaging/CI only, no runtime change

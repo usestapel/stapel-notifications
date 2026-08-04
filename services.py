@@ -331,7 +331,14 @@ def process_notification(
             except (KeyError, ValueError, IndexError):
                 pass
 
-    # Dispatch to each channel
+    # Dispatch to each channel. ``any_delivered`` / ``any_reachability_gap``
+    # feed the post-loop check below: a skip caused by "no address on this
+    # channel" (or an outright dispatch failure) is a REACHABILITY problem,
+    # distinct from a skip caused by the recipient's own notification
+    # preference (``_should_send`` False) — the latter is the system working
+    # as designed and must stay quiet.
+    any_delivered = False
+    any_reachability_gap = False
     for channel in routing["channels"]:
         if not _should_send(group, channel, settings_obj):
             NotificationLog.objects.create(
@@ -374,7 +381,9 @@ def process_notification(
                     recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
                     error_message=f"no {channel} address for this recipient",
                 )
+                any_reachability_gap = True
                 continue
+            any_delivered = True
             NotificationLog.objects.create(
                 user_id=user_id,
                 notification_type=notification_type,
@@ -400,6 +409,30 @@ def process_notification(
                 recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
                 error_message=str(e)[:500],
             )
+            any_reachability_gap = True
+
+    # This is the "must not be able to stay silent" guarantee: a caller
+    # that gets an event queued (``request_notification`` returned True, a
+    # 201 upstream) has no synchronous signal at all — dispatch happens
+    # later, off a Kafka consumer, with nothing to hand a failure back to.
+    # Per-channel rows already recorded the "skipped"/"failed" detail above
+    # at WARNING; nobody reads NotificationLog proactively. When NONE of
+    # the routed channels reached the recipient AND at least one of them
+    # failed for a reachability reason (not merely "the recipient opted
+    # out"), escalate to ERROR with a distinct, greppable prefix so
+    # log-based alerting (Sentry issue capture, a CloudWatch/Loki alarm on
+    # this string, etc.) has something to catch. Found live: a workspace
+    # invitation got a 201 and created the row, but nobody was ever told —
+    # "no email address for this recipient" sat at WARNING in a consumer
+    # log and nothing downstream ever looked at it.
+    if routing["channels"] and any_reachability_gap and not any_delivered:
+        logger.error(
+            "NOTIFICATION UNDELIVERABLE: %s reached no channel at all "
+            "(tried %s) for user_id=%s email=%s phone=%s event_id=%s — "
+            "the recipient was never notified",
+            notification_type, routing["channels"], user_id,
+            recipient_email, recipient_phone, event_id,
+        )
 
 
 def _dispatch(
