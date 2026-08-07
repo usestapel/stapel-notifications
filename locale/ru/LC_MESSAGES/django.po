@@ -431,6 +431,10 @@ msgstr "Если это вы — делать ничего не нужно. Ес
 msgid "Suspicious sign-in detected"
 msgstr "Обнаружен подозрительный вход"
 
+#: notification.suspicious_login.badge
+msgid "Security alert"
+msgstr "Оповещение безопасности"
+
 #: notification.suspicious_login.body
 msgid "A sign-in from an unrecognised location was detected on your account.\n\nDevice: {device_name}\nIP: {ip_address}"
 msgstr "В вашу учётную запись вошли из незнакомого места.\n\nУстройство: {device_name}\nIP: {ip_address}"
