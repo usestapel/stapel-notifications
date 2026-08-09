@@ -46,6 +46,7 @@ lazily (never frozen at import) and reload on `setting_changed` in tests.
 |---|---|---|
 | `TYPES` | `{}` | Notification-type registry, merged **over** built-ins (see §2) |
 | `EMAIL_TEMPLATES` | `{}` | Per-type email template map, merged over `DEFAULT_EMAIL_TEMPLATES` |
+| `TEXT` | `{}` | Per-key copy registry, merged **over** `NOTIFICATION_KEYS` — the string counterpart of `EMAIL_TEMPLATES` (see §4a) |
 | `EMAIL_PROVIDER` | `"mock"` | `resend` / `smtp` / `mailgun` / `mock` or dotted path (see §3) |
 | `SMS_PROVIDER` | `"mock"` | `gatewayapi` / `twilio` / `mock` or dotted path |
 | `PUSH_PROVIDER` | `"fcm"` | `fcm` / `mock` or dotted path |
@@ -145,6 +146,56 @@ app directories) overrides the packaged one — no setting in this module needed
 - Pointing a type at a fully custom template needs no ejection at all:
   `EMAIL_TEMPLATES = {"new_message": "myapp/email/new_message.html"}` or the
   `"template"` key of a `TYPES` entry.
+- **Gate your override against `docs/templates.json`.** It declares, per type,
+  the template path and every context variable this module passes, with its
+  provenance. Without it an override rests on honour twice over: rename a
+  variable here and Django's `string_if_invalid = ''` renders your letter with
+  a blank space; rename a template FILE here and your override shadows nothing
+  — while a "does my template resolve from my folder?" test stays green,
+  because it asserts a name you chose yourself and that file still exists.
+
+  ```python
+  from pathlib import Path
+  import stapel_notifications
+  from stapel_tools.template_contract import declared_for, load_contract, scan_template
+
+  CONTRACT = load_contract(Path(stapel_notifications.__file__).parent)
+
+  def test_my_override_is_still_an_override():
+      path = "notifications/email/otp_code.html"
+      declared = declared_for(CONTRACT, path)          # raises if the path is gone
+      scan = scan_template(MY_TEMPLATES / path, name=path)
+      assert set(scan.variables) <= declared           # raises if a variable is gone
+  ```
+
+  Pair it with `stapel_core.templates.strict_template_variables(TEMPLATES)` in
+  your TEST settings: an unresolved variable then renders as a visible marker
+  and `assert_no_missing_variables(html)` fails the test that rendered it. The
+  marker is the net (it catches what a test exercised); the contract is the
+  closure.
+
+### 4a. Copy overrides — `TEXT`, the string counterpart of `EMAIL_TEMPLATES`
+
+A host can replace a letter's layout; `TEXT` replaces its words. The subject is
+the case that forces it: it lives in no template at all, and
+`process_notification` refuses a caller `variables` key that collides with a
+translation key, so it cannot be passed per-send either.
+
+```python
+STAPEL_NOTIFICATIONS = {
+    "TEXT": {
+        # a bare string replaces the English default AND becomes the gettext
+        # msgid, so your own locale/*/django.po keeps translating it
+        "notification.workspace.invitation.subject": "Join {workspace_name}",
+        # a dict pins languages outright; the rest fall through the normal
+        # cache -> translate service -> gettext -> default chain
+        "notification.footer.legal": {"en": "...", "ru": "..."},
+    },
+}
+```
+
+Keys for a type YOU registered through `TYPES` work too — such a type has no
+entry in `NOTIFICATION_KEYS`, so `TEXT` is its only copy source.
 
 ### 5. i18n — integration with the translate module (no import)
 
