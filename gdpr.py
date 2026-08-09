@@ -24,7 +24,6 @@ class NotificationsGDPRProvider(GDPRProvider):
                 'push_system':    s.push_system,
                 'sms_messages':   s.sms_messages,
                 'sms_system':     s.sms_system,
-                'language':       s.language,
             }
         except UserNotificationSettings.DoesNotExist:
             pass

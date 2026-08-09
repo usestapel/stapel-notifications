@@ -35,11 +35,13 @@ class Command(BaseKafkaConsumerCommand):
 
         defaults = {}
 
-        # Sync language preferences
-        if "app_language" in payload:
-            defaults["language"] = payload["app_language"] or None
-        if "auto_detected_language" in payload:
-            defaults["auto_detected_language"] = payload["auto_detected_language"] or ''
+        # The recipient's LANGUAGE is deliberately not synced here any more.
+        # It is asked of profiles at send time (``profiles.language``, see
+        # language.py): this consumer cannot run at all on an in-process bus,
+        # so in a monolith the mirror it fed stayed empty and every recipient
+        # was written to in the sender's language. The channel preferences
+        # below are the same shape and have the same exposure — they are the
+        # next thing to move onto the comm plane.
 
         # Sync notification preferences
         for field in (

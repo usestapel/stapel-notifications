@@ -15,3 +15,7 @@ class NotificationsConfig(AppConfig):
         # Action subscriptions (in-process in a monolith, bus consumer in
         # microservices — same code, transport chosen by STAPEL_COMM).
         from . import actions  # noqa: F401
+
+        # System checks (notifications.W001/W002: a deployment that cannot
+        # ask a recipient's language writes to everybody in the sender's).
+        from . import checks  # noqa: F401

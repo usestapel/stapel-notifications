@@ -18,7 +18,7 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 |---|---|
 | Multi-channel dispatch | `services.process_notification` resolves language → contacts → translations → templates and dispatches to `email` / `sms` / `push` channels, with per-channel `NotificationLog` rows (`sent` / `failed` / `skipped`) and `event_id` idempotency |
 | Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (23 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*`, `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `workspace.invitation` + `.new_user`/`.reminder`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
-| User preferences | `UserNotificationSettings` (per channel×group booleans + language), enforced in `services._should_send`; `auth` group always sends |
+| User preferences | `UserNotificationSettings` (per channel×group booleans; **no language** — see §5), enforced in `services._should_send`; `auth` group always sends |
 | Contact projection | `UserContact` (email/phone synced from auth via bus; `is_active` soft-off during account-closure grace period) |
 | Push tokens + feed | `DevicePushToken` model; REST API: `POST/DELETE devices/`, `GET feed/` (push log as feed), `GET notification-keys/` (translation-key export for the translate collector) |
 | Branded email layer | `templates/notifications/email/_base.html` shared shell + 16 per-type templates + `_raw_content.html` escape hatch; branding driven entirely by settings |
@@ -211,9 +211,21 @@ entry in `NOTIFICATION_KEYS`, so `TEXT` is its only copy source.
   `translation_keys.NOTIFICATION_KEYS` (also served at
   `GET notification-keys/` for the translate collector,
   `source='backend:notifications'`).
-- Language resolution order per notification: profile override
-  (`UserNotificationSettings.language`) → event `language` → auto-detected
-  language → `"en"`. Translation strings are `{var}`-formatted with a
+- Language resolution order per notification (`language.py`, ordered by
+  *whose statement each step is*): the recipient's **chosen** language,
+  asked of profiles at send time via the `profiles.language` comm Function
+  → the caller's `language` argument (an anonymous OTP answers a request
+  the recipient just made) → the recipient's last **observed** language
+  (also from `profiles.language`) → the **sender's** active language, a
+  stated decision for the unregistered invitee who has no profile and never
+  will until they accept → the project default. Every delivery row records
+  which step decided it (`NotificationLog.data["language_source"]`), and a
+  deployment that cannot ask at all is flagged at boot
+  (`notifications.W001/W002`) and per send (`RECIPIENT LANGUAGE UNASKABLE`).
+  This module keeps **no copy** of the language: the mirror it used to keep
+  in `UserNotificationSettings` was empty for 100% of users for its entire
+  lifetime, and a mirror cannot distinguish "chose nothing" from "the sync
+  never ran". Translation strings are `{var}`-formatted with a
   `_SafeFormatter` that blocks attribute/index access.
 
 ### 6. Events & functions (comm surface)
@@ -234,10 +246,12 @@ Bus consumers (Kafka topics, `management/commands/consume_*.py`):
 |---|---|---|
 | `notification.requested` | `consume_notifications` | `process_notification(...)` — the module's main input |
 | user-contact-changed | `consume_contacts` | Upsert `UserContact` (email/phone from auth) |
-| profile-changed | `consume_profiles` | Upsert `UserNotificationSettings` (preferences + language from profiles) |
+| profile-changed | `consume_profiles` | Upsert `UserNotificationSettings` (channel preferences only — the language is asked over comm, not mirrored) |
 
-Functions: this module **calls** `translate.resolve`; it registers no comm
-Functions of its own. It publishes no events either — the publish side
+Functions: this module **calls** `translate.resolve` and `profiles.language`
+(the recipient's own language, asked at send time — stapel-profiles >= 0.12.1,
+or any provider registered under that name); it registers no comm Functions of
+its own. It publishes no events either — the publish side
 (`request_notification`) lives in `stapel_core.notifications.publish` so any
 module can request a notification without importing this package. JSON schemas
 for consumed events: `schemas/consumes/*.json`.
@@ -378,6 +392,7 @@ Attribute-only change: no migrations (`makemigrations notifications --check
 | Fork to add an email/SMS/push provider (SendGrid, Postmark, …) | Provider class in your project + dotted path in `*_PROVIDER` (§3) |
 | One-off email for an unregistered type by hacking templates | `request_notification(..., content_html=/content_text=)` — rendered inside the brand layout (§2) |
 | Import `stapel_translate` (or any stapel module) from here, or vice versa | Comm surface only: `translate.resolve` Function + `translations.changed` event (§5) |
+| Mirror another module's fact into a local table and read the copy | Ask the owner by name over comm at the moment you need it (`profiles.language` is the worked example: the mirror it replaced was empty for every user, silently) |
 | Write to `UserContact` / `UserNotificationSettings` directly from app code | They are event-synced projections — emit the auth/profile events; direct writes are overwritten by the next sync |
 | Call `process_notification` from another service/module | `request_notification` (re-exported here, defined in `stapel_core`) → bus → this module's consumer |
 | Hardcode user-facing strings in an overridden template | Keep `notification.<type>.*` translation keys so i18n keeps working (§5) |

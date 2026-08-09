@@ -17,9 +17,7 @@ from stapel_notifications.models import (
 
 def _seed(user_id):
     UserContact.objects.create(user_id=user_id, email="u@example.com", phone="+45999")
-    UserNotificationSettings.objects.create(
-        user_id=user_id, language="de", email_system=False
-    )
+    UserNotificationSettings.objects.create(user_id=user_id, email_system=False)
     DevicePushToken.objects.create(user_id=user_id, token=f"tok-{user_id}", platform="ios")
     return NotificationLog.objects.create(
         user_id=user_id,
@@ -38,7 +36,6 @@ class TestGDPRExport:
         _seed(uid)
         data = NotificationsGDPRProvider().export(uid)
         assert data["contact"] == {"email": "u@example.com", "phone": "+45999"}
-        assert data["settings"]["language"] == "de"
         assert data["settings"]["email_system"] is False
         assert len(data["devices"]) == 1
         assert data["devices"][0]["platform"] == "ios"

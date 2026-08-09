@@ -13,7 +13,7 @@ from .models import (
 
 @admin.register(UserNotificationSettings)
 class UserNotificationSettingsAdmin(admin.ModelAdmin):
-    list_display = ['user_id', 'language', 'email_messages', 'email_system', 'push_messages', 'push_system', 'updated_at']
+    list_display = ['user_id', 'email_messages', 'email_system', 'push_messages', 'push_system', 'updated_at']
     search_fields = ['user_id']
     readonly_fields = ['updated_at']
 

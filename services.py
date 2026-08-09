@@ -19,6 +19,7 @@ from .models import (
     NotificationLog,
 )
 from .conf import notifications_settings
+from .language import resolve as resolve_language
 from .routing import get_email_template, get_routing, is_transactional
 from .translation_keys import NOTIFICATION_KEYS, keys_for_type
 from .channels.email import send_email
@@ -285,21 +286,12 @@ def process_notification(
         settings_obj = UserNotificationSettings.objects.filter(user_id=user_id).first()
         contact = UserContact.objects.filter(user_id=user_id, is_active=True).first()
 
-    # Language: saved preference > what the caller resolved > last seen for
-    # this user > whatever this process currently has active > English.
-    #
-    # The last-but-one step is the one that was missing. An anonymous OTP
-    # request has no user_id, so there is no saved preference and no
-    # auto-detected language, and the chain fell straight through to a
-    # hardcoded "en" — even though Django had already resolved the
-    # request's language (found live by meettoday, 2026-07-28: OTP codes
-    # arrived in English regardless of locale). Callers that pass
-    # `language` explicitly are unaffected; callers that do not — every
-    # workspace invitation and GDPR notice among them — stop being
-    # silently anglicised.
-    saved = settings_obj.language if settings_obj else None
-    remembered = settings_obj.auto_detected_language if settings_obj else None
-    lang = saved or language or remembered or _active_language() or default_language()
+    # Language: the recipient's own choice (asked of profiles by name, not
+    # mirrored here), then the caller's, then the recipient's last observed
+    # language, then — as a stated decision for the unregistered invitee —
+    # the sender's. The whole chain and its reasoning live in language.py.
+    choice = resolve_language(user_id, language)
+    lang = choice.language
 
     # Resolve recipient contact info
     recipient_email = email or (contact.email if contact else None)
@@ -449,7 +441,21 @@ def process_notification(
                 recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
                 title=all_vars.get("push_title", all_vars.get("heading", "")),
                 body=all_vars.get("push_body", all_vars.get("body", "")),
-                data={"notification_type": notification_type, **({"event_id": event_id} if event_id else {}), **{k: v for k, v in variables.items() if isinstance(v, (str, int, float, bool))}},
+                data={
+                    # Caller variables first: the log's own keys below are
+                    # facts about the delivery and must not be overwritable
+                    # by a template variable that happens to share a name.
+                    **{k: v for k, v in variables.items() if isinstance(v, (str, int, float, bool))},
+                    "notification_type": notification_type,
+                    # WHY this letter is in this language. A row reading
+                    # "sender" is a letter addressed on a guess; counting
+                    # them is how an operator sees a broken language plane
+                    # without waiting for someone to complain about the
+                    # wrong language (SELECT data->>'language_source').
+                    "language_source": choice.source,
+                    **({"recipient_language_unaskable": True} if not choice.recipient_reachable else {}),
+                    **({"event_id": event_id} if event_id else {}),
+                },
             )
         except Exception as e:
             logger.error(

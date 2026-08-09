@@ -106,37 +106,45 @@ class TestConsumeContacts:
 
 @pytest.mark.django_db
 class TestConsumeProfiles:
-    def test_syncs_language_and_preferences(self):
+    def test_syncs_channel_preferences(self):
         uid = uuid.uuid4()
         ProfilesCommand().handle_event(
             _event(
                 EventType.PROFILE_CHANGED,
                 {
                     "user_id": str(uid),
-                    "app_language": "de",
-                    "auto_detected_language": "da",
                     "email_system": False,
                     "sms_messages": False,
                 },
             )
         )
         settings_obj = UserNotificationSettings.objects.get(user_id=uid)
-        assert settings_obj.language == "de"
-        assert settings_obj.auto_detected_language == "da"
         assert settings_obj.email_system is False
         assert settings_obj.sms_messages is False
         assert settings_obj.email_messages is True  # untouched default
 
-    def test_empty_app_language_becomes_null(self):
+    def test_language_is_no_longer_mirrored_here(self):
+        """The language is asked of profiles at send time, not copied.
+
+        A payload carrying only ``app_language`` now writes NOTHING: there
+        is no local column to write it to, and inventing a row would rebuild
+        the mirror whose emptiness made every recipient read the sender's
+        language.
+        """
         uid = uuid.uuid4()
         ProfilesCommand().handle_event(
-            _event(EventType.PROFILE_CHANGED, {"user_id": str(uid), "app_language": ""})
+            _event(
+                EventType.PROFILE_CHANGED,
+                {"user_id": str(uid), "app_language": "de",
+                 "auto_detected_language": "da"},
+            )
         )
-        assert UserNotificationSettings.objects.get(user_id=uid).language is None
+        assert UserNotificationSettings.objects.count() == 0
+        assert not hasattr(UserNotificationSettings, "language")
 
     def test_missing_user_id_is_ignored(self):
         ProfilesCommand().handle_event(
-            _event(EventType.PROFILE_CHANGED, {"app_language": "de"})
+            _event(EventType.PROFILE_CHANGED, {"email_system": False})
         )
         assert UserNotificationSettings.objects.count() == 0
 

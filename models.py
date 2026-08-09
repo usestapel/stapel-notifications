@@ -10,21 +10,18 @@ from stapel_core.access.declaration import access
 
 
 class UserNotificationSettings(models.Model):
-    """Notification preferences synced from profiles via Kafka."""
+    """Per-user channel preferences, synced from profiles.
+
+    Holds no language. It used to mirror ``app_language`` /
+    ``auto_detected_language`` here, and the mirror never filled once in its
+    lifetime — so every recipient was silently written to in the SENDER's
+    language. The language is now ASKED of the module that owns it, at send
+    time, through the ``profiles.language`` comm Function (see language.py):
+    a call either answers or raises, where a mirror answers ``None`` both
+    for "chose nothing" and for "the sync never ran".
+    """
 
     user_id = models.UUIDField(primary_key=True)
-    language = models.CharField(
-        max_length=10,
-        null=True,
-        blank=True,
-        help_text="Profile app_language override (null = auto-detect)",
-    )
-    auto_detected_language = models.CharField(
-        max_length=10,
-        blank=True,
-        default="",
-        help_text="Last detected language from Accept-Language header",
-    )
     email_messages = models.BooleanField(default=True)
     email_system = models.BooleanField(default=True)
     push_messages = models.BooleanField(default=True)

@@ -136,48 +136,109 @@ class TestLanguageResolution:
         )
         return NotificationLog.objects.get(notification_type=self.TYPE).language
 
-    def test_profile_override_beats_event_language(self, user, capture_email):
-        UserNotificationSettings.objects.create(
-            user_id=user.id, language="de", auto_detected_language="es"
-        )
-        assert self._process(user, language="fr") == "de"
+    def _source(self):
+        return NotificationLog.objects.get(
+            notification_type=self.TYPE, status="sent"
+        ).data["language_source"]
 
-    def test_event_language_beats_auto_detected(self, user, capture_email):
-        UserNotificationSettings.objects.create(
-            user_id=user.id, language=None, auto_detected_language="es"
-        )
-        assert self._process(user, language="fr") == "fr"
-
-    def test_auto_detected_fallback(self, user, capture_email):
-        UserNotificationSettings.objects.create(
-            user_id=user.id, language=None, auto_detected_language="es"
-        )
-        assert self._process(user) == "es"
-
-    def test_falls_back_to_the_active_language_not_a_hardcoded_en(
-        self, capture_email
+    def test_the_recipients_own_choice_beats_the_caller(
+        self, user, capture_email, profiles_language
     ):
-        """The gap meettoday found: an anonymous request has no user_id, so
-        there is no saved preference and nothing auto-detected, and the
-        chain used to fall straight through to a literal "en" — discarding
-        the language Django had already resolved for the request."""
+        """Nobody outranks a person's stated preference about their own mail.
+
+        The caller passes the language of the REQUEST, which for one person
+        notifying another is the sender's — so it must not overwrite what
+        the recipient said in their settings.
+        """
+        profiles_language[str(user.id)] = ("de", "es")
+        assert self._process(user, language="fr") == "de"
+        assert self._source() == "recipient_choice"
+
+    def test_the_caller_beats_a_merely_observed_language(
+        self, user, capture_email, profiles_language
+    ):
+        """The caller knows something about THIS message we cannot: an
+        anonymous OTP answers a request the recipient just made."""
+        profiles_language[str(user.id)] = (None, "es")
+        assert self._process(user, language="fr") == "fr"
+        assert self._source() == "caller"
+
+    def test_a_registered_user_who_chose_nothing_gets_what_profiles_saw(
+        self, user, capture_email, profiles_language
+    ):
+        profiles_language[str(user.id)] = (None, "es")
+        assert self._process(user) == "es"
+        assert self._source() == "recipient_detected"
+
+    def test_an_unregistered_invitee_gets_the_senders_language(
+        self, capture_email, profiles_language
+    ):
+        """A decision, not a fallthrough.
+
+        The invitee has no profile and no preference and will not have one
+        until they accept. The only fact in the system about how to address
+        them is that someone who presumably knows them wrote to them from a
+        UI in this language — so that is what they get, and the delivery row
+        says ``sender`` so nobody mistakes it for their preference.
+        """
         from django.utils import translation
 
         with translation.override("ru"):
             assert self._process() == "ru"
+        assert self._source() == "sender"
 
-    def test_still_english_when_nothing_at_all_is_known(self, capture_email):
-        """With no active translation and no preferences, English remains
-        the last resort — the project's LANGUAGE_CODE if it has one."""
+    def test_a_known_recipient_with_nothing_known_also_gets_the_sender(
+        self, user, capture_email, profiles_language
+    ):
+        """profiles answered, and the answer was "they never said" — which
+        is a real answer, not a broken sync."""
+        from django.utils import translation
+
+        with translation.override("ru"):
+            assert self._process(user) == "ru"
+        log = NotificationLog.objects.get(notification_type=self.TYPE, status="sent")
+        assert log.data["language_source"] == "sender"
+        assert "recipient_language_unaskable" not in log.data
+
+    def test_the_project_default_is_the_last_resort(self, capture_email):
+        """With no active translation and nothing else, the project's
+        configured default language — never a hardcoded "en"."""
         from django.utils import translation
 
         with translation.override(None):
             assert self._process().startswith("en")
+        assert self._source() == "default"
+
+    def test_an_unaskable_language_plane_is_recorded_not_swallowed(
+        self, user, capture_email, function_registry_sandbox, caplog
+    ):
+        """No provider for ``profiles.language`` at all: the letter still
+        goes out, in the sender's language, and SAYS SO — the delivery row
+        carries the flag and the log carries a greppable line. This is the
+        state that used to be indistinguishable from "the user has no
+        preference", and the whole defect lived in that ambiguity."""
+        from django.utils import translation
+
+        from stapel_notifications.language import PROFILES_LANGUAGE
+
+        with function_registry_sandbox._lock:
+            function_registry_sandbox._providers.pop(PROFILES_LANGUAGE, None)
+
+        with caplog.at_level("WARNING", logger="stapel_notifications.language"):
+            with translation.override("ru"):
+                assert self._process(user) == "ru"
+
+        log = NotificationLog.objects.get(notification_type=self.TYPE, status="sent")
+        assert log.data["language_source"] == "sender"
+        assert log.data["recipient_language_unaskable"] is True
+        assert any(
+            "RECIPIENT LANGUAGE UNASKABLE" in r.message for r in caplog.records
+        )
 
 
 @pytest.mark.django_db
-def test_translation_cache_resolves_and_formats(user, capture_email):
-    UserNotificationSettings.objects.create(user_id=user.id, language="de")
+def test_translation_cache_resolves_and_formats(user, capture_email, profiles_language):
+    profiles_language[str(user.id)] = ("de", None)
     UserContact.objects.create(user_id=user.id, email="de-user@example.com")
     TranslationCache.objects.create(
         key="notification.otp_code.subject",

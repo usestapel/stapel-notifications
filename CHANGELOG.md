@@ -2,6 +2,85 @@
 
 ## Unreleased
 
+## [0.9.0] — 2026-08-10
+
+### Changed — the recipient's language is asked, not mirrored (BREAKING: two columns dropped)
+
+There was no path by which a recipient's language reached their mail. Measured
+on the meettoday sandbox, 2026-08:
+
+    stapel_notifications.UserNotificationSettings   0 rows,  0 with a language
+    stapel_profiles.Profile.app_language            None for all 66 profiles
+    stapel_profiles.Profile.auto_detected_language  ru for 57, en for 6
+
+The third line is the one that convicts the design. Profiles *had* a language
+signal for 63 of 66 people; notifications had none for anybody, because it read
+its own mirror of that field. The mirror was fed by `consume_profiles`, which
+in this deployment cannot run at all (a standalone bus consumer on an
+in-process bus — core 0.14.2 refuses instead of restart-looping) and which, in
+a deployment where it could, listens on `stapel.profiles.profile-changed` while
+the comm plane publishes under the action name `profile.changed`. Two
+independent breaks, one silent outcome: `saved` was `None` for 100% of users,
+so the chain fell through to `_active_language()` — **the language of whoever
+pressed the button**. Invite from a Russian UI and the invitee got Russian mail
+whoever they were; a colleague's finished English bodies could never be
+selected.
+
+The mirror is gone. `UserNotificationSettings.language` and
+`.auto_detected_language` are dropped (migration `0005_drop_language_mirror`);
+`consume_profiles` no longer syncs them. The language is now asked of the
+module that owns it, at send time, through the `profiles.language` comm
+Function (stapel-profiles >= 0.12.1) — which works identically in a monolith
+and in a split deployment, because the transport is deployment configuration.
+
+**The resolution order is now ordered by whose statement each step is**
+(`language.py`), and the last step is a decision rather than a fallthrough:
+
+1. `recipient_choice` — the language the recipient CHOSE (profiles). Nobody
+   outranks a person's own statement about how they are written to; in
+   particular a *local mirror* that is empty for every user has no business
+   sitting above an explicit argument, which is where it used to sit.
+2. `caller` — the `language` argument. The caller knows something about THIS
+   message: an anonymous OTP answers a request the recipient just made. It
+   ranks below (1) because what a caller passes is the *request's* language,
+   which for one person notifying another is the sender's.
+3. `recipient_detected` — the recipient's last OBSERVED language (profiles).
+   About the right person, never stated by them.
+4. `sender` — the active language of the process doing the send. **Stated
+   decision for the unregistered invitee**, who has no profile and will not
+   have one until they accept: the only fact in the system about how to
+   address them is that someone who presumably knows them wrote from a UI in
+   this language. It is a guess, and it is labelled one.
+5. `default` — the project's default language (no request in scope at all).
+
+So: a registered user who chose a language gets that language; one who chose
+nothing gets the language they were last seen in; an unregistered invitee gets
+the sender's, deliberately.
+
+### Added — "no preference" and "never delivered" stop being the same answer
+
+That ambiguity was the defect underneath the defect: both produced `None` and
+nobody could tell which. A call cannot hide it — it answers or it raises — and
+the difference is now recorded on both sides:
+
+* every delivery row carries `NotificationLog.data["language_source"]` (one of
+  the five names above), plus `recipient_language_unaskable: true` when
+  profiles could not be reached at all. `SELECT data->>'language_source'`
+  answers "how many letters did we address on a guess" without waiting for a
+  complaint;
+* a failed/absent provider logs `RECIPIENT LANGUAGE UNASKABLE` (greppable, like
+  `NOTIFICATION UNDELIVERABLE`) instead of silently degrading;
+* `manage.py check` refuses to stay quiet about a deployment that cannot ask at
+  all: `notifications.W001` (in-process transport, no provider registered) and
+  `notifications.W002` (http transport, no `FUNCTION_ROUTES` prefix matching
+  `profiles.`). Silence with `SILENCED_SYSTEM_CHECKS` if the deployment really
+  is single-language.
+
+`UserNotificationSettings` keeps only its channel×group booleans, and those are
+the same mirror shape with the same exposure — the next thing to move onto the
+comm plane.
+
+
 ## [0.8.0] — 2026-08-10
 
 ### Added — `docs/templates.json`: templates stop being an undeclared surface

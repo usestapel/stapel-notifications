@@ -32,6 +32,28 @@ def function_registry_sandbox():
 
 
 @pytest.fixture
+def profiles_language(function_registry_sandbox):
+    """A stand-in for stapel-profiles' ``profiles.language`` provider.
+
+    Notifications never imports profiles — it asks a name. Tests answer that
+    name the way the real owner does: ``{"app_language": ..., "auto_detected_language": ...}``,
+    both null for a user profiles has never heard of.
+
+    Yields a dict ``{user_id: (chosen, detected)}`` the test fills in.
+    """
+    from stapel_notifications.language import PROFILES_LANGUAGE
+
+    answers: dict[str, tuple[str | None, str | None]] = {}
+
+    def provider(payload):
+        chosen, detected = answers.get(str(payload["user_id"]), (None, None))
+        return {"app_language": chosen, "auto_detected_language": detected}
+
+    function_registry_sandbox.register(PROFILES_LANGUAGE, provider)
+    return answers
+
+
+@pytest.fixture
 def user(db):
     from django.contrib.auth import get_user_model
     User = get_user_model()
