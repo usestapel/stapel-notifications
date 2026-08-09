@@ -118,3 +118,105 @@ def test_unknown_provider_falls_back_to_mock():
     with override_settings(STAPEL_NOTIFICATIONS={"SMS_PROVIDER": "does-not-exist"}):
         assert isinstance(_get_provider(), _MockSMSProvider)
 
+
+
+# ── TEXT: the copy seam that matches the template seam ───────────
+
+
+@pytest.mark.django_db
+def test_text_registry_overrides_a_subject_without_a_fork():
+    """A host could always replace a letter's layout and never its words.
+
+    The subject is the sharp case: it lives in no template, and
+    ``process_notification`` refuses caller ``variables`` that collide with a
+    translation key, so it could not be passed either. meettoday shipped a
+    fully Russian invitation body under an English library subject for exactly
+    this reason.
+    """
+    from stapel_notifications.services import _resolve_translations
+
+    key = "notification.otp_code.subject"
+    with override_settings(
+        STAPEL_NOTIFICATIONS={"TEXT": {key: "Sign in to Acme — code {code}"}}
+    ):
+        notifications_settings.reload()
+        resolved = _resolve_translations([key], "en")
+    assert resolved[key] == "Sign in to Acme — code {code}"
+
+
+@pytest.mark.django_db
+def test_text_override_stays_translatable():
+    """A bare-string override becomes the gettext msgid, so a host catalogue
+    still translates it — an override can never freeze copy into one
+    language, which is the bug the key registry exists to prevent."""
+    from stapel_notifications import services
+
+    key = "notification.otp_code.subject"
+    seen = []
+
+    def _fake_gettext(default, lang):
+        seen.append((default, lang))
+        return "Вход в Acme" if default == "Acme code" else None
+
+    original = services._gettext_default
+    services._gettext_default = _fake_gettext
+    try:
+        with override_settings(STAPEL_NOTIFICATIONS={"TEXT": {key: "Acme code"}}):
+            notifications_settings.reload()
+            resolved = services._resolve_translations([key], "ru")
+    finally:
+        services._gettext_default = original
+
+    assert ("Acme code", "ru") in seen, "the override did not become the msgid"
+    assert resolved[key] == "Вход в Acme"
+
+
+@pytest.mark.django_db
+def test_text_per_language_pin_wins_outright():
+    from stapel_notifications.services import _resolve_translations
+
+    key = "notification.otp_code.subject"
+    with override_settings(
+        STAPEL_NOTIFICATIONS={"TEXT": {key: {"en": "Acme code", "ru": "Код Acme"}}}
+    ):
+        notifications_settings.reload()
+        assert _resolve_translations([key], "ru")[key] == "Код Acme"
+        assert _resolve_translations([key], "en")[key] == "Acme code"
+
+
+def test_text_gives_a_host_registered_type_its_first_copy():
+    """A type registered through TYPES has no entry in NOTIFICATION_KEYS at
+    all: TEXT is the only place its copy can come from."""
+    from stapel_notifications.services import _get_keys_for_type
+
+    with override_settings(
+        STAPEL_NOTIFICATIONS={
+            "TYPES": {"invoice.ready": {"channels": ["email"], "group": "system"}},
+            "TEXT": {"notification.invoice.ready.subject": "Your invoice"},
+        }
+    ):
+        notifications_settings.reload()
+        assert "notification.invoice.ready.subject" in _get_keys_for_type("invoice.ready")
+
+
+def test_prefix_collision_no_longer_leaks_a_longer_types_keys():
+    """``notification.workspace.invitation.`` is a prefix of
+    ``notification.workspace.invitation.new_user.``; a plain prefix match gave
+    the plain invitation variables literally named ``new_user.subject`` —
+    names with a dot, which Django resolves as attribute lookups and can never
+    render."""
+    from stapel_notifications.services import _get_keys_for_type
+
+    keys = _get_keys_for_type("workspace.invitation")
+    assert "notification.workspace.invitation.subject" in keys
+    assert not any(".new_user." in k or ".reminder." in k for k in keys)
+
+
+def test_invitation_types_are_transactional():
+    from stapel_notifications.routing import is_transactional
+
+    assert is_transactional("workspace.invitation")
+    assert is_transactional("workspace.invitation.new_user")
+    assert is_transactional("workspace.invitation.reminder")
+    assert not is_transactional("new_message")
+    assert not is_transactional("otp_code")

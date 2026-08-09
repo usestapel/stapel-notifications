@@ -36,6 +36,26 @@ DEFAULTS = {
     # Per-type email template overrides, merged over
     # routing.DEFAULT_EMAIL_TEMPLATES.
     "EMAIL_TEMPLATES": {},
+    # Host copy registry, merged OVER translation_keys.NOTIFICATION_KEYS.
+    # The string counterpart of EMAIL_TEMPLATES: a host could always replace
+    # a letter's LAYOUT (template-directory precedence, EMAIL_TEMPLATES) but
+    # had no honest way to replace its WORDS — subject above all, which lives
+    # in no template. Overriding a whole template to change one subject line
+    # is not an option either: the subject is not in the template.
+    #
+    #   "TEXT": {
+    #       # a bare string replaces the English default AND becomes the
+    #       # gettext msgid, so a host's own locale/*/django.po keeps
+    #       # translating it — an override is never English-only-forever
+    #       "notification.otp_code.subject": "{company_name} code: {code}",
+    #       # a dict pins specific languages; the rest fall through the
+    #       # normal cache -> translate -> gettext -> default chain
+    #       "notification.footer.legal": {"en": "...", "ru": "..."},
+    #   }
+    #
+    # Keys for a host's OWN type (registered via TYPES) work too — that type
+    # has no entry in NOTIFICATION_KEYS, so TEXT is its only copy source.
+    "TEXT": {},
     # Channel backends: short registry name or dotted path to a provider
     # class with .send(...)
     "EMAIL_PROVIDER": "mock",

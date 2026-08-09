@@ -1,6 +1,6 @@
 {
   "module": "stapel-notifications",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
   "axes": [
     {
@@ -106,6 +106,15 @@
       "kind": "factory",
       "path": "stapel_notifications.routing.get_routing",
       "intent": "The effective routing entry ({channels, group, template}) of a type, with STAPEL_NOTIFICATIONS[\"TYPES\"] merged over the packaged catalog — the primitive the other readers sit on. Prefer get_channels/get_group/get_email_template when the question is narrower, and never merge the settings dict over routing.NOTIFICATION_ROUTING by hand: an override replaces a built-in wholesale, which a naive dict update gets wrong.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
+      "name": "is_transactional",
+      "kind": "predicate",
+      "path": "stapel_notifications.routing.is_transactional",
+      "intent": "True when a type is a one-to-one message triggered by a named person (a workspace invitation) rather than bulk mail. Such a letter carries no unsubscribe affordance at all: RFC 8058 one-click is machine-actionable and this library's token is minted per (user, GROUP, channel), so one automated POST on a personal invitation opts the recipient out of every system email forever. Ask this instead of testing group != \"auth\" when you are deciding whether an opt-out belongs on a message.",
       "instead_of": [
         "django.conf.settings.STAPEL_NOTIFICATIONS"
       ]

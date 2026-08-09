@@ -27,9 +27,17 @@ PYTHON ?= python3
 # indistinguishable from a complete one at the point of use, which is the
 # failure mode the hard-budget gate exists to prevent. contract-check below
 # enforces the same ceiling; it does not disable the check.
+#
+# The SIXTH artifact, docs/templates.json (stapel_tools.template_contract):
+# notification type -> template path -> the context variables this library
+# actually passes, derived from routing.py, translation_keys.py and the AST of
+# the render call site in services.py. It is emitted independently of the
+# triad — it needs no Django settings and no drf-spectacular, only the module
+# importable — so a host can regenerate and diff it on any interpreter.
 contract:
 	$(PYTHON) -m stapel_notifications._codegen --out docs
 	$(PYTHON) -m stapel_notifications._capabilities --out docs
+	$(PYTHON) -m stapel_notifications._template_contract --out docs
 	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 4500
 
 # Drift gate: regenerate into a temp dir and diff against the committed docs/*.json
@@ -41,16 +49,17 @@ contract-check:
 	mkdir -p "$$tmp/docs"; \
 	$(PYTHON) -m stapel_notifications._codegen --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._capabilities --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
+	$(PYTHON) -m stapel_notifications._template_contract --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 4500 || { rm -rf "$$tmp"; exit 1; }; \
 	rc=0; \
-	for f in schema.json flows.json errors.json capabilities.json llms.txt; do \
+	for f in schema.json flows.json errors.json capabilities.json templates.json llms.txt; do \
 		if ! diff -q "docs/$$f" "$$tmp/docs/$$f" >/dev/null 2>&1; then \
 			echo "DRIFT: docs/$$f is stale — run 'make contract' and commit it"; \
 			diff "docs/$$f" "$$tmp/docs/$$f" | head -20; rc=1; \
 		fi; \
 	done; \
 	rm -rf "$$tmp"; \
-	if [ $$rc -eq 0 ]; then echo "contract-check: docs/{schema,flows,errors,capabilities,llms.txt} up to date"; fi; \
+	if [ $$rc -eq 0 ]; then echo "contract-check: docs/{schema,flows,errors,capabilities,templates,llms.txt} up to date"; fi; \
 	exit $$rc
 
 

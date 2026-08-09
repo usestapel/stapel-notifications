@@ -112,10 +112,19 @@ def test_invitation_new_user_is_distinct_type_and_template(capture_email):
 
 
 @pytest.mark.django_db
-def test_invitation_new_user_is_system_group_gets_unsubscribe_with_user(user, capture_email):
-    """Contrast with the auth-class types below: "system" group still adds
-    List-Unsubscribe once a user_id is known — same behavior as its parent
-    "workspace.invitation" type."""
+def test_invitation_new_user_carries_no_unsubscribe_even_with_a_user(user, capture_email):
+    """An invitation is transactional: no List-Unsubscribe, ever.
+
+    This test used to assert the opposite, and the opposite was a defect. The
+    type is "system" group, so a user_id used to mint an unsubscribe_url and
+    with it a `List-Unsubscribe-Post: One-Click` header. That header is
+    machine-actionable (RFC 8058): a mail client or an anti-abuse scanner may
+    POST it with no human involved, and the token is minted per
+    (user, GROUP, channel) — so one automated click on a personal invitation
+    from a named colleague silently opted the recipient out of every "system"
+    email the platform will ever send. A person being invited never joined a
+    list; there is nothing there to leave. See routing.is_transactional.
+    """
     UserContact.objects.create(user_id=user.id, email="u@example.com")
     with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
         process_notification(
@@ -128,7 +137,12 @@ def test_invitation_new_user_is_system_group_gets_unsubscribe_with_user(user, ca
             },
         )
     (mail,) = capture_email
-    assert "List-Unsubscribe" in mail["headers"]
+    assert "List-Unsubscribe" not in mail["headers"]
+    assert "List-Unsubscribe-Post" not in mail["headers"]
+    # and the consent footer ("you agreed to receive messages from us"), which
+    # is simply untrue on a personal invitation, is gone with it
+    assert "agreed to receive messages" not in mail["html"]
+    assert "Unsubscribe</a>" not in mail["html"]
 
 
 # ── workspace.provisioned_account: secret-in-email precedent ────
@@ -247,10 +261,11 @@ def test_invitation_reminder_is_distinct_type_and_template(capture_email):
 
 
 @pytest.mark.django_db
-def test_invitation_reminder_is_system_group_gets_unsubscribe_with_user(
+def test_invitation_reminder_carries_no_unsubscribe_either(
     user, capture_email
 ):
-    """Same group as its parent: a reminder is still not a security letter."""
+    """A reminder of a personal invitation is as transactional as the
+    invitation — same reasoning as the .new_user case above."""
     UserContact.objects.create(user_id=user.id, email="u@example.com")
     with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
         process_notification(
@@ -263,7 +278,7 @@ def test_invitation_reminder_is_system_group_gets_unsubscribe_with_user(
             },
         )
     (mail,) = capture_email
-    assert "List-Unsubscribe" in mail["headers"]
+    assert "List-Unsubscribe" not in mail["headers"]
 
 
 # ── workspace.member_password_reset (#110) ───────────────────────

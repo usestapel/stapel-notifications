@@ -1,8 +1,8 @@
-# stapel-notifications 0.7.1
+# stapel-notifications 0.8.0
 
 Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
 
-Contract: axes 3 · surface 30 · extension points 5 · operations 4 · error codes 43.
+Contract: axes 3 · surface 31 · extension points 5 · operations 4 · error codes 43.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -63,6 +63,10 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
   "Access suspended — two-factor authentication required" — notification_type `workspace.mfa_suspension`, auth group: sent when a workspace's require_mfa sweep suspends a member who has not enrolled.
 - notifications/email/workspace_provisioned_account.html — templates/notifications/email/workspace_provisioned_account.html
   "Your account is ready" for a member an organization provisioned directly — notification_type `workspace.provisioned_account`, auth group: credentials mail is mandatory and carries no unsubscribe, like every other account-credential letter here.
+### predicate
+- is_transactional — stapel_notifications.routing.is_transactional
+  instead of: django.conf.settings.STAPEL_NOTIFICATIONS
+  True when a type is a one-to-one message triggered by a named person (a workspace invitation) rather than bulk mail. Such a letter carries no unsubscribe affordance at all: RFC 8058 one-click is machine-actionable and this library's token is minted per (user, GROUP, channel), so one automated POST on a personal invitation opts the recipient out of every system email forever. Ask this instead of testing group != "auth" when you are deciding whether an opt-out belongs on a message.
 ### factory
 - default_language — stapel_notifications.services.default_language
   instead of: django.conf.settings.LANGUAGE_CODE

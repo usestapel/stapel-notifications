@@ -24,6 +24,13 @@ Groups:
     auth     — mandatory security notifications (no unsubscribe)
     messages — user-to-user messages (can disable per channel)
     system   — platform notifications (can disable per channel)
+
+``"transactional": True`` is an ORTHOGONAL flag, not a fourth group: it says
+"this message is one-to-one, sent because a named human acted, not because a
+list was mailed". Such a message carries no unsubscribe affordance — no
+``List-Unsubscribe`` / ``List-Unsubscribe-Post`` header and no unsubscribe
+footer — while keeping whatever group it belongs to for preference purposes.
+See ``is_transactional`` for why the header in particular is a defect there.
 """
 from .conf import notifications_settings
 
@@ -51,18 +58,21 @@ NOTIFICATION_ROUTING = {
     "report_reviewed":       {"channels": ["push", "email"],        "group": "system"},
     "listing_expiring":      {"channels": ["push", "email"],        "group": "system"},
     "listing_blocked":       {"channels": ["push", "email"],        "group": "system"},
-    "workspace.invitation":  {"channels": ["email"],                "group": "system"},
+    "workspace.invitation":  {"channels": ["email"], "group": "system",
+                              "transactional": True},
     # Invite variant for a not-yet-registered recipient: the acceptance link
     # both creates the account and joins the workspace. Kept as its own type
     # (not an override of "workspace.invitation") so a host project can route
     # or template it independently — a clean routing-override seam.
-    "workspace.invitation.new_user": {"channels": ["email"],        "group": "system"},
+    "workspace.invitation.new_user": {"channels": ["email"], "group": "system",
+                                      "transactional": True},
     # Re-delivery of a pending invitation (admin "resend"): the token is
     # rotated and the TTL restarted on the workspaces side, so this letter's
     # job is "you are being reminded — here is a fresh link", not "you are
     # being invited". Its own type by the same rule as ".new_user": a
     # different message a host may route or template independently.
-    "workspace.invitation.reminder": {"channels": ["email"],        "group": "system"},
+    "workspace.invitation.reminder": {"channels": ["email"], "group": "system",
+                                      "transactional": True},
 
     # Org-provisioned account (org creates a login/password user directly) —
     # auth-class notification: mandatory, no unsubscribe, same as the other
@@ -136,6 +146,28 @@ def get_group(notification_type: str) -> str:
     if not routing:
         return ""
     return routing.get("group", "")
+
+
+def is_transactional(notification_type: str) -> bool:
+    """True when this type is a one-to-one message, not bulk mail.
+
+    A transactional message must not offer an unsubscribe, and above all must
+    not carry ``List-Unsubscribe`` + ``List-Unsubscribe-Post: One-Click``.
+    RFC 8058 one-click is machine-actionable: the mail client, an anti-abuse
+    scanner or a security appliance may POST that URL WITHOUT a human, and
+    this library's unsubscribe token is minted per (user, GROUP, channel) —
+    so one automated click on a personal workspace invitation opted the
+    recipient out of every ``system`` email the platform will ever send them,
+    silently. A person being invited by a named colleague never asked to be
+    on a list, so there is nothing there to leave.
+
+    Deliberately narrow: this flag governs the unsubscribe AFFORDANCE only.
+    It does not exempt the type from the recipient's own group preference —
+    a recipient who turned ``email_system`` off still does not get these.
+    Whether a personal invitation should override that preference is a
+    product question this flag does not answer.
+    """
+    return bool((get_routing(notification_type) or {}).get("transactional"))
 
 
 def get_email_template(notification_type: str) -> str | None:

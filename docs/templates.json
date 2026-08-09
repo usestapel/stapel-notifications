@@ -1,0 +1,2941 @@
+{
+  "artifact": "templates",
+  "schema_version": 1,
+  "module": "stapel-notifications",
+  "module_version": "0.8.0",
+  "routing_key": "notification_type",
+  "template_root": "templates",
+  "call_sites": [
+    {
+      "file": "services.py",
+      "context_var": "all_vars",
+      "dynamic_keys": true,
+      "variables": {
+        "brand_bg": {
+          "presence": "always"
+        },
+        "brand_primary": {
+          "presence": "always"
+        },
+        "brand_primary_dark": {
+          "presence": "always"
+        },
+        "brand_text": {
+          "presence": "always"
+        },
+        "company_address": {
+          "presence": "always"
+        },
+        "company_host": {
+          "presence": "always"
+        },
+        "company_name": {
+          "presence": "always"
+        },
+        "company_url": {
+          "presence": "always"
+        },
+        "company_year": {
+          "presence": "always"
+        },
+        "logo_url": {
+          "presence": "always"
+        },
+        "manage_notifications_url": {
+          "presence": "conditional",
+          "when": "group != 'auth' and user_id and (not is_transactional(notification_type))"
+        },
+        "unsubscribe_url": {
+          "presence": "conditional",
+          "when": "group != 'auth' and user_id and (not is_transactional(notification_type))"
+        }
+      },
+      "renders": [
+        {
+          "template": "'notifications/email/_raw_content.html'",
+          "context": "{**all_vars, 'content_html': content_html, 'content_text': content_text}",
+          "extra_keys": [
+            "content_html",
+            "content_text"
+          ],
+          "line": 521
+        },
+        {
+          "template": "template",
+          "context": "all_vars",
+          "extra_keys": [],
+          "line": 529
+        }
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "key": "@raw-content",
+      "template": "notifications/email/_raw_content.html",
+      "chain": [
+        "notifications/email/_raw_content.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "content_html",
+          "content_text"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "content_html": "required",
+        "content_text": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "system",
+      "transactional": false,
+      "note": "Not a routing key: process_notification(content_html=...) wraps caller-supplied markup in the base layout, and accepts an unregistered notification type."
+    },
+    {
+      "key": "all_sessions_revoked",
+      "template": "notifications/email/all_sessions_revoked.html",
+      "chain": [
+        "notifications/email/all_sessions_revoked.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "auth_change_completed",
+      "template": "notifications/email/auth_change.html",
+      "chain": [
+        "notifications/email/auth_change.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "change_type"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "sms",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email",
+        "sms",
+        "push"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "auth_change_reminder",
+      "template": "notifications/email/auth_change.html",
+      "chain": [
+        "notifications/email/auth_change.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "change_type",
+          "days_remaining",
+          "masked_new_value"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "sms",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email",
+        "sms",
+        "push"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "auth_change_requested",
+      "template": "notifications/email/auth_change.html",
+      "chain": [
+        "notifications/email/auth_change.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "change_type",
+          "masked_new_value",
+          "scheduled_date"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "sms",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email",
+        "sms",
+        "push"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "auth_change_urgent",
+      "template": "notifications/email/auth_change.html",
+      "chain": [
+        "notifications/email/auth_change.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "change_type",
+          "scheduled_date"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "sms",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email",
+        "sms",
+        "push"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "gdpr.export_ready",
+      "template": "notifications/email/gdpr_export_ready.html",
+      "chain": [
+        "notifications/email/gdpr_export_ready.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "download_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "download_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "gdpr.inactivity_closed",
+      "template": "notifications/email/gdpr_inactivity_closed.html",
+      "chain": [
+        "notifications/email/gdpr_inactivity_closed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "gdpr.inactivity_warning",
+      "template": "notifications/email/gdpr_inactivity_warning.html",
+      "chain": [
+        "notifications/email/gdpr_inactivity_warning.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "days_remaining"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "listing_blocked",
+      "template": "notifications/email/listing_blocked.html",
+      "chain": [
+        "notifications/email/listing_blocked.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "listing_title",
+          "notifications_chat_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "notifications_chat_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "listing_expiring",
+      "template": "notifications/email/listing_expiring.html",
+      "chain": [
+        "notifications/email/listing_expiring.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "days_remaining",
+          "listing_title",
+          "listing_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "listing_url": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "magic_link_login",
+      "template": "notifications/email/magic_link_login.html",
+      "chain": [
+        "notifications/email/magic_link_login.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "link"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "link": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "new_device_login",
+      "template": "notifications/email/new_device_login.html",
+      "chain": [
+        "notifications/email/new_device_login.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "device_name",
+          "ip_address",
+          "secure_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "secure_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "new_message",
+      "template": "notifications/email/new_message.html",
+      "chain": [
+        "notifications/email/new_message.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "chat_url",
+          "listing_title",
+          "message_preview",
+          "sender_name"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "chat_url": "required",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "messages",
+      "transactional": false
+    },
+    {
+      "key": "otp_code",
+      "template": "notifications/email/otp_code.html",
+      "chain": [
+        "notifications/email/otp_code.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "code",
+          "expiry_minutes"
+        ],
+        "translation": [
+          "body",
+          "expiry",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "sms",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "code": "required",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "expiry": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email",
+        "sms"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "report_reviewed",
+      "template": "notifications/email/report_reviewed.html",
+      "chain": [
+        "notifications/email/report_reviewed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "notifications_chat_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "notifications_chat_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "suspicious_login",
+      "template": "notifications/email/suspicious_login.html",
+      "chain": [
+        "notifications/email/suspicious_login.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "device_name",
+          "ip_address",
+          "revoke_url"
+        ],
+        "translation": [
+          "badge",
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "badge": "required",
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "revoke_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "workspace.invitation",
+      "template": "notifications/email/workspace_invitation.html",
+      "chain": [
+        "notifications/email/workspace_invitation.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "accept_url",
+          "inviter_name",
+          "role_name",
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "role_line",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "accept_url": "required",
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "role_line": "required",
+        "role_name": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "system",
+      "transactional": true
+    },
+    {
+      "key": "workspace.invitation.new_user",
+      "template": "notifications/email/workspace_invitation_new_user.html",
+      "chain": [
+        "notifications/email/workspace_invitation_new_user.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "accept_url",
+          "inviter_name",
+          "role_name",
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "role_line",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "accept_url": "required",
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "role_line": "required",
+        "role_name": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "system",
+      "transactional": true
+    },
+    {
+      "key": "workspace.invitation.reminder",
+      "template": "notifications/email/workspace_invitation_reminder.html",
+      "chain": [
+        "notifications/email/workspace_invitation_reminder.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "accept_url",
+          "inviter_name",
+          "role_name",
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "role_line",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "accept_url": "required",
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "role_line": "required",
+        "role_name": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "system",
+      "transactional": true
+    },
+    {
+      "key": "workspace.member_password_reset",
+      "template": "notifications/email/workspace_member_password_reset.html",
+      "chain": [
+        "notifications/email/workspace_member_password_reset.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "actor_name",
+          "login_url",
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "login_url": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "workspace.mfa_restored",
+      "template": "notifications/email/workspace_mfa_restored.html",
+      "chain": [
+        "notifications/email/workspace_mfa_restored.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "workspace_name",
+          "workspace_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "workspace_url": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "workspace.mfa_suspension",
+      "template": "notifications/email/workspace_mfa_suspension.html",
+      "chain": [
+        "notifications/email/workspace_mfa_suspension.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "security_url",
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "security_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "workspace.provisioned_account",
+      "template": "notifications/email/workspace_provisioned_account.html",
+      "chain": [
+        "notifications/email/workspace_provisioned_account.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "initial_password",
+          "login_url",
+          "username",
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "password_label",
+          "subject",
+          "username_label",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "initial_password": "required",
+        "login_url": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "password_label": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "username": "required",
+        "username_label": "required",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    }
+  ],
+  "templates": [
+    {
+      "path": "notifications/email/_base.html",
+      "role": "partial",
+      "used_by": [
+        "@raw-content",
+        "all_sessions_revoked",
+        "auth_change_completed",
+        "auth_change_reminder",
+        "auth_change_requested",
+        "auth_change_urgent",
+        "gdpr.export_ready",
+        "gdpr.inactivity_closed",
+        "gdpr.inactivity_warning",
+        "listing_blocked",
+        "listing_expiring",
+        "magic_link_login",
+        "new_device_login",
+        "new_message",
+        "otp_code",
+        "report_reviewed",
+        "suspicious_login",
+        "workspace.invitation",
+        "workspace.invitation.new_user",
+        "workspace.invitation.reminder",
+        "workspace.member_password_reset",
+        "workspace.mfa_restored",
+        "workspace.mfa_suspension",
+        "workspace.provisioned_account"
+      ],
+      "extends": null,
+      "includes": [
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "blocks": [
+        "content",
+        "footer",
+        "head_extra",
+        "preheader"
+      ],
+      "consumed": {
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_legal": "required",
+        "logo_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "declared": [
+        "accept_url",
+        "actor_name",
+        "badge",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "change_type",
+        "chat_url",
+        "code",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "content_html",
+        "content_text",
+        "cta",
+        "days_remaining",
+        "device_name",
+        "download_url",
+        "expiry",
+        "expiry_minutes",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "initial_password",
+        "inviter_name",
+        "ip_address",
+        "link",
+        "listing_title",
+        "listing_url",
+        "login_url",
+        "logo_url",
+        "manage_notifications_url",
+        "masked_new_value",
+        "message_preview",
+        "notifications_chat_url",
+        "password_label",
+        "push_body",
+        "push_title",
+        "revoke_url",
+        "role_line",
+        "role_name",
+        "scheduled_date",
+        "secure_url",
+        "security_url",
+        "sender_name",
+        "sms",
+        "subject",
+        "unsubscribe_url",
+        "username",
+        "username_label",
+        "warning",
+        "workspace_name",
+        "workspace_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/_footer_unsubscribe.html",
+      "role": "partial",
+      "used_by": [
+        "@raw-content",
+        "all_sessions_revoked",
+        "auth_change_completed",
+        "auth_change_reminder",
+        "auth_change_requested",
+        "auth_change_urgent",
+        "gdpr.export_ready",
+        "gdpr.inactivity_closed",
+        "gdpr.inactivity_warning",
+        "listing_blocked",
+        "listing_expiring",
+        "magic_link_login",
+        "new_device_login",
+        "new_message",
+        "otp_code",
+        "report_reviewed",
+        "suspicious_login",
+        "workspace.invitation",
+        "workspace.invitation.new_user",
+        "workspace.invitation.reminder",
+        "workspace.member_password_reset",
+        "workspace.mfa_restored",
+        "workspace.mfa_suspension",
+        "workspace.provisioned_account"
+      ],
+      "extends": null,
+      "includes": [],
+      "blocks": [],
+      "consumed": {
+        "brand_primary_dark": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "required",
+        "footer_legal": "required",
+        "footer_manage": "required",
+        "footer_unsubscribe": "required",
+        "manage_notifications_url": "required",
+        "unsubscribe_url": "required"
+      },
+      "declared": [
+        "accept_url",
+        "actor_name",
+        "badge",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "change_type",
+        "chat_url",
+        "code",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "content_html",
+        "content_text",
+        "cta",
+        "days_remaining",
+        "device_name",
+        "download_url",
+        "expiry",
+        "expiry_minutes",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "initial_password",
+        "inviter_name",
+        "ip_address",
+        "link",
+        "listing_title",
+        "listing_url",
+        "login_url",
+        "logo_url",
+        "manage_notifications_url",
+        "masked_new_value",
+        "message_preview",
+        "notifications_chat_url",
+        "password_label",
+        "push_body",
+        "push_title",
+        "revoke_url",
+        "role_line",
+        "role_name",
+        "scheduled_date",
+        "secure_url",
+        "security_url",
+        "sender_name",
+        "sms",
+        "subject",
+        "unsubscribe_url",
+        "username",
+        "username_label",
+        "warning",
+        "workspace_name",
+        "workspace_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/_raw_content.html",
+      "role": "letter",
+      "used_by": [
+        "@raw-content"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "brand_text": "optional",
+        "content_html": "required",
+        "content_text": "required"
+      },
+      "declared": [
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "content_html",
+        "content_text",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "logo_url",
+        "manage_notifications_url",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/all_sessions_revoked.html",
+      "role": "letter",
+      "used_by": [
+        "all_sessions_revoked"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/auth_change.html",
+      "role": "letter",
+      "used_by": [
+        "auth_change_completed",
+        "auth_change_reminder",
+        "auth_change_requested",
+        "auth_change_urgent"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "change_type",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "days_remaining",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "masked_new_value",
+        "push_body",
+        "push_title",
+        "scheduled_date",
+        "sms",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/gdpr_export_ready.html",
+      "role": "letter",
+      "used_by": [
+        "gdpr.export_ready"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "download_url": "required",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "download_url",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/gdpr_inactivity_closed.html",
+      "role": "letter",
+      "used_by": [
+        "gdpr.inactivity_closed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/gdpr_inactivity_warning.html",
+      "role": "letter",
+      "used_by": [
+        "gdpr.inactivity_warning"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "days_remaining",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/listing_blocked.html",
+      "role": "letter",
+      "used_by": [
+        "listing_blocked"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "notifications_chat_url": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "listing_title",
+        "logo_url",
+        "manage_notifications_url",
+        "notifications_chat_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/listing_expiring.html",
+      "role": "letter",
+      "used_by": [
+        "listing_expiring"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "listing_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "days_remaining",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "listing_title",
+        "listing_url",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/magic_link_login.html",
+      "role": "letter",
+      "used_by": [
+        "magic_link_login"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "link": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "link",
+        "logo_url",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/new_device_login.html",
+      "role": "letter",
+      "used_by": [
+        "new_device_login"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "secure_url": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "device_name",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "ip_address",
+        "logo_url",
+        "secure_url",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/new_message.html",
+      "role": "letter",
+      "used_by": [
+        "new_message"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "chat_url": "required",
+        "cta": "required",
+        "heading": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "chat_url",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "listing_title",
+        "logo_url",
+        "manage_notifications_url",
+        "message_preview",
+        "push_body",
+        "push_title",
+        "sender_name",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/otp_code.html",
+      "role": "letter",
+      "used_by": [
+        "otp_code"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_text": "optional",
+        "code": "required",
+        "expiry": "required",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "code",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "expiry",
+        "expiry_minutes",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "sms",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/report_reviewed.html",
+      "role": "letter",
+      "used_by": [
+        "report_reviewed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "notifications_chat_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "notifications_chat_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/suspicious_login.html",
+      "role": "letter",
+      "used_by": [
+        "suspicious_login"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "badge": "required",
+        "body": "required",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "revoke_url": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "badge",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "device_name",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "ip_address",
+        "logo_url",
+        "revoke_url",
+        "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_invitation.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.invitation"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "accept_url": "required",
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "role_line": "required",
+        "role_name": "optional"
+      },
+      "declared": [
+        "accept_url",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "inviter_name",
+        "logo_url",
+        "role_line",
+        "role_name",
+        "subject",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_invitation_new_user.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.invitation.new_user"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "accept_url": "required",
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "role_line": "required",
+        "role_name": "optional",
+        "warning": "required"
+      },
+      "declared": [
+        "accept_url",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "inviter_name",
+        "logo_url",
+        "role_line",
+        "role_name",
+        "subject",
+        "warning",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_invitation_reminder.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.invitation.reminder"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "accept_url": "required",
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "role_line": "required",
+        "role_name": "optional",
+        "warning": "required"
+      },
+      "declared": [
+        "accept_url",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "inviter_name",
+        "logo_url",
+        "role_line",
+        "role_name",
+        "subject",
+        "warning",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_member_password_reset.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.member_password_reset"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "login_url": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "actor_name",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "login_url",
+        "logo_url",
+        "subject",
+        "warning",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_mfa_restored.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.mfa_restored"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "workspace_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "subject",
+        "workspace_name",
+        "workspace_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_mfa_suspension.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.mfa_suspension"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "security_url": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "security_url",
+        "subject",
+        "warning",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_provisioned_account.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.provisioned_account"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "initial_password": "required",
+        "login_url": "required",
+        "password_label": "required",
+        "username": "required",
+        "username_label": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "initial_password",
+        "login_url",
+        "logo_url",
+        "password_label",
+        "subject",
+        "username",
+        "username_label",
+        "warning",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    }
+  ],
+  "limits": [
+    "`caller` is a floor, not a census: a variable the sender passes in `variables` that no translation string interpolates and no shipped template renders is invisible to static derivation — nothing in this library mentions it. Every other field here is exact.",
+    "A host's own overrides are not modelled. This declares what the LIBRARY passes and what the LIBRARY's templates read; STAPEL_NOTIFICATIONS TYPES / EMAIL_TEMPLATES / TEXT can add types, repoint templates and replace copy at runtime.",
+    "Chain variables are the union over {% extends %} and {% include %}: a parent block the child overrides is still counted, and `include ... only` context isolation is ignored. The union over-declares, which is the safe direction for a host gating `my template's variables ⊆ declared`.",
+    "`consumed` reports `optional` for a variable whose every read carries a `default` filter or is an {% if %} condition, `required` otherwise. It describes the LIBRARY's template; a host's override may read more or fewer."
+  ]
+}

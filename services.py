@@ -19,8 +19,8 @@ from .models import (
     NotificationLog,
 )
 from .conf import notifications_settings
-from .routing import get_email_template, get_routing
-from .translation_keys import NOTIFICATION_KEYS
+from .routing import get_email_template, get_routing, is_transactional
+from .translation_keys import NOTIFICATION_KEYS, keys_for_type
 from .channels.email import send_email
 from .channels.push import send_push
 from .channels.sms import send_sms
@@ -29,12 +29,53 @@ logger = logging.getLogger(__name__)
 
 
 def _get_keys_for_type(notification_type: str) -> list[str]:
-    """Get all translation keys for a notification type."""
-    prefix = f"notification.{notification_type}."
-    keys = [k for k in NOTIFICATION_KEYS if k.startswith(prefix)]
-    # Also include footer keys
-    keys.extend(k for k in NOTIFICATION_KEYS if k.startswith("notification.footer."))
-    return keys
+    """Get all translation keys for a notification type.
+
+    The naming rule itself lives in ``translation_keys.keys_for_type`` so the
+    ``docs/templates.json`` emitter derives the per-type context from the same
+    function the runtime uses, not from a second copy of the convention.
+    """
+    from .routing import registered_types
+
+    return keys_for_type(
+        notification_type,
+        known_types=registered_types(),
+        extra_keys=(notifications_settings.TEXT or {}),
+    )
+
+
+def _text_overrides() -> dict:
+    """``STAPEL_NOTIFICATIONS["TEXT"]`` — the host's copy registry."""
+    return notifications_settings.TEXT or {}
+
+
+def _override_for(key: str, lang: str, overrides: dict) -> tuple[str | None, str | None]:
+    """``(pinned, default)`` for one key from the host's TEXT registry.
+
+    ``pinned`` is copy the host declared for THIS language and wins outright:
+    a host that spelled out the Russian subject means it, and neither a
+    TranslationCache row nor a translate service — both of which only ever saw
+    the OLD English — may outvote it.
+
+    ``default`` replaces the built-in English string wherever it is used as a
+    default: as the gettext msgid, and as the final fallback. That is what
+    keeps an override translatable — a host that overrides in English and
+    ships a ``locale/ru`` catalogue keyed on the new msgid still gets Russian,
+    so an override can never freeze a notification into one language.
+    """
+    value = overrides.get(key)
+    if value is None:
+        return None, None
+    if isinstance(value, str):
+        return None, value
+    if isinstance(value, dict):
+        pinned = value.get(lang) or value.get(lang.split("-")[0])
+        return pinned, value.get("en")
+    logger.warning(
+        "STAPEL_NOTIFICATIONS['TEXT'][%r] must be a str or {lang: str}, got %s "
+        "— ignored", key, type(value).__name__,
+    )
+    return None, None
 
 
 def _gettext_default(default: str, lang: str) -> str | None:
@@ -61,9 +102,11 @@ def _gettext_default(default: str, lang: str) -> str | None:
 def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
     """Resolve translation keys to translated strings.
 
-    Four sources, in order: the local TranslationCache, a lazy pull
+    Five sources, in order: a language the host PINNED in
+    ``STAPEL_NOTIFICATIONS["TEXT"]``, the local TranslationCache, a lazy pull
     through the ``translate.resolve`` comm Function, the host's gettext
-    catalogue, and finally this package's built-in English defaults.
+    catalogue, and finally the built-in English default — which the host's
+    TEXT entry may itself have replaced.
 
     The gettext step is what makes the library usable without a translate
     service: hosts that already ship .po files get translated notifications
@@ -100,9 +143,14 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
         """
         return not re.search(r"[^\W\d_]", re.sub(r"\{[^}]*\}", "", s))
 
+    overrides = _text_overrides()
     untranslated = []
     for key in keys:
-        default = NOTIFICATION_KEYS.get(key, key)
+        pinned, override_default = _override_for(key, lang, overrides)
+        if pinned:
+            translations[key] = pinned
+            continue
+        default = override_default or NOTIFICATION_KEYS.get(key, key)
         if key in cached:
             text = cached[key].get(lang)
             if text:
@@ -308,9 +356,17 @@ def process_notification(
     all_vars.setdefault("brand_bg", notifications_settings.BRAND_BG)
     all_vars.setdefault("brand_text", notifications_settings.BRAND_TEXT)
 
-    # Add unsubscribe/manage URLs for non-auth groups
+    # Add unsubscribe/manage URLs for non-auth groups.
+    #
+    # A transactional type is excluded even though its group allows
+    # unsubscribing: it is a one-to-one message triggered by a named person,
+    # so there is no list to leave, and the affordance is actively harmful —
+    # see routing.is_transactional. No unsubscribe_url means the base layout
+    # also falls back to the minimal footer, which is the point: the
+    # "you agreed to receive messages from us" consent line is a lie on a
+    # personal invitation.
     frontend_url = notifications_settings.FRONTEND_URL
-    if group != "auth" and user_id:
+    if group != "auth" and user_id and not is_transactional(notification_type):
         token = generate_unsubscribe_token(user_id, group, "email")
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
         all_vars["manage_notifications_url"] = f"{frontend_url}/settings/notifications"
@@ -473,7 +529,15 @@ def _dispatch(
             html = render_to_string(template, all_vars)
         subject = all_vars.get("subject", f"{all_vars.get('company_name', '')} Notification".strip())
         headers = {}
-        if group != "auth" and "unsubscribe_url" in all_vars:
+        # Checked here as well as at the point unsubscribe_url is minted: a
+        # caller may pass unsubscribe_url as a plain variable, and a
+        # transactional message must not grow a one-click opt-out that way
+        # either (routing.is_transactional).
+        if (
+            group != "auth"
+            and "unsubscribe_url" in all_vars
+            and not is_transactional(notification_type)
+        ):
             headers["List-Unsubscribe"] = f"<{all_vars['unsubscribe_url']}>"
             headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
         send_email(recipient_email, subject, html, headers)

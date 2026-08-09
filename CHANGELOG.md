@@ -2,6 +2,102 @@
 
 ## Unreleased
 
+## [0.8.0] — 2026-08-10
+
+### Added — `docs/templates.json`: templates stop being an undeclared surface
+
+Templates are the largest extension seam this library has — a host drops a file
+of the same name into a directory that resolves first and the letter is theirs.
+Until now nothing declared that seam. `capabilities.json`, `errors.json`,
+`flows.json`, `schema.json` and `llms.txt` between them name not one template
+path and not one context variable, so a host obtained the contract by reading
+`services.py`, and this library could break that host twice over with every
+test on both sides staying green:
+
+* rename a context variable and Django's `string_if_invalid = ''` renders the
+  hole as an empty string — an OTP mail with a blank code, 200 OK, nobody can
+  log in;
+* rename a template file and the host's override shadows nothing, so the
+  LIBRARY's letter goes out under the host's brand — while the host's own
+  "resolves from our folder, not site-packages" guard stays GREEN, because it
+  asserts the name the host chose and that file still exists.
+
+The sixth artifact declares, per notification type: the template it resolves
+to, the whole `{% extends %}`/`{% include %}` chain, and the context variables
+this library passes, each with its provenance — `translation` (short names off
+`NOTIFICATION_KEYS`), `branding` (always set), `conditional` (set under a
+guard, and the guard's source text travels with it) and `caller` (what the
+sender must supply). Emitted by `stapel_tools.template_contract` from
+`routing.py`, `translation_keys.py` and the Python AST of the render call site
+in `services.py`; nothing is retyped, and `make contract-check` gates the
+drift. It states its own edges in `limits` rather than claiming completeness:
+a caller variable that no translation string interpolates and no shipped
+template renders is invisible to static derivation.
+
+Unlike the triad it needs neither Django settings nor drf-spectacular, so a
+host can regenerate and diff it on any interpreter.
+
+### Added — the library's own suite renders every letter with a marker for what is missing
+
+The test harness (`_codegen_settings.py`) now switches on stapel-core 0.21's
+missing-variable marker, and `tests/test_template_render.py` renders every one
+of the 24 routes against **exactly** the context `docs/templates.json` declares
+and asserts nothing came up missing. Rename a variable on either side without
+the other and the suite says which one, by name. The emitter already refused to
+publish a contract that under-declares; this is the runtime confirmation that
+the declaration is not merely self-consistent but sufficient to render the
+letter. Production rendering is untouched — the host's own `TEMPLATES` decide
+that.
+
+### Added — `STAPEL_NOTIFICATIONS["TEXT"]`: the copy seam that matched the template seam
+
+A host could always replace a letter's LAYOUT and never its WORDS. The subject
+above all: it lives in no template, and `process_notification` refuses caller
+`variables` that collide with a translation key, so `subject` could not be
+passed either. The gettext route could not fix English at all — `_gettext_default`
+treats "translation == msgid" as "no translation".
+
+`TEXT` is a per-key registry merged over `NOTIFICATION_KEYS`, the string
+counterpart of `EMAIL_TEMPLATES`. A bare string replaces the English default
+**and becomes the gettext msgid**, so an override stays translatable through
+the host's own catalogue — an override can never freeze a letter into one
+language, which is the bug the key registry exists to prevent. A
+`{lang: str}` dict pins specific languages and wins over the cache and the
+translate service, which only ever saw the old copy. `TEXT` keys also give a
+host-registered type its first copy source: such a type has no entry in
+`NOTIFICATION_KEYS` at all.
+
+### Fixed — a personal invitation carried a one-click unsubscribe
+
+`workspace.invitation`, `.new_user` and `.reminder` are `group: "system"`, so a
+known `user_id` minted an `unsubscribe_url` and with it
+`List-Unsubscribe` + `List-Unsubscribe-Post: One-Click`. RFC 8058 one-click is
+machine-actionable — a mail client or an anti-abuse scanner may POST that URL
+with no human involved — and the token is minted per (user, GROUP, channel).
+One automated click on an invitation from a named colleague therefore opted the
+recipient out of every `system` email the platform will ever send, silently.
+
+The three invitation types now carry `"transactional": True` (`routing.is_transactional`),
+an orthogonal flag rather than a fourth group: no `List-Unsubscribe` headers and
+no unsubscribe footer, whatever the group. The "you agreed to receive messages
+from us" consent line goes with them; it was never true of an invitation.
+
+**Behaviour change**: those three letters no longer offer an unsubscribe.
+Deliberately narrow — the flag governs the AFFORDANCE only and does not exempt
+a type from the recipient's own group preference.
+
+### Fixed — a prefix collision handed invitations six unusable variables
+
+`notification.workspace.invitation.` is a prefix of
+`notification.workspace.invitation.new_user.`, so a plain prefix match gave the
+plain invitation context variables literally named `new_user.subject` — names
+with a dot, which Django resolves as attribute lookups and can therefore never
+render. No output changed; every invitation simply paid for six extra
+translation lookups and reported them as untranslated. The naming rule now
+lives in `translation_keys.keys_for_type`, shared by the runtime and the
+`templates.json` emitter, so the contract is derived from the function that
+actually runs.
+
 ## [0.7.1] — 2026-08-09
 
 ### Added — Spanish ships as a language of the library, not as a host override

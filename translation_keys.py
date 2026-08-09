@@ -179,3 +179,43 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.footer.unsubscribe": "Unsubscribe",
     "notification.footer.manage": "Manage notifications",
 }
+
+#: Prefix of the keys every letter gets regardless of its type.
+FOOTER_PREFIX = "notification.footer."
+
+
+def keys_for_type(
+    notification_type: str,
+    known_types=(),
+    extra_keys=(),
+) -> list[str]:
+    """Translation keys that make up one notification type's copy.
+
+    The single source of truth for the ``notification.<type>.<slot>``
+    convention, shared by the runtime (``services._get_keys_for_type``) and by
+    the ``docs/templates.json`` emitter — a contract derived from a *second*
+    implementation of the naming rule would be a contract of something else.
+
+    ``known_types`` excludes the keys of a LONGER registered type that merely
+    starts with this one. ``workspace.invitation`` is a prefix of
+    ``workspace.invitation.new_user``, so a plain prefix match handed the
+    plain invitation a variable literally named ``new_user.subject`` — a name
+    with a dot in it, which Django resolves as an attribute lookup and can
+    therefore never render. Harmless output, but it made every invitation pay
+    for six extra translation lookups and report them as untranslated.
+
+    ``extra_keys`` folds in a host's own copy registry
+    (``STAPEL_NOTIFICATIONS["TEXT"]``) so a host-registered type — which has
+    no entry in ``NOTIFICATION_KEYS`` at all — can have copy for the first
+    time, not just a template.
+    """
+    prefix = f"notification.{notification_type}."
+    longer = tuple(
+        f"notification.{t}."
+        for t in known_types
+        if t != notification_type and t.startswith(f"{notification_type}.")
+    )
+    universe = list(NOTIFICATION_KEYS) + [k for k in extra_keys if k not in NOTIFICATION_KEYS]
+    keys = [k for k in universe if k.startswith(prefix) and not (longer and k.startswith(longer))]
+    keys.extend(k for k in universe if k.startswith(FOOTER_PREFIX))
+    return keys

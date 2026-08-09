@@ -64,6 +64,12 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # The fifth artifact (badge-canon §3): docs/llms.txt, the module's own
 # context slice for an agent, rendered from capabilities.json + the triad by
 # stapel_tools.llms_txt. Same emit/drift discipline as the rest.
+# The sixth artifact: docs/templates.json — notification type -> template
+# path -> the context variables this library passes, emitted by
+# stapel_tools.template_contract from routing.py + translation_keys.py + the
+# AST of the render call site. Same emit/drift discipline; its own semantics
+# live in tests/test_template_contract.py, which runs on any interpreter
+# because this artifact needs neither Django settings nor drf-spectacular.
 #
 # The usage surface (services.py + routing.py + the 23 packaged email
 # templates — the dispatch entry point, the routing readers and one line per
@@ -71,12 +77,16 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # Same exception stapel-auth and stapel-workspaces already take: raise the
 # ceiling to 4500 for this module, do not shorten intents to fit. The budget
 # stays enforced, just at 4500 — matching the Makefile's contract targets.
-ARTIFACTS = TRIAD + ("capabilities.json", "llms.txt")
+ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
 LLMS_TXT_BUDGET = 4500
 
 
 def _emit(out_dir: Path) -> None:
-    for module in ("stapel_notifications._codegen", "stapel_notifications._capabilities"):
+    for module in (
+        "stapel_notifications._codegen",
+        "stapel_notifications._capabilities",
+        "stapel_notifications._template_contract",
+    ):
         subprocess.run(
             [sys.executable, "-m", module, "--out", str(out_dir)],
             cwd=str(REPO),

@@ -21,6 +21,19 @@ second copy of it"). Copied from stapel-auth's etalon
 from __future__ import annotations
 
 
+def _strict_templates(templates: list[dict]) -> list[dict]:
+    """``TEMPLATES`` with stapel-core's missing-variable marker switched on.
+
+    Imported inside the function on purpose: ``stapel_core.django``'s package
+    ``__init__`` pulls in DRF, which reads ``settings.REST_FRAMEWORK`` at
+    import time — and this module runs *before* ``settings.configure()``. A
+    module-level import here is an ImproperlyConfigured at collection.
+    """
+    from stapel_core.templates import strict_template_variables
+
+    return strict_template_variables(templates)
+
+
 def settings_kwargs(
     *,
     root_urlconf: str = "stapel_notifications.urls_v1",
@@ -115,14 +128,22 @@ def settings_kwargs(
         DEFAULT_AUTO_FIELD="django.db.models.BigAutoField",
         USE_TZ=True,
         ROOT_URLCONF=root_urlconf,
-        TEMPLATES=[
+        # A missing template variable renders as a visible marker here, not as
+        # Django's default empty string. This harness is what the library's own
+        # suite runs on, and a renamed context variable is a defect this
+        # library would otherwise ship to every host: its templates would still
+        # render, its tests would still pass, and only the delivered email
+        # would have a hole in it. stapel_core.templates ships
+        # the marker; tests/test_template_render.py asserts on it. Production
+        # rendering is untouched — the host's own TEMPLATES decide that.
+        TEMPLATES=_strict_templates([
             {
                 "BACKEND": "django.template.backends.django.DjangoTemplates",
                 "DIRS": [],
                 "APP_DIRS": True,
                 "OPTIONS": {"context_processors": []},
             }
-        ],
+        ]),
         CACHES={
             "default": {
                 "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

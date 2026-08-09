@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.7.1"
+version = "0.8.0"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -25,7 +25,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "stapel-core>=0.16,<1.0",  # default_language() / stapel_core.language
+    "stapel-core>=0.21,<1.0",  # language.default_language + templates.strict_template_variables
 ]
 
 [project.urls]
@@ -45,7 +45,7 @@ package-dir = {"stapel_notifications" = "."}
 packages = ["stapel_notifications", "stapel_notifications.channels", "stapel_notifications.management", "stapel_notifications.management.commands", "stapel_notifications.migrations"]
 
 [tool.setuptools.package-data]
-stapel_notifications = ["py.typed", "migrations/*.py", "schemas/**/*.json", "translations/*.json", "templates/**/*", "static/**/*", "locale/**/*.po", "locale/**/*.mo", "migrations/**/*.py", "docs/capabilities.json", "docs/llms.txt", "docs/flows.json", "docs/errors.json", "CONFIG.MD"]
+stapel_notifications = ["py.typed", "migrations/*.py", "schemas/**/*.json", "translations/*.json", "templates/**/*", "static/**/*", "locale/**/*.po", "locale/**/*.mo", "migrations/**/*.py", "docs/capabilities.json", "docs/llms.txt", "docs/flows.json", "docs/errors.json", "docs/templates.json", "CONFIG.MD"]
 
 [tool.ruff]
 target-version = "py311"

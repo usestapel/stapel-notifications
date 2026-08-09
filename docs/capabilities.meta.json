@@ -197,6 +197,13 @@
     },
     "notifications/email/workspace_member_password_reset.html": {
       "intent": "\"Your password was reset\" — notification_type `workspace.member_password_reset`, auth group. It names the workspace and the admin who did it and never carries the new password: a reset performed by somebody other than the account's owner is indistinguishable from a takeover until the owner is told, which is why this one is mandatory."
+    },
+    "is_transactional": {
+      "kind": "predicate",
+      "intent": "True when a type is a one-to-one message triggered by a named person (a workspace invitation) rather than bulk mail. Such a letter carries no unsubscribe affordance at all: RFC 8058 one-click is machine-actionable and this library's token is minted per (user, GROUP, channel), so one automated POST on a personal invitation opts the recipient out of every system email forever. Ask this instead of testing group != \"auth\" when you are deciding whether an opt-out belongs on a message.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
     }
   }
 }
