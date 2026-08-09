@@ -1,32 +1,38 @@
-"""Localized error catalog (``translations/errors.ru.json``) + provenance gate.
+"""Localized error catalogs (``translations/errors.<lang>.json``) + provenance gate.
 
 i18n-shipping.md §5 / wave 2. stapel-notifications rolls out the same
 ``stapel_core.i18n`` catalog contour stapel-auth piloted (wave 1, commit
 c55a347) to the ``errors`` domain here: the en canon lives in ``errors.py``
 (``register_service_errors``) plus the cross-cutting core/verification/captcha
-keys, ru ships as a flat ``translations/errors.ru.json`` catalog with a
+keys, each target language ships as a flat
+``translations/errors.<lang>.json`` catalog with a shared
 ``translations/.state.json`` provenance sidecar, and
 :func:`check_translation_catalogs` gates coverage, staleness, params and
 byte-stability.
 
-Provenance of the ru values (honest, per §5):
+Provenance of the localized values (honest, per §5):
 
 * the bulk is **seeded** from the already-curated ``stapel-translate`` builtin
   fixtures (``origin: seed:stapel-builtin``) — requirement 5 ("clients don't
   spend tokens") met by copying the paid-for corpus, not re-running an LLM;
 * the handful of keys the fixtures do not cover are **machine translations**
-  recorded here as :data:`_MACHINE_RU` and written with ``origin: llm``
-  (unreviewed — the gate's W-counter). In a live deployment
-  ``translate_catalogs --domain errors --lang ru --llm`` produces these through
-  the ``STAPEL_I18N["TRANSLATOR"]`` comm seam; offline they come from this map so
-  the reference regenerates deterministically without a live LLM.
+  recorded here per language in :data:`_MACHINE` and written with
+  ``origin: llm`` (unreviewed — the gate's W-counter). In a live deployment
+  ``translate_catalogs --domain errors --lang <lang> --llm`` produces these
+  through the ``STAPEL_I18N["TRANSLATOR"]`` comm seam; offline they come from
+  that map so the module regenerates deterministically without a live LLM.
+
+Adding a language is a three-line change here: append the tag to
+:data:`LANGUAGES`, add its ``_MACHINE_<TAG>`` table for whatever the corpus
+misses, and regenerate. Everything else — the catalog, the provenance sidecar,
+the reference doc, the gate — follows.
 
 Regenerate after adding/changing an error key or a translation:
 
     STAPEL_REGEN_ERROR_I18N=1 python -m pytest tests/test_error_i18n.py::test_regen
 
-then commit ``translations/errors.ru.json`` + ``translations/.state.json`` +
-``docs/errors.{en,ru}.md``. Without the env var the same module is the CI gate.
+then commit ``translations/errors.<lang>.json`` + ``translations/.state.json``
++ ``docs/errors.<lang>.md``. Without the env var the same module is the CI gate.
 """
 import io
 import os
@@ -45,7 +51,11 @@ from stapel_core.i18n.catalogs import load_catalog_file
 REPO = Path(__file__).resolve().parent.parent
 TRANSLATIONS = REPO / "translations"
 DOCS = REPO / "docs"
-LANGUAGES = ["en", "ru"]
+#: Languages this module ships error catalogs in. en is the canon (the
+#: registry literals); every other tag needs a catalog + a docs page.
+LANGUAGES = ["en", "ru", "es"]
+#: The languages that need a catalog — everything but the source language.
+TARGET_LANGUAGES = [lang for lang in LANGUAGES if lang != "en"]
 
 #: stapel-translate builtin fixtures (the curated seed corpus). Overridable for
 #: an out-of-tree checkout via STAPEL_TRANSLATE_FIXTURES.
@@ -66,6 +76,17 @@ _MACHINE_RU = {
     "error.403.verification_enrollment_required":
         "Требуется регистрация фактора подтверждения.",
 }
+
+_MACHINE_ES = {
+    "error.403.network_blocked":
+        "No se permiten solicitudes desde esta red.",
+    "error.403.verification_enrollment_required":
+        "Es necesario registrar un factor de verificación.",
+}
+
+#: language -> machine-translation table, consulted for the keys the
+#: curated corpus does not carry. Values land as ``origin: llm``.
+_MACHINE = {"ru": _MACHINE_RU, "es": _MACHINE_ES}
 
 
 class _DictTranslator:
@@ -93,20 +114,24 @@ def _seed_from_fixtures(lang: str) -> dict[str, str]:
     }
 
 
-def test_regen():
-    """Regenerate (env-gated) or assert the ru catalog is a no-op regen (drift)."""
-    source = source_texts("errors")
+def _regen(lang: str):
+    """Materialize one target-language catalog from corpus + machine map."""
+    return translate_catalog(
+        "errors", lang, TRANSLATIONS,
+        source_texts=source_texts("errors"),
+        seed=_seed_from_fixtures(lang),
+        seed_label="stapel-builtin",
+        llm=True,
+        translator=_DictTranslator(_MACHINE.get(lang, {})),
+    )
 
+
+def test_regen():
+    """Regenerate (env-gated) or assert every catalog is a no-op regen (drift)."""
     if os.environ.get("STAPEL_REGEN_ERROR_I18N"):
-        result = translate_catalog(
-            "errors", "ru", TRANSLATIONS,
-            source_texts=source,
-            seed=_seed_from_fixtures("ru"),
-            seed_label="stapel-builtin",
-            llm=True,
-            translator=_DictTranslator(_MACHINE_RU),
-        )
-        assert not result.missing, f"still missing: {result.missing}"
+        for lang in TARGET_LANGUAGES:
+            result = _regen(lang)
+            assert not result.missing, f"{lang}: still missing: {result.missing}"
         for lang in LANGUAGES:
             call_command("generate_error_docs", "--lang", lang,
                          "--out", str(DOCS), "--translations", str(TRANSLATIONS),
@@ -114,21 +139,15 @@ def test_regen():
         return
 
     # Drift gate: regenerating in place (kept, since committed hashes match) must
-    # not change the committed catalog.
-    before = (TRANSLATIONS / "errors.ru.json").read_bytes()
-    translate_catalog(
-        "errors", "ru", TRANSLATIONS,
-        source_texts=source,
-        seed=_seed_from_fixtures("ru"),
-        seed_label="stapel-builtin",
-        llm=True,
-        translator=_DictTranslator(_MACHINE_RU),
-    )
-    after = (TRANSLATIONS / "errors.ru.json").read_bytes()
-    assert before == after, (
-        "errors.ru.json drifted — run "
-        "STAPEL_REGEN_ERROR_I18N=1 pytest tests/test_error_i18n.py::test_regen"
-    )
+    # not change any committed catalog.
+    for lang in TARGET_LANGUAGES:
+        path = TRANSLATIONS / f"errors.{lang}.json"
+        before = path.read_bytes()
+        _regen(lang)
+        assert path.read_bytes() == before, (
+            f"errors.{lang}.json drifted — run "
+            f"STAPEL_REGEN_ERROR_I18N=1 pytest tests/test_error_i18n.py::test_regen"
+        )
 
 
 def test_catalog_gate_green():
@@ -144,28 +163,35 @@ def test_catalog_gate_green():
     assert errors == 0
 
 
-def test_ru_covers_every_canonical_key():
+def test_every_language_covers_every_canonical_key():
     source = source_texts("errors")
-    catalog = load_catalog_file(TRANSLATIONS / "errors.ru.json")
-    missing = [k for k in source if k not in catalog]
-    assert not missing, f"ru catalog missing {len(missing)} key(s): {missing[:8]}"
+    for lang in TARGET_LANGUAGES:
+        catalog = load_catalog_file(TRANSLATIONS / f"errors.{lang}.json")
+        missing = [k for k in source if k not in catalog]
+        assert not missing, (
+            f"{lang} catalog missing {len(missing)} key(s): {missing[:8]}"
+        )
 
 
-def test_ru_preserves_placeholders():
-    """Every ru text keeps exactly the canon's ``{param}`` slots (§3)."""
+def test_translations_preserve_placeholders():
+    """Every localized text keeps exactly the canon's ``{param}`` slots (§3)."""
     from stapel_core.i18n.domains import params_of
 
     source = source_texts("errors")
-    catalog = load_catalog_file(TRANSLATIONS / "errors.ru.json")
-    for key, ru in catalog.items():
-        if key in source:
-            assert set(params_of(ru)) == set(params_of(source[key])), key
+    for lang in TARGET_LANGUAGES:
+        catalog = load_catalog_file(TRANSLATIONS / f"errors.{lang}.json")
+        for key, text in catalog.items():
+            if key in source:
+                assert set(params_of(text)) == set(params_of(source[key])), \
+                    f"{lang}: {key}"
 
 
-def test_error_docs_bilingual_exist():
+def test_error_docs_exist_for_every_language():
     for lang in LANGUAGES:
         path = DOCS / f"errors.{lang}.md"
         assert path.is_file(), f"missing {path}"
-    assert "_(en)_" not in (DOCS / "errors.ru.md").read_text(), (
-        "ru error reference has en-fallback rows — ru catalog is incomplete"
-    )
+    for lang in TARGET_LANGUAGES:
+        assert "_(en)_" not in (DOCS / f"errors.{lang}.md").read_text(), (
+            f"{lang} error reference has en-fallback rows — "
+            f"the {lang} catalog is incomplete"
+        )
