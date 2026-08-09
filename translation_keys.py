@@ -158,10 +158,10 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.new_device_login.warning": "If this was you, no action is needed. If you don't recognise this sign-in, secure your account immediately.",
     # ── Suspicious Login (A8) ───────────────────────────────────
     "notification.suspicious_login.subject": "Suspicious sign-in detected",
-    # Плашка над заголовком. Была ЗАШИТА в шаблон английским литералом — и
-    # русскому человеку приходило письмо с английской шапкой над русским
-    # телом (разбор Олега, 08.08.2026). Всё видимое в письме обязано идти
-    # через реестр ключей: шаблон не место для копирайта.
+    # Header banner. Used to be hardcoded as an English literal in the
+    # template, so Russian recipients got an English banner over a Russian
+    # body (2026-08-08). Everything visible in an email must go through
+    # the key registry — templates aren't the place for copy.
     "notification.suspicious_login.badge": "Security alert",
     "notification.suspicious_login.heading": "Suspicious sign-in detected",
     "notification.suspicious_login.body": "A sign-in from an unrecognised location was detected on your account.\n\nDevice: {device_name}\nIP: {ip_address}",

@@ -1,22 +1,16 @@
-"""Ни одно видимое слово письма не живёт в шаблоне.
+"""No visible email word may live in the template.
 
-ДЕФЕКТ. В `suspicious_login.html` плашка над заголовком была написана прямо
-в разметке: `&#9888; Security alert`. Всё остальное письмо шло через реестр
-ключей и переводилось — поэтому русский человек получал русское тело под
-английской шапкой. Разбор Олега, 08.08.2026: письмо про безопасность, где
-шапка на чужом языке, читается как подделка ровно в тот момент, когда
-доверие нужнее всего.
+Defect (2026-08-08): `suspicious_login.html` hardcoded its header banner
+as literal markup while the rest of the email went through the key
+registry — a Russian recipient got a Russian body under an English
+banner. Hardcoded copy passes every machine check (renders, tests green,
+send succeeds); only a human reading in their own language notices. One
+fix closes one literal — this gate closes the class, on every template,
+every run.
 
-ПОЧЕМУ ГЕЙТ, А НЕ ПРАВКА. Копирайт в шаблоне не ломает ничего машинного:
-письмо собирается, тесты зелены, отправка проходит. Увидеть это может только
-человек, читающий письмо на своём языке, — то есть уже получатель. Один
-разбор закрыл один литерал; закрывает класс — проверка, которая смотрит на
-все шаблоны сразу и на каждом прогоне.
-
-ЧТО ИМЕННО СЧИТАЕТСЯ. Из шаблона вычитаются служебные слои, где слова
-законны и невидимы получателю: CSS в `<style>`, HTML-комментарии, комментарии
-Django и сами теги с их атрибутами. Всё, что осталось, — это текст, который
-человек УВИДИТ, и он обязан приходить переменной из реестра ключей.
+What counts as visible: whatever survives stripping CSS, HTML/Django
+comments, and tags with their attributes. Anything left over must come
+from a translation_keys.py key, not the template.
 """
 import html
 import re
@@ -33,9 +27,9 @@ _DJANGO_COMMENT = re.compile(r"\{%\s*comment\s*%\}.*?\{%\s*endcomment\s*%\}", re
 _DJANGO_INLINE_COMMENT = re.compile(r"\{#.*?#\}", re.S)
 _DJANGO_TAG = re.compile(r"\{\{.*?\}\}|\{%.*?%\}", re.S)
 _HTML_TAG = re.compile(r"<[^>]*>", re.S)
-#: слово = две и более буквы подряд. Одиночная буква — это скорее символ
-#: разметки («×», «·»), и придираться к ней значило бы получить гейт,
-#: который отключат.
+#: word = two or more letters in a row. A single character is more likely
+#: markup punctuation («×», «·»); flagging those would produce a gate
+#: people just disable.
 _WORD = re.compile(r"[A-Za-zА-Яа-яЁё][A-Za-zА-Яа-яЁё'’-]+")
 
 
@@ -55,20 +49,18 @@ def visible_words(source: str) -> list[str]:
     sorted(EMAIL_TEMPLATES.glob("*.html")),
     ids=lambda p: p.name,
 )
-def test_шаблон_не_несёт_собственного_копирайта(template):
+def test_template_carries_no_hardcoded_copy(template):
     words = visible_words(template.read_text(encoding="utf-8"))
     assert not words, (
-        f"{template.name}: видимый текст зашит в шаблон — {words}. "
-        f"Заведите ключ в translation_keys.py и подставьте переменной: "
-        f"шаблон не переводится, а письмо читают на своём языке."
+        f"{template.name}: hardcoded visible text in template — {words}. "
+        f"Add a key in translation_keys.py and substitute the variable: "
+        f"templates aren't translated, and recipients read in their own language."
     )
 
 
-def test_гейт_действительно_ловит_возвращённый_дефект():
-    """Сам детектор — тоже механизм, и он обязан быть проверяемым.
-
-    Ровно та строка, что уходила Елене, в точной разметке своей плашки.
-    """
+def test_gate_catches_the_regressed_defect():
+    """The detector is a mechanism too, and needs its own test — this is
+    the exact markup of the regression it was built to catch."""
     regression = (
         '<p style="margin: 0; font-size: 13px;">\n'
         "  &#9888; Security alert\n"
@@ -77,7 +69,7 @@ def test_гейт_действительно_ловит_возвращённый
     assert visible_words(regression) == ["Security", "alert"]
 
 
-def test_гейт_не_придирается_к_служебным_слоям():
+def test_gate_ignores_service_layers():
     benign = (
         "{% comment %}Base email layout shared by every template{% endcomment %}\n"
         "<!-- Alert banner -->\n"

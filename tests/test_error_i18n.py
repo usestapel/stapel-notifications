@@ -1,7 +1,7 @@
 """Localized error catalog (``translations/errors.ru.json``) + provenance gate.
 
-i18n-shipping.md §5 / волна 2. stapel-notifications rolls out the same
-``stapel_core.i18n`` catalog contour stapel-auth piloted (волна 1, commit
+i18n-shipping.md §5 / wave 2. stapel-notifications rolls out the same
+``stapel_core.i18n`` catalog contour stapel-auth piloted (wave 1, commit
 c55a347) to the ``errors`` domain here: the en canon lives in ``errors.py``
 (``register_service_errors``) plus the cross-cutting core/verification/captcha
 keys, ru ships as a flat ``translations/errors.ru.json`` catalog with a
