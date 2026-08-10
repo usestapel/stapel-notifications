@@ -71,3 +71,30 @@ contract-check:
 # workspace venv, or `pip install stapel-tools` once published).
 migration-lint:
 	$(PYTHON) -m stapel_tools.migration_lint . --strict
+
+
+.PHONY: messages messages-check
+
+# --- i18n seam (gettext) ----------------------------------------------------
+# `messages` is the command to reach for after adding a translatable string —
+# NOT a bare `manage.py makemessages`. The bare tool rewrites the catalogue as
+# a projection of the sources it could find and demotes everything else to
+# obsolete (#~, parked at the end) or fuzzy (left among the live entries, still
+# showing a translation). gettext skips both, and a suite that asserts almost
+# no strings stays green while the product reverts to its source language —
+# meettoday, 2026-08-11: one flag flip from python-format to python-brace-format
+# turned the passcode subject fuzzy and the branded letter went back to the
+# library default.
+#
+# The wrapper runs the extraction with the right ignores and then runs the gate
+# on the result, restoring the catalogues untouched if anything was demoted.
+# Pass ACCEPT=1 when the demotion is the point (strings genuinely retired).
+messages:
+	$(PYTHON) -m stapel_tools.makemessages . $(if $(ACCEPT),--accept-losses,)
+
+# The gate on its own — no extraction, safe in CI and in a pre-commit hook.
+# This module's catalogue is hand-authored (its `#:` slot holds the translation
+# key, not a source path), so the ownership rule PO004 does not apply to it;
+# PO001/PO002 do, because gettext skips fuzzy and obsolete whoever wrote them.
+messages-check:
+	$(PYTHON) -m stapel_tools.po_lint .
