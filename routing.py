@@ -25,14 +25,54 @@ Groups:
     messages — user-to-user messages (can disable per channel)
     system   — platform notifications (can disable per channel)
 
-``"transactional": True`` is an ORTHOGONAL flag, not a fourth group: it says
-"this message is one-to-one, sent because a named human acted, not because a
-list was mailed". Such a message carries no unsubscribe affordance — no
-``List-Unsubscribe`` / ``List-Unsubscribe-Post`` header and no unsubscribe
-footer — while keeping whatever group it belongs to for preference purposes.
-See ``is_transactional`` for why the header in particular is a defect there.
+The group set is CLOSED (``VALID_GROUPS``): a group is also the name of the
+per-channel preference field (``email_system``, ``push_messages``, …), so a
+group nobody has a field for is mail the recipient cannot switch off. A type
+registered under an unknown group is ``notifications.E001`` at boot.
+
+Two ORTHOGONAL flags, neither of them a fourth group. Both govern the
+unsubscribe AFFORDANCE only and leave the group — and therefore the
+recipient's preference — exactly as it is:
+
+``"transactional": True``
+    "this message is one-to-one, sent because a named human acted, not
+    because a list was mailed". See ``is_transactional``.
+
+``"security": True``
+    "this is an account-security / authentication message that happens to
+    live outside the ``auth`` group". A host that wants a security letter to
+    stay switch-off-able keeps it in ``system`` and marks it here.
+
+**The policy, in one sentence:** an unsubscribe affordance — the
+``List-Unsubscribe`` / ``List-Unsubscribe-Post: One-Click`` headers and the
+unsubscribe footer — is produced ONLY for a type whose group is explicitly in
+``UNSUBSCRIBABLE_GROUPS`` and which is neither transactional nor
+security-class. It is an allowlist, not a denylist: a type with a missing,
+misspelled or unknown group gets NO affordance, because the old rule was
+``group != "auth"`` and every way of failing to say "auth" — a typo, an
+omitted key, a settings override that replaces a built-in auth entry
+wholesale and drops its group — silently turned a passcode into bulk mail
+with a one-click opt-out from every security email the platform sends.
+
+``unsubscribe_allowed`` is the single decision; ``checks.py`` refuses at boot
+the two registrations that are always defects (unknown group; a host override
+that demotes a built-in security type out of its class).
 """
 from .conf import notifications_settings
+
+#: Groups whose mail is security/authentication class: mandatory, and never
+#: carrying an unsubscribe affordance.
+SECURITY_GROUPS = frozenset({"auth"})
+
+#: The ONLY groups whose mail may carry an unsubscribe affordance. Adding a
+#: name here is the single edit that grants a whole class of mail a one-click
+#: opt-out — which is why it is a literal, reviewable set and not "anything
+#: that is not auth".
+UNSUBSCRIBABLE_GROUPS = frozenset({"messages", "system"})
+
+#: The closed group vocabulary. Every one of these has matching preference
+#: fields in ``services._VALID_PREF_FIELDS``.
+VALID_GROUPS = SECURITY_GROUPS | UNSUBSCRIBABLE_GROUPS
 
 NOTIFICATION_ROUTING = {
     # Group A: Auth/Security (mandatory, no unsubscribe)
@@ -168,6 +208,51 @@ def is_transactional(notification_type: str) -> bool:
     product question this flag does not answer.
     """
     return bool((get_routing(notification_type) or {}).get("transactional"))
+
+
+def is_security(notification_type: str) -> bool:
+    """True when this type is account-security / authentication class.
+
+    Either by group (``auth``) or by the explicit ``"security": True`` flag,
+    which exists for the letter that must stay switch-off-able — and so
+    cannot live in ``auth`` — while still never offering a one-click opt-out:
+    "your password was changed", "a new device signed in", "your export is
+    ready". Like ``transactional`` this governs the AFFORDANCE only; the group
+    still decides the recipient's preference and whether the mail is
+    mandatory.
+    """
+    routing = get_routing(notification_type) or {}
+    return bool(routing.get("security")) or routing.get("group") in SECURITY_GROUPS
+
+
+def unsubscribe_allowed(routing: dict | None) -> bool:
+    """May mail described by this routing entry carry an unsubscribe?
+
+    THE single decision behind both the ``unsubscribe_url`` context variable
+    (which drives the footer) and the ``List-Unsubscribe`` /
+    ``List-Unsubscribe-Post: One-Click`` headers. Takes the effective routing
+    ENTRY rather than a type name so the raw-content escape hatch — which
+    synthesises an entry for an unregistered type — is judged by the same
+    rule as everything else, instead of falling through a registry lookup
+    that returns None.
+
+    Allowlist, and deliberately so. The predicate this replaced was
+    ``group != "auth"``, under which every way of *not saying* "auth" —
+    ``"group": "Auth"``, a missing ``group`` key, a settings override that
+    replaces a built-in auth entry wholesale — put a machine-actionable
+    one-click opt-out from all security mail on a passcode. Now the wrong
+    thing has to be spelled out: a type only becomes unsubscribable by naming
+    a group that is in ``UNSUBSCRIBABLE_GROUPS``.
+    """
+    routing = routing or {}
+    if routing.get("security") or routing.get("transactional"):
+        return False
+    return routing.get("group") in UNSUBSCRIBABLE_GROUPS
+
+
+def may_carry_unsubscribe(notification_type: str) -> bool:
+    """``unsubscribe_allowed`` asked by type name — the reader for hosts."""
+    return unsubscribe_allowed(get_routing(notification_type))
 
 
 def get_email_template(notification_type: str) -> str | None:

@@ -9,6 +9,7 @@ import re
 import string
 
 from django.template.loader import render_to_string
+from django.utils import translation
 
 from stapel_core.notifications.tokens import generate_unsubscribe_token
 
@@ -20,7 +21,7 @@ from .models import (
 )
 from .conf import notifications_settings
 from .language import resolve as resolve_language
-from .routing import get_email_template, get_routing, is_transactional
+from .routing import get_email_template, get_routing, unsubscribe_allowed
 from .translation_keys import NOTIFICATION_KEYS, keys_for_type
 from .channels.email import send_email
 from .channels.push import send_push
@@ -348,17 +349,18 @@ def process_notification(
     all_vars.setdefault("brand_bg", notifications_settings.BRAND_BG)
     all_vars.setdefault("brand_text", notifications_settings.BRAND_TEXT)
 
-    # Add unsubscribe/manage URLs for non-auth groups.
+    # Add unsubscribe/manage URLs — only for a type the policy allows one on.
     #
-    # A transactional type is excluded even though its group allows
-    # unsubscribing: it is a one-to-one message triggered by a named person,
-    # so there is no list to leave, and the affordance is actively harmful —
-    # see routing.is_transactional. No unsubscribe_url means the base layout
-    # also falls back to the minimal footer, which is the point: the
-    # "you agreed to receive messages from us" consent line is a lie on a
-    # personal invitation.
+    # routing.unsubscribe_allowed is the whole rule (allowlisted group, not
+    # transactional, not security-class); it is asked here and again in
+    # _dispatch, from the same routing entry, so neither the footer nor the
+    # header can appear without the other having been granted. No
+    # unsubscribe_url means the base layout falls back to the minimal footer,
+    # which is the point: the "you agreed to receive messages from us"
+    # consent line is a lie on a personal invitation and an absurdity on a
+    # passcode.
     frontend_url = notifications_settings.FRONTEND_URL
-    if group != "auth" and user_id and not is_transactional(notification_type):
+    if user_id and unsubscribe_allowed(routing):
         token = generate_unsubscribe_token(user_id, group, "email")
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
         all_vars["manage_notifications_url"] = f"{frontend_url}/settings/notifications"
@@ -401,7 +403,7 @@ def process_notification(
 
         try:
             delivered = _dispatch(
-                channel, notification_type, group,
+                channel, notification_type, routing,
                 recipient_email, recipient_phone, user_id,
                 all_vars, lang,
                 content_html=content_html,
@@ -500,7 +502,7 @@ def process_notification(
 def _dispatch(
     channel: str,
     notification_type: str,
-    group: str,
+    routing: dict,
     recipient_email: str | None,
     recipient_phone: str | None,
     user_id: str | None,
@@ -521,29 +523,45 @@ def _dispatch(
     if channel == "email":
         if not recipient_email:
             return False
-        if content_html or content_text:
-            # Raw-content escape hatch: wrap the caller-provided body in the
-            # base brand layout instead of a registered per-type template.
-            html = render_to_string(
-                "notifications/email/_raw_content.html",
-                {**all_vars, "content_html": content_html, "content_text": content_text},
-            )
-        else:
-            template = get_email_template(notification_type)
-            if not template:
-                raise ValueError(f"No email template for notification type: {notification_type}")
-            html = render_to_string(template, all_vars)
+        # The RENDER runs inside the recipient's language, not the process's.
+        #
+        # Every string this library owns is already resolved per-recipient
+        # into all_vars before we get here, so the packaged templates —
+        # which contain no prose of their own, enforced by
+        # tests/test_no_hardcoded_copy_in_templates.py — were correct
+        # without this. A HOST template is where it mattered: `{% trans %}`,
+        # `{% blocktrans %}`, `|date` and every other locale-sensitive tag
+        # asks Django's ACTIVE language, which in a consumer process is
+        # whatever the last request left behind and in a web process is the
+        # SENDER's. Wrapping the render is what makes a host's own gettext
+        # catalogue reach the person being written to.
+        #
+        # What this cannot do: prose typed literally into a template stays
+        # in the language it was typed in. get_email_template() takes no
+        # language — there is one template per type — so a host whose letter
+        # is hardcoded Russian markup sends Russian to everyone no matter
+        # what is active here.
+        with translation.override(lang):
+            if content_html or content_text:
+                # Raw-content escape hatch: wrap the caller-provided body in
+                # the base brand layout instead of a per-type template.
+                html = render_to_string(
+                    "notifications/email/_raw_content.html",
+                    {**all_vars, "content_html": content_html, "content_text": content_text},
+                )
+            else:
+                template = get_email_template(notification_type)
+                if not template:
+                    raise ValueError(f"No email template for notification type: {notification_type}")
+                html = render_to_string(template, all_vars)
         subject = all_vars.get("subject", f"{all_vars.get('company_name', '')} Notification".strip())
         headers = {}
-        # Checked here as well as at the point unsubscribe_url is minted: a
-        # caller may pass unsubscribe_url as a plain variable, and a
-        # transactional message must not grow a one-click opt-out that way
-        # either (routing.is_transactional).
-        if (
-            group != "auth"
-            and "unsubscribe_url" in all_vars
-            and not is_transactional(notification_type)
-        ):
+        # Asked again, from the same routing entry that granted the
+        # unsubscribe_url — not from the presence of that variable. A caller
+        # may pass unsubscribe_url as a plain template variable, and a
+        # passcode must not grow a machine-actionable one-click opt-out from
+        # all security mail because somebody put a URL in a dict.
+        if unsubscribe_allowed(routing) and "unsubscribe_url" in all_vars:
             headers["List-Unsubscribe"] = f"<{all_vars['unsubscribe_url']}>"
             headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
         send_email(recipient_email, subject, html, headers)

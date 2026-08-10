@@ -2,6 +2,108 @@
 
 ## Unreleased
 
+## [0.10.0] — 2026-08-10
+
+### Fixed — a passcode could carry a one-click opt-out from all security mail (BREAKING: two new boot-time errors)
+
+Reported from real Gmail (2026-08-09): an "Unsubscribe" banner on every
+message, one-time passcodes and sign-in alerts included. Gmail renders that
+button prominently, and `List-Unsubscribe-Post: One-Click` is
+machine-actionable — a mail client, an anti-abuse scanner or a security
+appliance may POST the URL with no human involved. This library's token is
+minted per (user, GROUP, channel), so one automated click on a security
+letter stops the mail that tells the recipient their account is under attack.
+
+Version 0.8.0 answered a narrower version of this per letter (the personal
+workspace invitation). This closes the class. The predicate was
+
+    group != "auth" and "unsubscribe_url" in all_vars and not is_transactional(type)
+
+— a denylist, under which every way of *failing to say* `"auth"` produced a
+one-click opt-out. All of these did, and none of them look wrong at a glance:
+
+* a routing entry with no `group` key at all;
+* a misspelled or unknown group (`"Auth"`, `"sistem"`);
+* a settings override of a built-in security type, because
+  `STAPEL_NOTIFICATIONS["TYPES"]` **replaces** an entry rather than merging
+  into it — `{"otp_code": {"channels": ["email"]}}`, a host dropping the SMS
+  channel, silently dropped `"group": "auth"` with it;
+* an ad-hoc `content_html` send, whose synthesised entry answered the
+  registry lookup with `None`;
+* a caller passing `unsubscribe_url` as a plain template variable.
+
+The decision is now one function, `routing.unsubscribe_allowed(routing)`, and
+it is an **allowlist**: the group must be in `routing.UNSUBSCRIBABLE_GROUPS`
+(`messages`, `system`) and the type must be neither `"transactional": True`
+nor the new `"security": True`. It takes the effective routing *entry*, not a
+type name, so the raw-content escape hatch is judged by the same rule; it is
+asked once where `unsubscribe_url` is minted and again where the headers are
+set, both times from that entry rather than from the presence of a variable.
+`may_carry_unsubscribe(type)` is the reader for host code and UIs.
+
+`"security": True` is the second orthogonal flag, alongside `transactional`.
+It says "account-security mail that must nevertheless stay switch-off-able"
+— the letter that cannot live in `auth` because the recipient keeps the
+right to turn it off, but must never be handed a one-click opt-out. Like
+`transactional`, it governs the affordance only: the group still decides the
+preference.
+
+**Boot gates** (`manage.py check`), because a registration defect that only
+shows up in somebody's inbox is not a runtime symptom:
+
+* `notifications.E001` — a type registered under a group outside the now
+  closed `routing.VALID_GROUPS`. The group also names the recipient's
+  preference field, so mail under a misspelled group is mail nobody can
+  switch off.
+* `notifications.E002` — a settings override that drops a built-in security
+  type's classification. There is no reading of that edit under which a
+  passcode should become unsubscribable.
+* `notifications.W003` — a type *named* like security mail (`otp`,
+  `password`, `login`, `session`, `mfa`, `device`, `recovery`, …) sitting in
+  a bulk-mail group. Heuristic, so warn-level; answered by the declaration it
+  asks for.
+
+**Behaviour change**: a host whose type has a missing or unknown group no
+longer gets `List-Unsubscribe` on that type — and `manage.py check` now fails
+rather than sending it. Genuine list mail is unaffected: an allowlisted group
+still carries both headers, RFC 8058 compliance intact.
+
+`tests/test_unsubscribe_policy.py` asserts on the headers of actually
+rendered messages — every packaged security letter individually, plus each
+hole above. Restoring the old predicate turns four of them red.
+
+### Fixed — a host template rendered in the sender's language, not the recipient's
+
+`services._dispatch` called `render_to_string` outside any language override,
+so `{% trans %}`, `{% blocktranslate %}`, `|date` and every other
+locale-sensitive tag in a **host** template resolved against whatever
+language the process had active: the sender's in a web process, a leftover in
+a consumer. The render now runs inside `translation.override(lang)` with the
+language resolved for the recipient.
+
+This does **not** change the packaged letters, and the distinction matters
+for anyone diagnosing this. Every string this library owns is resolved per
+recipient into the template context *before* the render, and the packaged
+templates carry no prose of their own (gated by
+`tests/test_no_hardcoded_copy_in_templates.py`) — so they already followed
+the recipient, which is why a live measurement of a packaged letter (Russian
+active in the process, an English-speaking recipient) came out English in
+both subject and body. Both facts are now tests, and removing the override
+leaves those two green while turning the host-template ones red.
+
+**And the limit, stated rather than implied**: `get_email_template(type)`
+takes no language argument. There is one template per type. Prose typed
+literally into a template is frozen in the language it was typed in, and
+neither mechanism moves it — the words have to live in `{% trans %}`,
+`STAPEL_NOTIFICATIONS["TEXT"]` or the key registry.
+
+Closed as a mechanism rather than a call site:
+`tests/test_render_language.py` parses every module in the package and fails
+on any `render_to_string` that is not lexically inside
+`translation.override(...)`. The point fix is one `with` that the next call
+site forgets — this module already had an override around its gettext lookup
+three hundred lines above the render that lacked one.
+
 ## [0.9.0] — 2026-08-10
 
 ### Changed — the recipient's language is asked, not mirrored (BREAKING: two columns dropped)

@@ -75,10 +75,11 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # templates — the dispatch entry point, the routing readers and one line per
 # ready-made letter) does not fit the generator's default 4000-token budget.
 # Same exception stapel-auth and stapel-workspaces already take: raise the
-# ceiling to 4500 for this module, do not shorten intents to fit. The budget
-# stays enforced, just at 4500 — matching the Makefile's contract targets.
+# ceiling for this module, do not shorten intents to fit. Raised 4500 -> 5200
+# when the unsubscribe policy added its three predicates to the surface. The
+# budget stays enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 4500
+LLMS_TXT_BUDGET = 5200
 
 
 def _emit(out_dir: Path) -> None:

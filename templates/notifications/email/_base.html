@@ -7,7 +7,8 @@ in as logo_url / brand_* template variables by services.process_notification.
 Type templates extend this and fill {% block content %}; override
 {% block preheader %} (defaults to the subject) or {% block footer %} when
 needed. The footer picks the unsubscribe variant automatically whenever an
-unsubscribe_url is present (non-auth groups).
+unsubscribe_url is present, which routing.unsubscribe_allowed grants only
+to a non-transactional, non-security type in an allowlisted group.
 {% endcomment %}<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>

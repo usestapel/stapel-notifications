@@ -94,9 +94,24 @@ STAPEL_NOTIFICATIONS = {
 
 - Email template precedence per type: routing entry `"template"` key →
   `EMAIL_TEMPLATES[type]` → `DEFAULT_EMAIL_TEMPLATES[type]` (built-in).
-- Group semantics: `auth` = mandatory, no unsubscribe headers/links;
-  `messages` / `system` = per-channel user preference checked, one-click
-  `List-Unsubscribe` headers added.
+- Group semantics: the vocabulary is **closed** (`routing.VALID_GROUPS`), and
+  an unknown or missing group is `notifications.E001` at boot — the group also
+  names the recipient's preference field, so mail under a misspelled group is
+  mail nobody can switch off. `auth` = mandatory security/authentication mail;
+  `messages` / `system` = per-channel user preference checked.
+- **Unsubscribe policy** (`routing.unsubscribe_allowed`, one decision behind
+  both the footer and the `List-Unsubscribe` / `List-Unsubscribe-Post:
+  One-Click` headers): an **allowlist** — the group must be in
+  `UNSUBSCRIBABLE_GROUPS` (`messages`, `system`) and the type must be neither
+  `"transactional": True` nor `"security": True`. Everything else, including a
+  type whose group is missing or misspelled, gets nothing. Two orthogonal
+  flags, both affordance-only (the group still decides the preference):
+  `transactional` = one-to-one mail triggered by a named human;
+  `security` = account-security mail that must nevertheless stay
+  switch-off-able. Boot gates: `E001` unknown group, `E002` a settings
+  override that drops a built-in security type's classification (an override
+  REPLACES the built-in entry, it does not merge), `W003` a type named like
+  security mail sitting in a bulk-mail group.
 - Ad-hoc escape hatch: `request_notification(..., content_html=/content_text=)`
   renders the given body inside the brand layout (`_raw_content.html`) and
   permits an **unregistered** type (group defaults to `system`).
@@ -137,7 +152,8 @@ app directories) overrides the packaged one — no setting in this module needed
 - `_base.html` is the shared shell (header/logo, body slot, footer). Blocks to
   override in per-type templates: `content` (required), `preheader` (defaults
   to `{{ subject }}`), `footer`, `head_extra`. The footer auto-switches to the
-  unsubscribe variant whenever `unsubscribe_url` is present (non-auth groups).
+  unsubscribe variant whenever `unsubscribe_url` is present — which only a
+  type `routing.unsubscribe_allowed` grants one to ever gets.
 - Branding without touching any template: `LOGO_URL` + `BRAND_PRIMARY` /
   `BRAND_PRIMARY_DARK` / `BRAND_BG` / `BRAND_TEXT` + `COMPANY_*` are threaded
   into every render as `logo_url` / `brand_*` / `company_*` variables by
@@ -227,6 +243,22 @@ entry in `NOTIFICATION_KEYS`, so `TEXT` is its only copy source.
   lifetime, and a mirror cannot distinguish "chose nothing" from "the sync
   never ran". Translation strings are `{var}`-formatted with a
   `_SafeFormatter` that blocks attribute/index access.
+- **Where the language applies.** Two mechanisms, and a host needs to know
+  which one its template uses. (a) Every string this library owns is resolved
+  per recipient into the template context before the render — the packaged
+  templates carry no prose of their own (gated by
+  `tests/test_no_hardcoded_copy_in_templates.py`), so they are per-recipient
+  by construction. (b) The render itself runs inside
+  `translation.override(lang)` (`services._dispatch`), so `{% trans %}`,
+  `{% blocktrans %}`, `|date` and every other locale-sensitive tag in a
+  **host** template resolves against the recipient's language rather than the
+  language the process happens to have active (a consumer's leftover, or the
+  sender's). **The limit:** `get_email_template(notification_type)` takes no
+  language argument — there is one template per type — so prose typed
+  literally into a template is frozen in the language it was typed in. A host
+  whose letters are hardcoded markup gets nothing from either mechanism until
+  the words move into `{% trans %}`, `STAPEL_NOTIFICATIONS["TEXT"]` or the
+  key registry.
 
 ### 6. Events & functions (comm surface)
 

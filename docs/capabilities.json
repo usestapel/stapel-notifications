@@ -1,6 +1,6 @@
 {
   "module": "stapel-notifications",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
   "axes": [
     {
@@ -96,7 +96,7 @@
       "name": "get_group",
       "kind": "factory",
       "path": "stapel_notifications.routing.get_group",
-      "intent": "The preference group of a type: \"auth\" is mandatory and carries no unsubscribe, \"messages\" and \"system\" are user-mutable per channel. This is the value that decides whether a user may switch the notification off, so read it before a UI promises an opt-out — and before classifying a new type, because putting a marketing message in the auth group is how a deployment loses its List-Unsubscribe compliance.",
+      "intent": "The preference group of a type, from a CLOSED vocabulary (routing.VALID_GROUPS): \"auth\" is mandatory and carries no unsubscribe, \"messages\" and \"system\" are user-mutable per channel and are the only groups whose mail may carry one. An unknown group is notifications.E001 at boot — the group also names the preference field, so mail under a misspelled group is mail nobody can switch off. This is the value that decides whether a user may switch the notification off, so read it before a UI promises an opt-out — and before classifying a new type, because putting a marketing message in the auth group is how a deployment loses its List-Unsubscribe compliance.",
       "instead_of": [
         "django.conf.settings.STAPEL_NOTIFICATIONS"
       ]
@@ -111,6 +111,15 @@
       ]
     },
     {
+      "name": "is_security",
+      "kind": "predicate",
+      "path": "stapel_notifications.routing.is_security",
+      "intent": "True when a type is account-security / authentication class — either by living in the `auth` group or by carrying the explicit `\"security\": True` routing key. The flag exists for the security letter that must stay switch-off-able and therefore cannot live in `auth` (\"a new device signed in\"): it removes the unsubscribe affordance without touching the group, so the recipient keeps their preference and never gets a one-click opt-out from security mail.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
       "name": "is_transactional",
       "kind": "predicate",
       "path": "stapel_notifications.routing.is_transactional",
@@ -120,10 +129,28 @@
       ]
     },
     {
+      "name": "may_carry_unsubscribe",
+      "kind": "predicate",
+      "path": "stapel_notifications.routing.may_carry_unsubscribe",
+      "intent": "`unsubscribe_allowed` asked by type name — the reader to call from host code or a UI before promising an opt-out on a given notification type. Never re-derive the answer from get_group(): the group is only one of the three inputs, and reimplementing the rule is how the two copies drift.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
       "name": "registered_types",
       "kind": "factory",
       "path": "stapel_notifications.routing.registered_types",
       "intent": "Every notification type this deployment knows, built-ins plus the host's TYPES registrations — ask it before requesting a type you are not sure exists, because an unregistered type without content_html/content_text is dropped with a logged error rather than delivered. `manage.py check_notifications` is the CI-time form of the same question over literal call sites.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    {
+      "name": "unsubscribe_allowed",
+      "kind": "predicate",
+      "path": "stapel_notifications.routing.unsubscribe_allowed",
+      "intent": "THE single decision behind both the unsubscribe footer and the List-Unsubscribe / List-Unsubscribe-Post: One-Click headers, taken over a routing ENTRY (so the raw-content escape hatch, which synthesises one for an unregistered type, is judged by the same rule). It is an allowlist — group in routing.UNSUBSCRIBABLE_GROUPS, not transactional, not security-class — because the predicate it replaced was `group != \"auth\"`, under which a typo, a missing group key or a settings override that replaced a built-in auth entry wholesale put a machine-actionable opt-out from all security mail on a passcode.",
       "instead_of": [
         "django.conf.settings.STAPEL_NOTIFICATIONS"
       ]
@@ -157,7 +184,7 @@
       "name": "notifications/email/_footer_unsubscribe.html",
       "kind": "template",
       "path": "templates/notifications/email/_footer_unsubscribe.html",
-      "intent": "The unsubscribe / manage-preferences footer that _base.html switches to whenever `unsubscribe_url` is present, i.e. on every non-auth group. Do not write an unsubscribe line into a custom template by hand: the URL, its signed token and the matching one-click List-Unsubscribe headers are produced together by process_notification, and a hand-written link stops working the moment the token scheme moves."
+      "intent": "The unsubscribe / manage-preferences footer that _base.html switches to whenever `unsubscribe_url` is present — which routing.unsubscribe_allowed grants only to a type in an allowlisted group (`messages`, `system`) that is neither transactional nor security-class. Do not write an unsubscribe line into a custom template by hand: the URL, its signed token and the matching one-click List-Unsubscribe headers are produced together by process_notification, and a hand-written link stops working the moment the token scheme moves."
     },
     {
       "name": "notifications/email/_raw_content.html",

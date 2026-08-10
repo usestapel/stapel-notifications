@@ -1,8 +1,8 @@
-# stapel-notifications 0.9.0
+# stapel-notifications 0.10.0
 
 Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
 
-Contract: axes 3 · surface 31 · extension points 5 · operations 4 · error codes 43.
+Contract: axes 3 · surface 34 · extension points 5 · operations 4 · error codes 43.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -20,7 +20,7 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
 - notifications/email/_base.html — templates/notifications/email/_base.html
   The shared email shell every packaged letter extends: header/logo, body slot, footer, and the logo_url/brand_*/company_* variables process_notification threads into every render. A host template for a new type should extend this and fill the `content` block (plus `preheader`/`footer`/`head_extra` as needed) rather than start from a blank HTML document — that is what makes a product's own letter look like the rest of the mail the deployment sends, and what makes the branding settings apply to it for free.
 - notifications/email/_footer_unsubscribe.html — templates/notifications/email/_footer_unsubscribe.html
-  The unsubscribe / manage-preferences footer that _base.html switches to whenever `unsubscribe_url` is present, i.e. on every non-auth group. Do not write an unsubscribe line into a custom template by hand: the URL, its signed token and the matching one-click List-Unsubscribe headers are produced together by process_notification, and a hand-written link stops working the moment the token scheme moves.
+  The unsubscribe / manage-preferences footer that _base.html switches to whenever `unsubscribe_url` is present — which routing.unsubscribe_allowed grants only to a type in an allowlisted group (`messages`, `system`) that is neither transactional nor security-class. Do not write an unsubscribe line into a custom template by hand: the URL, its signed token and the matching one-click List-Unsubscribe headers are produced together by process_notification, and a hand-written link stops working the moment the token scheme moves.
 - notifications/email/_raw_content.html — templates/notifications/email/_raw_content.html
   The raw-content wrapper that puts a caller-supplied content_html/content_text inside the brand layout — what makes the request_notification(..., content_html=...) escape hatch possible for a type that is deliberately not registered. Reach for the escape hatch, not for this template directly.
 - notifications/email/all_sessions_revoked.html — templates/notifications/email/all_sessions_revoked.html
@@ -64,9 +64,18 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
 - notifications/email/workspace_provisioned_account.html — templates/notifications/email/workspace_provisioned_account.html
   "Your account is ready" for a member an organization provisioned directly — notification_type `workspace.provisioned_account`, auth group: credentials mail is mandatory and carries no unsubscribe, like every other account-credential letter here.
 ### predicate
+- is_security — stapel_notifications.routing.is_security
+  instead of: django.conf.settings.STAPEL_NOTIFICATIONS
+  True when a type is account-security / authentication class — either by living in the `auth` group or by carrying the explicit `"security": True` routing key. The flag exists for the security letter that must stay switch-off-able and therefore cannot live in `auth` ("a new device signed in"): it removes the unsubscribe affordance without touching the group, so the recipient keeps their preference and never gets a one-click opt-out from security mail.
 - is_transactional — stapel_notifications.routing.is_transactional
   instead of: django.conf.settings.STAPEL_NOTIFICATIONS
   True when a type is a one-to-one message triggered by a named person (a workspace invitation) rather than bulk mail. Such a letter carries no unsubscribe affordance at all: RFC 8058 one-click is machine-actionable and this library's token is minted per (user, GROUP, channel), so one automated POST on a personal invitation opts the recipient out of every system email forever. Ask this instead of testing group != "auth" when you are deciding whether an opt-out belongs on a message.
+- may_carry_unsubscribe — stapel_notifications.routing.may_carry_unsubscribe
+  instead of: django.conf.settings.STAPEL_NOTIFICATIONS
+  `unsubscribe_allowed` asked by type name — the reader to call from host code or a UI before promising an opt-out on a given notification type. Never re-derive the answer from get_group(): the group is only one of the three inputs, and reimplementing the rule is how the two copies drift.
+- unsubscribe_allowed — stapel_notifications.routing.unsubscribe_allowed
+  instead of: django.conf.settings.STAPEL_NOTIFICATIONS
+  THE single decision behind both the unsubscribe footer and the List-Unsubscribe / List-Unsubscribe-Post: One-Click headers, taken over a routing ENTRY (so the raw-content escape hatch, which synthesises one for an unregistered type, is judged by the same rule). It is an allowlist — group in routing.UNSUBSCRIBABLE_GROUPS, not transactional, not security-class — because the predicate it replaced was `group != "auth"`, under which a typo, a missing group key or a settings override that replaced a built-in auth entry wholesale put a machine-actionable opt-out from all security mail on a passcode.
 ### factory
 - default_language — stapel_notifications.services.default_language
   instead of: django.conf.settings.LANGUAGE_CODE
@@ -79,7 +88,7 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
   The email template a type actually renders with, resolving the whole precedence chain (the routing entry's "template" key → the EMAIL_TEMPLATES override → the packaged default). Reach for it instead of hardcoding a template path, which silently ignores the host's remap.
 - get_group — stapel_notifications.routing.get_group
   instead of: django.conf.settings.STAPEL_NOTIFICATIONS
-  The preference group of a type: "auth" is mandatory and carries no unsubscribe, "messages" and "system" are user-mutable per channel. This is the value that decides whether a user may switch the notification off, so read it before a UI promises an opt-out — and before classifying a new type, because putting a marketing message in the auth group is how a deployment loses its List-Unsubscribe compliance.
+  The preference group of a type, from a CLOSED vocabulary (routing.VALID_GROUPS): "auth" is mandatory and carries no unsubscribe, "messages" and "system" are user-mutable per channel and are the only groups whose mail may carry one. An unknown group is notifications.E001 at boot — the group also names the preference field, so mail under a misspelled group is mail nobody can switch off. This is the value that decides whether a user may switch the notification off, so read it before a UI promises an opt-out — and before classifying a new type, because putting a marketing message in the auth group is how a deployment loses its List-Unsubscribe compliance.
 - get_routing — stapel_notifications.routing.get_routing
   instead of: django.conf.settings.STAPEL_NOTIFICATIONS
   The effective routing entry ({channels, group, template}) of a type, with STAPEL_NOTIFICATIONS["TYPES"] merged over the packaged catalog — the primitive the other readers sit on. Prefer get_channels/get_group/get_email_template when the question is narrower, and never merge the settings dict over routing.NOTIFICATION_ROUTING by hand: an override replaces a built-in wholesale, which a naive dict update gets wrong.

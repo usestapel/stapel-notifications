@@ -111,7 +111,12 @@ def test_call_site_records_the_guard_on_conditional_variables():
     )
     unsub = site["variables"]["unsubscribe_url"]
     assert unsub["presence"] == "conditional"
-    assert "is_transactional" in unsub["when"]
+    # The guard is the unsubscribe policy's single decision (an allowlist over
+    # the routing entry — routing.unsubscribe_allowed), and the contract has
+    # to name it: a host reading "when: user_id" would conclude every logged-in
+    # recipient's letter may render an opt-out, which is how a passcode grew
+    # one in the first place.
+    assert "unsubscribe_allowed" in unsub["when"]
 
 
 def test_limits_are_stated():
