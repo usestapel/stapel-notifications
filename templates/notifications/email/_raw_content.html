@@ -7,6 +7,12 @@ type/template.
 {% endcomment %}
 
 {% block content %}
+              {# `safe` is reachable only through STAPEL_NOTIFICATIONS["RAW_CONTENT"]
+                 = "html", a deployment declaring that every producer on its bus is
+                 trusted. Under the default ("off") and under "text" the service
+                 never passes content_html at all — raw_content.apply_policy drops
+                 or de-marks it before the render. The gate is upstream because no
+                 template filter can tell branded mail from branded phishing. #}
               {% if content_html %}{{ content_html|safe }}{% else %}
               <p style="margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 22px; color: {{ brand_text|default:"#1C1D20" }};">
                 {{ content_text|linebreaksbr }}

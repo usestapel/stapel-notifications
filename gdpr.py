@@ -50,10 +50,16 @@ class NotificationsGDPRProvider(GDPRProvider):
         UserContact.objects.filter(user_id=user_id).delete()
         DevicePushToken.objects.filter(user_id=user_id).delete()
         UserNotificationSettings.objects.filter(user_id=user_id).delete()
-        # Anonymise log rows rather than delete — preserves delivery audit trail
+        # Anonymise log rows rather than delete — preserves delivery audit
+        # trail. The payload columns go with the identifiers: a row whose
+        # user_id and recipient are gone but whose title/body still quote
+        # what was written to that person is not anonymised, it is merely
+        # harder to query.
         NotificationLog.objects.filter(user_id=user_id).update(
             recipient='',
             user_id=None,
+            title='',
+            body='',
         )
 
     def anonymize(self, user_id: int) -> None:

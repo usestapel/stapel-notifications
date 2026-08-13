@@ -60,12 +60,15 @@ class _Capture:
 CAPTURE = f"{_Capture.__module__}._Capture"
 
 
-def _send(notification_type, user_id, variables=None, types=None, **extra):
+def _send(notification_type, user_id, variables=None, types=None,
+          raw_content=None, **extra):
     """Send one notification through a capturing provider, return the message."""
     _Capture.sent = []
     settings = {"EMAIL_PROVIDER": CAPTURE, "FRONTEND_URL": "https://app.example"}
     if types is not None:
         settings["TYPES"] = types
+    if raw_content is not None:
+        settings["RAW_CONTENT"] = raw_content
     with override_settings(STAPEL_NOTIFICATIONS=settings):
         notifications_settings.reload()
         process_notification(
@@ -208,10 +211,15 @@ def test_raw_content_ad_hoc_mail_is_judged_by_the_same_rule(user):
     it here is that the decision goes through ``unsubscribe_allowed`` on the
     synthesised entry rather than through a registry lookup that answers
     None.
+
+    Sent with the escape hatch opened explicitly: since the 2026-08-11 audit
+    a deployment has to declare ``RAW_CONTENT`` before a caller may put its
+    own body in a branded letter at all (NOTIFY-02, raw_content.py).
     """
     UserContact.objects.create(user_id=user.id, email="u@example.com")
     mail = _send(
         "myapp.announcement", str(user.id),
+        raw_content="html",
         content_html="<p>We moved office.</p>",
     )
     assert mail["headers"]["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"

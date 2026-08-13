@@ -178,6 +178,37 @@ def check_no_security_type_is_unsubscribable(app_configs, **kwargs):
     return errors
 
 
+@checks.register(checks.Tags.security)
+def check_raw_content_is_a_decision(app_configs, **kwargs):
+    """W: this deployment lets a caller supply the body of branded mail.
+
+    Warn-level, not error: there are deployments where every producer is
+    first-party and authenticated and the hatch is genuinely wanted. What
+    must not happen is inheriting it — a setting somebody turned on for one
+    internal tool three releases ago is the difference between "a bug lets
+    you send mail" and "a bug lets you send mail *as us*".
+    """
+    from .raw_content import HTML, mode
+
+    if mode() != HTML:
+        return []
+    return [checks.Warning(
+        "STAPEL_NOTIFICATIONS['RAW_CONTENT']='html': any producer that can "
+        "reach the notification bus can send mail rendered inside this "
+        "brand's layout, with markup and links of its own choosing, to a "
+        "recipient of its own choosing, under a notification type that need "
+        "not be registered. That is first-party phishing with valid SPF/DKIM.",
+        hint=(
+            "Register the types you send with their own templates and set "
+            "RAW_CONTENT to 'off', or to 'text' if callers must be able to "
+            "supply a one-off body (their markup is reduced to its text). "
+            "Silence with SILENCED_SYSTEM_CHECKS once the producers on this "
+            "bus are authenticated and scoped."
+        ),
+        id="stapel_notifications.W004",
+    )]
+
+
 @checks.register(checks.Tags.compatibility)
 def check_security_shaped_types_are_classified(app_configs, **kwargs):
     """W: a type whose NAME reads as security mail, in a bulk-mail group.

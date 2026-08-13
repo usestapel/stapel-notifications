@@ -2,6 +2,117 @@
 
 ## Unreleased
 
+### Fixed — the delivery journal kept the credentials it delivered (BREAKING: `NotificationLog.data` is now deny-by-default)
+
+Security audit 2026-08-11, NOTIFY-01 (P1). Every scalar the caller passed in
+`variables` was copied into `NotificationLog.data`. For this library's own
+built-in types that is, literally: the one-time passcode (`otp_code.code`),
+the sign-in link with its token in the query string (`magic_link_login`), the
+invitation URL that both creates an account and joins it to a workspace, and
+the initial password of an org-provisioned account — persisted for the life of
+the deployment in a table the Django admin renders.
+
+The replacement is deny-by-default in two independent layers (`telemetry.py`):
+
+* **Keys.** A caller variable is journalled only where somebody DECLARED it —
+  the routing entry's `"telemetry": [...]`, `STAPEL_NOTIFICATIONS["TELEMETRY"]`
+  (`{"<type>": [...], "*": [...]}`), or the deep links the push feed reads back
+  out of `data` to open the thing a notification is about. A denylist of
+  known-bad names would have to be right about a name nobody has invented yet;
+  an allowlist has to be right about names somebody wrote down.
+* **Shapes.** A declared key is still dropped — replaced by `[redacted]` —
+  when its VALUE is credential-shaped: a link carrying a query/fragment token
+  or an opaque last segment, a JWT, a long high-entropy run, a 4–10 digit run.
+  So declaring `reset_url` as telemetry does not get the reset token into the
+  table. UUIDs, numbers and prose are identifiers and stay.
+
+Both layers run inside `NotificationLog.save()`, so the guarantee belongs to
+the **table**, not to one call site: host code, a future channel and a data
+migration are covered by the same mechanism. `title`/`body` are copy a human
+reads back in the feed, so they are stripped of credential carriers (links
+with parameters, JWTs, long opaque runs) rather than filtered by key.
+
+The GDPR erasure path clears `title`/`body` along with `recipient`/`user_id`:
+an anonymised row that still quotes what was written to that person was not
+anonymised, only harder to query.
+
+**Historical rows are not rewritten by the migration** — a migration that
+silently edits an audit table is the wrong place for it. `manage.py
+scrub_notification_logs` does it on the operator's word (dry run by default,
+`--commit` to write, `--delete-older-than-days N` to shred). Database backups
+holding the same values are outside anything this library can reach and belong
+in the incident plan.
+
+*Upgrade note.* A host that reads `NotificationLog.data[...]` for its own
+analytics gets `{}` where it used to get the caller's variables. Declare the
+keys — `"telemetry"` in the routing entry, or `TELEMETRY` in settings — and
+they come back, minus anything credential-shaped.
+
+### Fixed — anything on the bus could send branded mail of its own composition (BREAKING: `RAW_CONTENT` defaults to "off")
+
+Security audit 2026-08-11, NOTIFY-02 (P1). `process_notification(...,
+content_html=...)` accepted an **unregistered** notification type with a
+caller-supplied body and an explicit recipient, and `_raw_content.html`
+rendered that body with `|safe` inside the brand layout. A compromised
+producer, a leaked broker credential or an internal service with more reach
+than it needs could therefore send mail that is, byte for byte, this platform
+writing to its own users — with any link it liked, and valid SPF/DKIM. No
+sanitiser fixes that: `<a href="https://not-us.example/login">` is
+harmless-looking markup and is the whole attack.
+
+The hatch is now a declaration a deployment makes,
+`STAPEL_NOTIFICATIONS["RAW_CONTENT"]`:
+
+| value | meaning |
+|---|---|
+| `"off"` (default) | no hatch: `content_html`/`content_text` are ignored and an unregistered type is refused, with an ERROR naming the setting |
+| `"text"` | ad-hoc bodies allowed, no caller markup — HTML is reduced to its text, which the layout escapes |
+| `"html"` | the pre-Unreleased behaviour, for a deployment whose producers are all first-party and authenticated; boot warns (`stapel_notifications.W004`) |
+
+An unrecognised value falls back to `"off"`: a typo in a security switch must
+not be the thing that opens it. `manage.py check_notifications` follows the
+setting — with the hatch shut, a `content_html=` call site on an unregistered
+type is an ERROR, because a gate that certifies the one call site guaranteed
+to be silent is worse than no gate.
+
+*Upgrade note.* A deployment that legitimately sends ad-hoc mail sets
+`RAW_CONTENT` to `"text"` (recommended) or `"html"` before upgrading;
+otherwise those sends stop and say so in the log.
+
+### Fixed — delivery idempotency was check-then-act, and answered for the wrong thing
+
+Same audit finding. `process_notification` opened with
+`NotificationLog.objects.filter(data__event_id=..., status="sent").exists()`,
+which is wrong twice. **Not atomic**: two consumers handed the same event by
+an at-least-once broker both read "no row yet" and both send, and the window
+is the whole render + SMTP round trip — exactly when a redelivery arrives.
+**Too coarse**: one `sent` row suppressed the WHOLE event, so a passcode that
+reached the recipient's email but had no phone number to reach on SMS could
+never be retried on SMS; the email row answered for both.
+
+New table `NotificationDelivery` (migration `0006_delivery_claim`) with a
+unique constraint on `(event_id, channel, recipient, template_version)`. The
+claim is taken in the database before the dispatch, confirmed when the
+provider takes the message, and released when nothing was delivered so a retry
+can take it again. A claim whose process died is taken over after
+`DELIVERY_CLAIM_TTL` seconds (default 900) — a crash between claim and send
+must not silence a notification forever. `template_version` is this library's
+version of a letter, the effective template path (or `"raw"`), so re-pointing
+a type at a new template is a new delivery rather than a suppressed duplicate.
+
+*Upgrade note.* Nothing is backfilled from the old `data->>'event_id'` rows,
+so the first redelivery of an event already delivered before the migration can
+send once more. The window is the broker's retention; paying it once is the
+price of moving idempotency off a check-then-act on a journal.
+
+### Not fixed here — the producer side
+
+The audit also asks to authenticate and scope producers and to allowlist
+recipients. A library that is handed an event cannot do either: whether the
+bus requires per-producer credentials, and which recipients a producer may
+name, are deployment facts. `RAW_CONTENT="off"` removes the value of reaching
+the bus without them; it does not replace them.
+
 ## [0.10.0] — 2026-08-10
 
 ### Fixed — this module translates only the keys it owns

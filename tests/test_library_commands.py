@@ -101,7 +101,14 @@ class TestCheckNotifications:
         assert issue.line == 1
 
     def test_content_escape_hatch_is_exempt(self, tmp_path):
-        assert self._issues(tmp_path, ESCAPE_HATCH) == []
+        """Exempt where the deployment opened the hatch — and only there.
+
+        With ``RAW_CONTENT`` off (the default since the 2026-08-11 audit)
+        such a call site sends nothing at all, so the gate reports it; that
+        half is pinned in tests/test_raw_content_policy.py.
+        """
+        with override_settings(STAPEL_NOTIFICATIONS={"RAW_CONTENT": "html"}):
+            assert self._issues(tmp_path, ESCAPE_HATCH) == []
 
     def test_explicit_none_content_does_not_count_as_escape_hatch(self, tmp_path):
         (issue,) = self._issues(tmp_path, NONE_CONTENT)

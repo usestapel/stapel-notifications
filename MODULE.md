@@ -64,6 +64,9 @@ lazily (never frozen at import) and reload on `setting_changed` in tests.
 | `BRAND_BG` | `"#F5F5F6"` | Page background (`brand_bg`) |
 | `BRAND_TEXT` | `"#1C1D20"` | Headings + body copy (`brand_text`) |
 | `LANGUAGES` | `["en"]` | Languages prefetched by `manage.py sync_translations` (lazy resolve-on-miss covers the rest) |
+| `RAW_CONTENT` | `"off"` | May a caller supply the body of a branded letter? `off` / `text` (body yes, markup no) / `html` (trusted producers only, boot-warns `W004`) — see §2a |
+| `TELEMETRY` | `{}` | Per-type journal allowlist, `{"<type>": [...], "*": [...]}` — deny-by-default, see §2b |
+| `DELIVERY_CLAIM_TTL` | `900` | Seconds after which a delivery claim whose process died may be taken over by a redelivery (§2c) |
 
 Note: this namespace declares no `import_strings` — the `*_PROVIDER` dotted
 paths are resolved at send time by `channels.sms._resolve_provider` (shared by
@@ -114,9 +117,58 @@ STAPEL_NOTIFICATIONS = {
   security mail sitting in a bulk-mail group.
 - Ad-hoc escape hatch: `request_notification(..., content_html=/content_text=)`
   renders the given body inside the brand layout (`_raw_content.html`) and
-  permits an **unregistered** type (group defaults to `system`).
+  permits an **unregistered** type (group defaults to `system`) — **only where
+  the deployment opened it**, `RAW_CONTENT` is `"off"` by default (§2a).
 - CI gate: `manage.py check_notifications` statically verifies literal
-  `request_notification` call sites against the effective registry.
+  `request_notification` call sites against the effective registry, and
+  follows `RAW_CONTENT`: with the hatch shut a `content_html=` call site on an
+  unregistered type is an error, because it sends nothing.
+
+### 2a. `RAW_CONTENT` — who may compose branded mail (`raw_content.py`)
+
+Caller-supplied markup rendered with `|safe` inside this brand's layout, for a
+notification type that need not be registered, is a phishing kit for anything
+that can reach the bus (security audit 2026-08-11, NOTIFY-02). No sanitiser
+answers it — `<a href="https://not-us.example/login">` is valid markup and is
+the attack — so the hatch is a declaration, not a default:
+
+| `RAW_CONTENT` | Unregistered types | Caller markup |
+|---|---|---|
+| `"off"` (default) | refused, ERROR names the setting | ignored |
+| `"text"` | allowed | reduced to its text, escaped by the layout |
+| `"html"` | allowed | rendered as given; boot-warns `W004` |
+
+An unrecognised value falls back to `"off"`. Authenticating and scoping the
+producers on the bus is the deployment's job — this setting removes the value
+of reaching the bus, it does not replace producer authentication.
+
+### 2b. `TELEMETRY` — what the delivery journal may remember (`telemetry.py`)
+
+`NotificationLog.data` used to hold every scalar the caller passed, which for
+the built-in types means passcodes, sign-in links, invitation URLs and
+provisioned passwords (NOTIFY-01). It is now deny-by-default in two layers:
+a **key** is journalled only where declared — the routing entry's
+`"telemetry": [...]`, `STAPEL_NOTIFICATIONS["TELEMETRY"]`, or the deep links
+the push feed needs (`chat_url`, `listing_url`, `notifications_chat_url`) —
+and a declared key is still replaced by `[redacted]` when its **value** is
+credential-shaped (token links, JWTs, opaque runs, 4–10 digit runs). UUIDs,
+numbers and prose survive; `title`/`body` are stripped of credential carriers
+rather than filtered by key, because a human reads them back in the feed.
+
+Both layers run in `NotificationLog.save()`, so this is a property of the
+table: host code and future channels get it without opting in. Rows written
+before the change are rewritten by `manage.py scrub_notification_logs`
+(dry run by default; `--commit`, `--older-than-days`, `--delete-older-than-days`).
+
+### 2c. Delivery claims (`delivery.py`, `models.NotificationDelivery`)
+
+Idempotency is a row, not a `.exists()` check: a claim unique on
+`(event_id, channel, recipient, template_version)` taken before the dispatch,
+confirmed when the provider accepts the message, released when nothing was
+delivered. Per channel and recipient, so one channel's success no longer
+suppresses another channel's retry; atomic, so two consumers handed the same
+event cannot both send. A claim whose process died is taken over after
+`DELIVERY_CLAIM_TTL` seconds.
 
 ### 3. Channel providers — dotted paths (`channels/{email,sms,push}.py`)
 
@@ -380,7 +432,7 @@ then commit `docs/{schema,flows,errors}.json`.
 
 ## Admin categories (`stapel_core.access`, admin-suite AS-5)
 
-Five models, reviewed against the doc's business/ops/secret cut:
+Six models, reviewed against the doc's business/ops/secret cut:
 
 - `UserNotificationSettings`, `UserContact` — business (undecorated, implicit
   `@access.standard`). Per-user preference/contact projections a support
@@ -397,7 +449,11 @@ Five models, reviewed against the doc's business/ops/secret cut:
 - `NotificationLog` — `@access.ops`. A passive delivery/audit journal:
   `services.process_notification` is the only writer (`sent`/`failed`/
   `skipped` rows per channel attempt), plus a GDPR-erasure `update()` in
-  `gdpr.py`. Matches the doc's own worked example verbatim.
+  `gdpr.py`. Matches the doc's own worked example verbatim. Its payload
+  columns filter themselves in `save()` (§2b) — the admin renders this table.
+- `NotificationDelivery` — `@access.ops`. The delivery-claim ledger (§2c);
+  answers "why was this redelivery suppressed", written only by
+  `delivery.claim`/`confirm`/`release`.
 - `DevicePushToken` — `@access.secret`. Carries a bearer FCM push-token
   string (`token`, unique) that authorizes sending to a device; deactivated
   automatically on delivery failure (`channels/push.py`), never staff-edited.
@@ -422,7 +478,8 @@ Attribute-only change: no migrations (`makemigrations notifications --check
 | Fork to add or re-route a notification type | `STAPEL_NOTIFICATIONS["TYPES"]` entry (§2); verify with `manage.py check_notifications` |
 | Fork or edit site-packages to rebrand emails | `LOGO_URL` + `BRAND_*` + `COMPANY_*` settings; per-type `EMAIL_TEMPLATES`; `eject_notification_templates` for structural edits (§4) |
 | Fork to add an email/SMS/push provider (SendGrid, Postmark, …) | Provider class in your project + dotted path in `*_PROVIDER` (§3) |
-| One-off email for an unregistered type by hacking templates | `request_notification(..., content_html=/content_text=)` — rendered inside the brand layout (§2) |
+| One-off email for an unregistered type by hacking templates | `request_notification(..., content_html=/content_text=)` after opening `RAW_CONTENT` (§2a) — off by default |
+| Read your own variables back out of `NotificationLog.data` | Declare them: `"telemetry"` in the routing entry or `TELEMETRY` in settings (§2b) |
 | Import `stapel_translate` (or any stapel module) from here, or vice versa | Comm surface only: `translate.resolve` Function + `translations.changed` event (§5) |
 | Mirror another module's fact into a local table and read the copy | Ask the owner by name over comm at the moment you need it (`profiles.language` is the worked example: the mirror it replaced was empty for every user, silently) |
 | Write to `UserContact` / `UserNotificationSettings` directly from app code | They are event-synced projections — emit the auth/profile events; direct writes are overwritten by the next sync |

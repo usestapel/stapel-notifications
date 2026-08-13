@@ -97,10 +97,32 @@ class NotificationLog(models.Model):
     title = models.CharField(max_length=255, blank=True, default="")
     body = models.TextField(blank=True, default="")
     data = models.JSONField(
-        default=dict, help_text="Deep link URL, notification_type, etc."
+        default=dict,
+        help_text=(
+            "Declared telemetry only — deep link, notification_type, "
+            "language_source, event_id. Deny-by-default: see telemetry.py."
+        ),
     )
     error_message = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        """The journal filters itself, at the table's own boundary.
+
+        Putting the rule here rather than only at the call site in
+        ``services`` is what makes it a property of the TABLE: a host
+        writing its own delivery row, a future channel, and a data migration
+        all get the same guarantee, and no future call site can opt out of
+        it by forgetting. ``title``/``body`` are rendered copy a human reads
+        back in the feed, so they are only stripped of credential carriers,
+        not filtered by key.
+        """
+        from .telemetry import redact_text, scrub_data
+
+        self.data = scrub_data(self.notification_type, self.data)
+        self.title = redact_text(self.title)
+        self.body = redact_text(self.body)
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Notification Log"
@@ -115,6 +137,62 @@ class NotificationLog(models.Model):
 
     def __str__(self):
         return f"{self.notification_type}/{self.channel} → {self.recipient} ({self.status})"
+
+
+@access.ops  # delivery ledger: written by services.py, read-only in admin (AS-5)
+class NotificationDelivery(models.Model):
+    """One row per delivery this deployment has claimed or completed.
+
+    The idempotency key, moved out of a check-then-act on the journal.
+    ``process_notification`` used to ask ``NotificationLog.objects.filter(
+    data__event_id=..., status="sent").exists()`` before doing anything,
+    which is wrong twice:
+
+    * **Not atomic.** Two consumers handed the same event by an at-least-once
+      broker both read "no row yet" and both send. The window is the whole
+      render+SMTP round trip, which is exactly when a redelivery arrives.
+    * **Too coarse.** One ``sent`` row suppressed the WHOLE event. An OTP
+      that reached the recipient's email but had no phone number to reach on
+      SMS could never be retried on SMS: the email row answered for both.
+
+    A claim is per ``(event_id, channel, recipient, template_version)`` and
+    the uniqueness is the database's, not a Python ``if``. ``template_version``
+    is this library's version of a letter — the effective template path, or
+    ``"raw"`` for the raw-content escape hatch — so re-pointing a type at a
+    new template does not have its delivery suppressed by a claim taken for
+    the old one.
+
+    ``state`` separates "somebody is sending this right now" from "this was
+    delivered". A claim is released on failure so a retry can take it again;
+    a claim whose process died is taken over after
+    ``STAPEL_NOTIFICATIONS["DELIVERY_CLAIM_TTL"]`` seconds, because a crash
+    between claim and send must not silence a notification forever.
+    """
+
+    CLAIMED = "claimed"
+    DELIVERED = "delivered"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    event_id = models.CharField(max_length=255, db_index=True)
+    channel = models.CharField(max_length=10)
+    recipient = models.CharField(max_length=255)
+    template_version = models.CharField(max_length=255, blank=True, default="")
+    state = models.CharField(max_length=10, default=CLAIMED)  # claimed | delivered
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Notification Delivery"
+        verbose_name_plural = "Notification Deliveries"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event_id", "channel", "recipient", "template_version"],
+                name="notif_delivery_claim_uniq",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.event_id}/{self.channel} → {self.recipient} ({self.state})"
 
 
 @access.secret  # bearer push token carrier; `token` field auto-masked by StapelModelAdmin (AS-5)
