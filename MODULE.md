@@ -102,6 +102,11 @@ STAPEL_NOTIFICATIONS = {
   names the recipient's preference field, so mail under a misspelled group is
   mail nobody can switch off. `auth` = mandatory security/authentication mail;
   `messages` / `system` = per-channel user preference checked.
+- The **channel** half of the same pair is `notifications.E004`: a non-`auth`
+  type routed to a channel with no `{channel}_{group}` field on
+  `UserNotificationSettings` (`{"channels": ["webhook"], "group": "system"}`
+  passes E001 and still has no switch). `_should_send` refuses a preference it
+  cannot read rather than defaulting to send.
 - **Unsubscribe policy** (`routing.unsubscribe_allowed`, one decision behind
   both the footer and the `List-Unsubscribe` / `List-Unsubscribe-Post:
   One-Click` headers): an **allowlist** — the group must be in

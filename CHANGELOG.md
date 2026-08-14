@@ -56,6 +56,41 @@ A deployment that already names its providers is unaffected, except that a
 name which never resolved — and had therefore been sending nothing for as long
 as it had been wrong — now fails the boot check rather than the recipient.
 
+### Fixed — `_should_send` treated an unreadable preference as consent (BREAKING: an unrecognised channel+group pair is now refused, not sent)
+
+Security audit 2026-08-11, NOTIFY-03 (P2). `services._should_send` failed open
+on a preference it could not read: an unrecognised `f"{channel}_{group}"` field
+logged "defaulting to send" and returned `True`, and the trailing
+`getattr(settings_obj, pref_field, True)` did the same on a settings object
+that no longer carried the field. Either way the result was mail the recipient
+had no switch for anywhere in the API — the harm `notifications.E001` refuses
+at boot for the group half of the pair.
+
+The channel half had no check at all. `{"channels": ["webhook"], "group":
+"system"}` names a real group, so E001 stayed silent, while
+`UserNotificationSettings` has no `webhook_system` field.
+
+Now:
+
+* An unrecognised preference field is **refused**, at `ERROR` level. Sending is
+  the half of this decision that cannot be taken back once it is wrong.
+* New system check **`notifications.E004`** — a type routed to a channel with
+  no preference field for its group. The `auth` group stays exempt: it is
+  mandatory by design and deliberately has no preference field.
+
+Unchanged on purpose: a recipient with **no** `UserNotificationSettings` row
+still receives non-`auth` mail. Every preference field on that model defaults
+to `True`, so an absent row and a default row mean the same thing; refusing
+there would silence all mail for every user who never opened their settings,
+which is a product decision this library does not get to make unilaterally.
+
+**Upgrade note.** A host that registered a type on a channel this library
+carries no preference for was sending mail nobody could switch off; that type
+now sends nothing on that channel and `manage.py check` refuses the boot with
+`E004`. There is no runtime opt-out, because the honest fix is bounded and
+mechanical: route the type to `email`, `sms` or `push`, or drop the channel
+from the entry.
+
 ### Fixed — the delivery journal kept the credentials it delivered (BREAKING: `NotificationLog.data` is now deny-by-default)
 
 Security audit 2026-08-11, NOTIFY-01 (P1). Every scalar the caller passed in

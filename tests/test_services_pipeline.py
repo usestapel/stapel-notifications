@@ -325,9 +325,33 @@ class TestPreferenceGating:
         assert NotificationLog.objects.get(channel="email").status == "sent"
         assert len(capture_email) == 1
 
-    def test_unknown_pref_field_defaults_to_send(self, user):
+    def test_unknown_pref_field_refuses_to_send(self, user):
+        """An unrecognised channel+group pair must not mean "send".
+
+        It used to log a warning and return True, so a type whose pair has
+        no field on UserNotificationSettings became mail the recipient could
+        not switch off anywhere in the API — the harm E001 refuses at boot
+        for the group half. Both halves of the pair are covered:
+        """
         obj = UserNotificationSettings.objects.create(user_id=user.id)
-        assert _should_send("weird_group", "email", obj) is True
+        # unknown GROUP half (no email_weird_group field)
+        assert _should_send("weird_group", "email", obj) is False
+        # unknown CHANNEL half (no webhook_system field) — checks.E004
+        assert _should_send("system", "webhook", obj) is False
+        # the known pairs still answer the recipient's own preference
+        assert _should_send("system", "email", obj) is True
+
+    def test_settings_object_missing_a_known_field_refuses_to_send(self, user):
+        """A settings row that has drifted from the preference vocabulary.
+
+        ``getattr(settings_obj, pref_field, True)`` defaulted to send on a
+        model that no longer carried the field — an unreadable preference
+        read as consent.
+        """
+        class _DriftedSettings:
+            email_messages = True  # every other pref field is gone
+
+        assert _should_send("system", "email", _DriftedSettings()) is False
 
 
 # ── Rendering + unsubscribe headers ─────────────────────────────

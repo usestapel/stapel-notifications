@@ -244,6 +244,60 @@ def check_security_shaped_types_are_classified(app_configs, **kwargs):
     return warnings
 
 
+# ── The preference field a channel+group pair must have ───────────────
+
+@checks.register(checks.Tags.compatibility)
+def check_notification_channels_have_a_preference(app_configs, **kwargs):
+    """E: a routed channel with no preference field for the type's group.
+
+    E001 checks the GROUP half of ``services._VALID_PREF_FIELDS``; this is
+    the CHANNEL half, and it was the half nobody was told about. A type
+    registered as::
+
+        "TYPES": {"invoice_ready": {"channels": ["webhook"], "group": "system"}}
+
+    names a real group, so E001 is silent — but there is no
+    ``webhook_system`` field on ``UserNotificationSettings``, so the
+    recipient has no switch for it anywhere in the API. ``_should_send``
+    now refuses that pair instead of sending it (an unrecognised preference
+    used to mean "send"), which turns the defect from unstoppable mail into
+    mail that never leaves; either way the registration is wrong and the
+    host should learn it at boot.
+
+    ``auth`` is exempt on purpose: that group is mandatory by design and
+    deliberately has no preference field.
+    """
+    from .services import _VALID_PREF_FIELDS
+
+    errors = []
+    for notification_type, routing in sorted(_effective_types().items()):
+        routing = routing or {}
+        group = routing.get("group")
+        # An unknown group is E001's story, not this one — do not report the
+        # same registration twice under two ids.
+        if group not in UNSUBSCRIBABLE_GROUPS:
+            continue
+        for channel in routing.get("channels") or []:
+            if f"{channel}_{group}" in _VALID_PREF_FIELDS:
+                continue
+            errors.append(checks.Error(
+                f"STAPEL_NOTIFICATIONS['TYPES'][{notification_type!r}] routes to "
+                f"channel {channel!r} in group {group!r}, but "
+                f"UserNotificationSettings has no {channel}_{group} field. The "
+                "recipient has no switch for this mail anywhere in the API, and "
+                "_should_send refuses a preference it cannot read — so this "
+                "type is silently undeliverable on that channel.",
+                hint=(
+                    "Route the type to a channel this library carries a "
+                    "preference for (email, sms, push), or drop the channel "
+                    "from the entry. The pairs are fixed by the model: "
+                    f"{sorted(_VALID_PREF_FIELDS)}."
+                ),
+                id="stapel_notifications.E004",
+            ))
+    return errors
+
+
 # ── Channel providers: what actually happens to a passcode ───────────
 
 #: Short names whose provider accepts a message and delivers it NOWHERE.

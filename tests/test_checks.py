@@ -42,6 +42,8 @@ def test_a_remote_transport_needs_a_route_to_profiles(routes, expected):
         assert [w.id for w in check_recipient_language_is_askable(None)] == expected
 
 
+# ── The channel half of the preference vocabulary (E004) ─────────
+
 
 @pytest.fixture(autouse=True)
 def _reload_settings():
@@ -50,6 +52,63 @@ def _reload_settings():
     notifications_settings.reload()
     yield
     notifications_settings.reload()
+
+
+def test_a_channel_with_no_preference_field_is_an_error():
+    """E001 caught the unknown GROUP; nothing caught the unknown CHANNEL.
+
+    'system' is a real group, so E001 stays silent — but there is no
+    ``webhook_system`` field on UserNotificationSettings, so the recipient
+    has no switch for this mail anywhere in the API. ``_should_send`` used
+    to answer an unrecognised pair with "send".
+    """
+    from stapel_notifications.checks import (
+        check_notification_channels_have_a_preference,
+        check_notification_groups_are_known,
+    )
+
+    with override_settings(
+        STAPEL_NOTIFICATIONS={
+            "TYPES": {
+                "invoice_ready": {"channels": ["webhook"], "group": "system"},
+            }
+        }
+    ):
+        (error,) = check_notification_channels_have_a_preference(None)
+        assert error.id == "stapel_notifications.E004"
+        assert "webhook" in error.msg
+        # ...and E001 really was silent about it, which is why E004 exists.
+        assert check_notification_groups_are_known(None) == []
+
+
+def test_the_packaged_registry_has_a_preference_for_every_routed_channel():
+    from stapel_notifications.checks import check_notification_channels_have_a_preference
+
+    assert check_notification_channels_have_a_preference(None) == []
+
+
+def test_an_unknown_group_is_not_reported_twice():
+    """A typo'd group is E001's story; E004 must not pile on."""
+    from stapel_notifications.checks import check_notification_channels_have_a_preference
+
+    with override_settings(
+        STAPEL_NOTIFICATIONS={
+            "TYPES": {"x": {"channels": ["email"], "group": "sistem"}}
+        }
+    ):
+        assert check_notification_channels_have_a_preference(None) == []
+
+
+def test_the_auth_group_is_exempt():
+    """Mandatory by design, and deliberately without a preference field."""
+    from stapel_notifications.checks import check_notification_channels_have_a_preference
+
+    with override_settings(
+        STAPEL_NOTIFICATIONS={
+            "TYPES": {"x": {"channels": ["email", "sms", "push"], "group": "auth"}}
+        }
+    ):
+        assert check_notification_channels_have_a_preference(None) == []
 
 
 # ── Channel providers (E003 / W005) ──────────────────────────────

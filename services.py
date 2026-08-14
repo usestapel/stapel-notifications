@@ -188,6 +188,11 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
     return translations
 
 
+#: Sentinel for "this settings object does not carry the field at all",
+#: distinct from a field that carries False. ``getattr(..., True)`` used to
+#: paper over the difference by defaulting to send.
+_NO_PREFERENCE = object()
+
 _VALID_PREF_FIELDS = {
     "email_messages",
     "email_system",
@@ -207,12 +212,37 @@ def _should_send(group: str, channel: str, settings_obj: UserNotificationSetting
     if not settings_obj:
         return True
 
-    # Check channel+group specific preference
+    # Check channel+group specific preference.
+    #
+    # An unrecognised pair is REFUSED, not sent. It used to log a warning and
+    # return True, which made a mistyped channel or a host-registered type
+    # whose channel/group pair has no field into mail the recipient could
+    # never switch off — the exact harm checks.E001 refuses at boot for the
+    # group half, and checks.E004 now refuses for the channel half. Sending
+    # is the half of this decision that cannot be taken back once it is
+    # wrong, so the unknown case has to be the quiet one.
     pref_field = f"{channel}_{group}"
     if pref_field not in _VALID_PREF_FIELDS:
-        logger.warning("No preference field '%s' for channel=%s group=%s, defaulting to send", pref_field, channel, group)
-        return True
-    return getattr(settings_obj, pref_field, True)
+        logger.error(
+            "No preference field '%s' for channel=%s group=%s — refusing to "
+            "send, because a recipient has no way to switch off mail whose "
+            "preference does not exist. Register the type on a channel this "
+            "library carries a preference for (see notifications.E004).",
+            pref_field, channel, group,
+        )
+        return False
+    allowed = getattr(settings_obj, pref_field, _NO_PREFERENCE)
+    if allowed is _NO_PREFERENCE:
+        # The field is in the vocabulary but not on this object: a settings
+        # row from a model that has drifted from _VALID_PREF_FIELDS. Same
+        # rule — an unreadable preference is not consent.
+        logger.error(
+            "%s has no attribute '%s' — refusing to send; the preference "
+            "vocabulary and UserNotificationSettings have drifted apart.",
+            type(settings_obj).__name__, pref_field,
+        )
+        return False
+    return bool(allowed)
 
 
 def default_language() -> str:
