@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [0.11.0] — 2026-08-14
+
 ### Fixed — a zero-config deployment could believe it had delivered an OTP (BREAKING: `EMAIL_PROVIDER`/`SMS_PROVIDER` no longer default to `mock`, and an unresolvable provider raises)
 
 Security audit 2026-08-11, NOTIFY-02 (P1). Two halves of the same defect.

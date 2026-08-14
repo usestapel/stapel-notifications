@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.10.0",
+  "module_version": "0.11.0",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
