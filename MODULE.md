@@ -37,10 +37,20 @@ core so any module can request without importing this one),
 
 ### 1. Settings — the `STAPEL_NOTIFICATIONS` namespace (`conf.py`)
 
-`notifications_settings = AppSettings("STAPEL_NOTIFICATIONS", ...)`.
+`notifications_settings = NotificationsAppSettings("STAPEL_NOTIFICATIONS", ...)`.
 Resolution per key: `settings.STAPEL_NOTIFICATIONS[key]` → environment
 variable → default. Values are read
 lazily (never frozen at import) and reload on `setting_changed` in tests.
+
+**Exception — the three `*_PROVIDER` keys are never read from the
+environment.** They are declared `import_strings`, which stapel-core (≥0.24.0)
+treats as implicitly `no_env`: such a key names the class the process imports
+and runs to deliver a passcode, so a stray or leaked env var must not choose
+it. Resolution for them is `settings.STAPEL_NOTIFICATIONS[key]` → flat Django
+setting → default; a same-named env var is ignored and reported by
+`manage.py check` as `stapel_core.conf.W001`. A deployment that really must
+select a provider per environment adds that key to `env_overridable=` in
+`conf.py` — deliberately not preconfigured.
 
 | Key | Default | Purpose |
 |---|---|---|

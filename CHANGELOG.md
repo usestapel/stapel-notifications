@@ -2,6 +2,73 @@
 
 ## Unreleased
 
+### Security — an environment variable could choose who sends your one-time passcodes (BREAKING for a deployment that set `EMAIL_PROVIDER`/`SMS_PROVIDER`/`PUSH_PROVIDER` as a bare env var)
+
+`STAPEL_NOTIFICATIONS` declared no `import_strings`, so `AppSettings` resolved
+every key — including the three provider keys — from `os.environ` when the
+settings dict did not carry it. Those keys are not data: each names the **class
+this process imports and runs** to put an OTP, a magic link, a password reset
+and an account-closure notice on the wire. Anything able to set an env var in
+the pod (a leaked value, a sibling container's config, a stray `export` in an
+entrypoint) could therefore redirect every passcode this service sends to a
+class of its choosing, with no trace in the project's settings module.
+
+stapel-core 0.24.0 closed this class fleet-wide by making `import_strings` keys
+implicitly `no_env` — but only for keys a module actually declares. This module
+declared none, so the mechanism did not reach it.
+
+Now `EMAIL_PROVIDER`, `SMS_PROVIDER` and `PUSH_PROVIDER` are declared
+`import_strings` (`conf.PROVIDER_SETTINGS`), so the shared rule covers them:
+the `STAPEL_NOTIFICATIONS` dict and a flat Django setting still choose the
+provider, and the environment does not. Values stay strings resolved by the
+registry-aware `channels` resolver, so built-in short names (`resend`, `twilio`,
+`fcm`, `mock`, `unconfigured`) keep working and an unresolvable value keeps
+raising `ImproperlyConfigured` / `notifications.E003` rather than a bare
+`ImportError`.
+
+**Upgrade note — this change is silent by nature, so read this one.** A
+deployment that selected a provider with a bare `EMAIL_PROVIDER=…`,
+`SMS_PROVIDER=…` or `PUSH_PROVIDER=…` environment variable **silently stops
+doing so**: no error, no log line, the service simply runs the value from your
+settings module or the shipped default (`unconfigured` for email/SMS, which
+raises on send and journals `status="failed"`). Nothing about the running
+process announces that your variable is being ignored — which is why the rule
+carries its own alarm:
+
+```
+$ python manage.py check
+WARNINGS:
+?: (stapel_core.conf.W001) Environment variable EMAIL_PROVIDER is set but
+   ignored: STAPEL_NOTIFICATIONS['EMAIL_PROVIDER'] is an import_strings key …
+```
+
+`manage.py check` names every such variable (names only — never its value).
+Run it against your deployment's environment before rolling this out.
+
+Two remedies, in order of preference:
+
+1. **Move the value into your settings module** (recommended — the project's
+   own settings are trusted, the environment is not):
+
+   ```python
+   STAPEL_NOTIFICATIONS = {
+       "EMAIL_PROVIDER": "myproject.email.SendgridProvider",
+       "SMS_PROVIDER": "twilio",
+   }
+   ```
+
+   Reading the env var yourself in `settings.py` (`os.environ["…"]`) is the
+   same thing said explicitly, and is fine: the decision is then in code you
+   own and can review.
+
+2. **If this deployment genuinely must select the implementation from the
+   environment**, say so once, by name, with core's `env_overridable` allowlist
+   in `conf.py`'s `AppSettings` declaration. It is deliberately **empty** in
+   this release and is not added preemptively for any key — forgetting a flag
+   must leave the process closed, never open.
+
+Unsetting the stale variable also clears the warning.
+
 ## [0.11.0] — 2026-08-14
 
 ### Fixed — a zero-config deployment could believe it had delivered an OTP (BREAKING: `EMAIL_PROVIDER`/`SMS_PROVIDER` no longer default to `mock`, and an unresolvable provider raises)

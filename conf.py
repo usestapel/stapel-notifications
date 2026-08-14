@@ -21,9 +21,59 @@ Everything a host project previously had to fork is an override here::
         "PUSH_PROVIDER": "fcm",
     }
 
-Resolution per key: STAPEL_NOTIFICATIONS dict → env → default.
+Resolution per key: STAPEL_NOTIFICATIONS dict → env → default — except for
+the provider keys, which are never read from the environment (see
+``PROVIDER_SETTINGS`` below).
 """
 from stapel_core.conf import AppSettings
+
+#: The keys whose value names the CLASS this process imports and runs to put
+#: a passcode, a password reset or an account-closure notice on the wire.
+#:
+#: They are declared to ``AppSettings`` as ``import_strings``, which since
+#: stapel-core 0.24.0 makes them implicitly ``no_env``: a same-named
+#: environment variable no longer selects the delivery backend. That is the
+#: whole point — anything that can set an env var in the pod (a leaked value,
+#: a sibling container's config, a stray export in an entrypoint) could
+#: otherwise choose which class receives every OTP this service sends. The
+#: project's own settings module is trusted and still wins; the environment
+#: is not. ``stapel_core.conf.W001`` names such a variable at
+#: ``manage.py check`` time, because ignoring one is silent by nature.
+#:
+#: A deployment that genuinely must pick a provider per environment says so
+#: once, by name, with ``env_overridable=`` — deliberately not preconfigured
+#: here: forgetting a flag must leave the process closed, never open.
+PROVIDER_SETTINGS = ("EMAIL_PROVIDER", "SMS_PROVIDER", "PUSH_PROVIDER")
+
+
+class NotificationsAppSettings(AppSettings):
+    """``AppSettings`` whose provider keys are imported by the channel layer.
+
+    ``PROVIDER_SETTINGS`` are ``import_strings`` for the POLICY half of that
+    declaration (env-closed, and visible to the ``W001`` ignored-env-var
+    check). The IMPORT half stays where it already lives —
+    ``channels.sms._resolve_provider_class`` — because a provider value is
+    not only a dotted path: it is *either* a built-in short name
+    (``"twilio"``, ``"mock"``, the shipped ``"unconfigured"``/``"fcm"``
+    defaults) *or* a dotted path. The base class's eager ``import_string``
+    would raise on every short-name deployment, and it would also replace a
+    typo's ``ImproperlyConfigured`` — the message ``checks.E003`` turns into
+    a failed boot — with a bare ``ImportError`` from attribute access.
+
+    So this class hands the raw string through and lets the registry-aware
+    resolver do the import. It is a superset of ``import_string``, not a way
+    around it: an unknown name and an unimportable path both raise, and
+    neither can be chosen by an env var any more.
+    """
+
+    def __getattr__(self, key):
+        if key not in PROVIDER_SETTINGS:
+            return super().__getattr__(key)
+        if key in self._cache:
+            return self._cache[key]
+        value = self._raw(key)  # _raw applies the env gate; the import does not
+        self._cache[key] = value
+        return value
 
 #: AppSettings-shaped literal dict (capability-config.md §2): a top-level
 #: DEFAULTS lets the capabilities.json emitter introspect axis keys/kinds
@@ -133,9 +183,12 @@ DEFAULTS = {
     "LANGUAGES": ["en"],
 }
 
-notifications_settings = AppSettings(
+notifications_settings = NotificationsAppSettings(
     "STAPEL_NOTIFICATIONS",
     defaults=DEFAULTS,
+    # Implementation seam: never selected by the environment. See
+    # PROVIDER_SETTINGS above for why, and for the way back out.
+    import_strings=PROVIDER_SETTINGS,
 )
 
-__all__ = ["notifications_settings"]
+__all__ = ["notifications_settings", "NotificationsAppSettings", "PROVIDER_SETTINGS"]
