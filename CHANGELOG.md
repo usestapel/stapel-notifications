@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+
+## [0.11.0] — 2026-08-14
 
 ### Security — an environment variable could choose who sends your one-time passcodes (BREAKING for a deployment that set `EMAIL_PROVIDER`/`SMS_PROVIDER`/`PUSH_PROVIDER` as a bare env var)
 
@@ -69,7 +71,6 @@ Two remedies, in order of preference:
 
 Unsetting the stale variable also clears the warning.
 
-## [0.11.0] — 2026-08-14
 
 ### Fixed — a zero-config deployment could believe it had delivered an OTP (BREAKING: `EMAIL_PROVIDER`/`SMS_PROVIDER` no longer default to `mock`, and an unresolvable provider raises)
 
