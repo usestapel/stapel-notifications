@@ -6,6 +6,7 @@ from .models import (
     UserNotificationSettings,
     UserContact,
     TranslationCache,
+    NotificationDelivery,
     NotificationLog,
     DevicePushToken,
 )
@@ -37,6 +38,17 @@ class NotificationLogAdmin(StapelModelAdmin):
     list_display = ['id', 'notification_type', 'channel', 'status', 'recipient', 'language', 'created_at']
     list_filter = ['status', 'channel', 'notification_type']
     search_fields = ['user_id', 'recipient', 'notification_type']
+    readonly_fields = ['id', 'created_at']
+    ordering = ['-created_at']
+
+
+@admin.register(NotificationDelivery)
+class NotificationDeliveryAdmin(StapelModelAdmin):
+    """Why a redelivery was suppressed — the question this table answers."""
+
+    list_display = ['event_id', 'channel', 'recipient', 'state', 'template_version', 'created_at']
+    list_filter = ['state', 'channel']
+    search_fields = ['event_id', 'recipient']
     readonly_fields = ['id', 'created_at']
     ordering = ['-created_at']
 

@@ -325,9 +325,33 @@ class TestPreferenceGating:
         assert NotificationLog.objects.get(channel="email").status == "sent"
         assert len(capture_email) == 1
 
-    def test_unknown_pref_field_defaults_to_send(self, user):
+    def test_unknown_pref_field_refuses_to_send(self, user):
+        """An unrecognised channel+group pair must not mean "send".
+
+        It used to log a warning and return True, so a type whose pair has
+        no field on UserNotificationSettings became mail the recipient could
+        not switch off anywhere in the API — the harm E001 refuses at boot
+        for the group half. Both halves of the pair are covered:
+        """
         obj = UserNotificationSettings.objects.create(user_id=user.id)
-        assert _should_send("weird_group", "email", obj) is True
+        # unknown GROUP half (no email_weird_group field)
+        assert _should_send("weird_group", "email", obj) is False
+        # unknown CHANNEL half (no webhook_system field) — checks.E004
+        assert _should_send("system", "webhook", obj) is False
+        # the known pairs still answer the recipient's own preference
+        assert _should_send("system", "email", obj) is True
+
+    def test_settings_object_missing_a_known_field_refuses_to_send(self, user):
+        """A settings row that has drifted from the preference vocabulary.
+
+        ``getattr(settings_obj, pref_field, True)`` defaulted to send on a
+        model that no longer carried the field — an unreadable preference
+        read as consent.
+        """
+        class _DriftedSettings:
+            email_messages = True  # every other pref field is gone
+
+        assert _should_send("system", "email", _DriftedSettings()) is False
 
 
 # ── Rendering + unsubscribe headers ─────────────────────────────
@@ -530,9 +554,17 @@ class TestUndeliverableIsLoud:
 
     def test_partial_delivery_is_not_escalated(self, user, caplog):
         """One reachable channel is enough to stay quiet — the recipient
-        WAS told, just not on every channel the type could have used."""
+        WAS told, just not on every channel the type could have used.
+
+        The email provider is named explicitly because the shipped default
+        no longer delivers: EMAIL_PROVIDER defaults to 'unconfigured', which
+        raises rather than logging a line and calling it a delivery.
+        """
         UserContact.objects.create(user_id=user.id, email="u@example.com")
-        with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+        with (
+            override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}),
+            caplog.at_level("ERROR", logger="stapel_notifications.services"),
+        ):
             process_notification(
                 notification_type="otp_code",
                 user_id=str(user.id),
@@ -607,3 +639,33 @@ def test_last_resort_language_follows_the_project_not_a_hardcoded_en(
     assert NotificationLog.objects.get(
         notification_type="new_device_login"
     ).language == "ru"
+
+
+# ── Zero config must not be able to claim a delivery ─────────────
+
+
+@pytest.mark.django_db
+def test_zero_config_otp_is_journalled_as_failed_not_sent(user, caplog):
+    """The whole point of dropping the "mock" default.
+
+    With EMAIL_PROVIDER defaulting to "mock", this exact call — a
+    zero-config deployment sending a passcode to a reachable address —
+    wrote a NotificationLog row reading status="sent" and stayed at INFO.
+    The passcode had gone to a log line. Now the send raises, the row reads
+    "failed", and the undeliverable escalation fires.
+    """
+    UserContact.objects.create(user_id=user.id, email="u@example.com")
+    with override_settings(STAPEL_NOTIFICATIONS={}):
+        with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+            process_notification(
+                notification_type="otp_code",
+                user_id=str(user.id),
+                variables={"code": "1234", "expiry_minutes": 3},
+            )
+    log = NotificationLog.objects.get(channel="email")
+    assert log.status == "failed"
+    assert "EMAIL_PROVIDER" in log.error_message
+    assert NotificationLog.objects.filter(status="sent").count() == 0
+    assert any(
+        "NOTIFICATION UNDELIVERABLE" in r.getMessage() for r in caplog.records
+    )

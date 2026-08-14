@@ -5,8 +5,11 @@ Statically scans the host project (and any extra paths) for
 argument (or ``notification_type=`` keyword) against the effective type
 registry (built-in catalog + STAPEL_NOTIFICATIONS['TYPES']).
 
-A call that passes ``content_html=``/``content_text=`` is exempt — the
-raw-content escape hatch renders without a registered type/template.
+A call that passes ``content_html=``/``content_text=`` is exempt ONLY where
+the deployment has opened the raw-content escape hatch
+(``STAPEL_NOTIFICATIONS["RAW_CONTENT"]``, "off" by default). With the hatch
+shut those calls send nothing at all, so exempting them would be a CI gate
+certifying the one call site that is guaranteed to be silent.
 
 Limitations (documented, not silent): only literal, same-codebase call
 sites can be verified. Dynamic types (variables, f-strings) are reported
@@ -82,9 +85,16 @@ def _passes_content(call):
     )
 
 
+def _hatch_is_open() -> bool:
+    from stapel_notifications.raw_content import OFF, mode
+
+    return mode() != OFF
+
+
 def check_paths(paths) -> list[Issue]:
     issues: list[Issue] = []
     known = set(registered_types())
+    hatch_open = _hatch_is_open()
     if not known:
         issues.append(Issue(
             "warning", "-", 0,
@@ -101,7 +111,19 @@ def check_paths(paths) -> list[Issue]:
             continue
         for call in _request_notification_calls(tree):
             if _passes_content(call):
-                continue  # escape hatch: renders without a registered type
+                if hatch_open:
+                    continue  # escape hatch: renders without a registered type
+                type_arg = _type_arg(call)
+                if isinstance(type_arg, ast.Constant) and type_arg.value in known:
+                    continue  # registered type; the raw body is simply ignored
+                issues.append(Issue(
+                    "error", path, call.lineno,
+                    "content_html/content_text on an unregistered type, but "
+                    "STAPEL_NOTIFICATIONS['RAW_CONTENT'] is 'off' — this call "
+                    "sends nothing. Register the type with its own template, "
+                    "or open the hatch deliberately ('text' or 'html').",
+                ))
+                continue
             type_arg = _type_arg(call)
             if type_arg is None:
                 issues.append(Issue(

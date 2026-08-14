@@ -175,10 +175,22 @@ def test_resend_skips_inline_attachment_when_logo_url_set(monkeypatch):
 
 @pytest.mark.django_db
 class TestRawContentEscapeHatch:
+    """The hatch as a deployment that opened it experiences it.
+
+    ``RAW_CONTENT`` is "off" by default since the 2026-08-11 audit — a
+    caller-supplied body inside the brand layout is a phishing kit for
+    anything that can reach the bus (NOTIFY-02). What the hatch DOES once
+    declared is unchanged, and that is what this class pins;
+    tests/test_raw_content_policy.py pins the default and the middle mode.
+    """
+
+    HATCH_OPEN = {"RAW_CONTENT": "html"}
+
     def test_unknown_type_with_content_html_sends(self, capture_email):
         _process(
             ntype="adhoc.announcement",  # NOT in the registry
             variables={"subject": "Big news"},
+            extra_settings=self.HATCH_OPEN,
             content_html='<p id="adhoc-body">Hello there</p>',
         )
         (mail,) = capture_email
@@ -194,6 +206,7 @@ class TestRawContentEscapeHatch:
         _process(
             ntype="adhoc.plain",
             variables={},
+            extra_settings=self.HATCH_OPEN,
             content_text="line one\nline two",
         )
         (mail,) = capture_email
@@ -202,6 +215,7 @@ class TestRawContentEscapeHatch:
     def test_content_beats_registered_template(self, capture_email):
         _process(
             ntype="otp_code",  # registered, has a template
+            extra_settings=self.HATCH_OPEN,
             content_html="<p>override body</p>",
         )
         (mail,) = capture_email
@@ -225,7 +239,9 @@ class TestRawContentEscapeHatch:
         from stapel_notifications.models import UserContact
 
         UserContact.objects.create(user_id=user.id, email="u@example.com")
-        with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        with override_settings(
+            STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE, **self.HATCH_OPEN}
+        ):
             process_notification(
                 notification_type="adhoc.announcement",
                 user_id=str(user.id),

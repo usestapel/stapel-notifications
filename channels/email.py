@@ -2,17 +2,24 @@
 Email channel facade.
 
 Dispatches to the provider configured via EMAIL_PROVIDER setting:
-  resend   — Resend API (https://resend.com)
-  smtp     — Standard SMTP via Django email backend
-  mailgun  — Mailgun API (https://mailgun.com)
-  mock     — Log only, no real sending (default)
+  resend       — Resend API (https://resend.com)
+  smtp         — Standard SMTP via Django email backend
+  mailgun      — Mailgun API (https://mailgun.com)
+  mock         — Log only, no real sending. Must be asked for explicitly.
+  unconfigured — The shipped default: refuses to send (see sms.py).
 
-Unknown values fall back to mock with a warning.
+An unknown short name, or a dotted path that cannot be imported, RAISES —
+see ``sms._resolve_provider_class`` for why the mock fallback had to go.
 """
 
 import logging
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+
+# sms.py owns the shared resolver and the "nobody chose a backend" vocabulary
+# for all three channels; it imports nothing from here, so this is not a cycle.
+from stapel_notifications.channels.sms import UNCONFIGURED, UNCONFIGURED_MESSAGE
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +50,19 @@ logger = logging.getLogger(__name__)
 class _MockEmailProvider:
     def send(self, recipient: str, subject: str, html_body: str, headers: dict | None) -> None:
         logger.info("[mock email] to=%s subject=%r", _mask(recipient), subject)
+
+
+class _UnconfiguredEmailProvider:
+    """The shipped default — see ``sms._UnconfiguredSMSProvider``.
+
+    The email channel is the one this matters most on: every built-in
+    security type routes to it, so a zero-config deployment used to journal
+    OTP codes, password resets and account-closure notices as ``sent`` when
+    all that happened was a log line.
+    """
+
+    def send(self, recipient: str, subject: str, html_body: str, headers: dict | None) -> None:
+        raise ImproperlyConfigured(UNCONFIGURED_MESSAGE.format(setting="EMAIL_PROVIDER"))
 
 
 class _ResendEmailProvider:
@@ -136,10 +156,11 @@ class _MailgunEmailProvider:
 # ──────────────────────────────────────────────────────────────────
 
 _PROVIDERS: dict[str, type] = {
-    'resend':   _ResendEmailProvider,
-    'smtp':     _SMTPEmailProvider,
-    'mailgun':  _MailgunEmailProvider,
-    'mock':     _MockEmailProvider,
+    'resend':      _ResendEmailProvider,
+    'smtp':        _SMTPEmailProvider,
+    'mailgun':     _MailgunEmailProvider,
+    'mock':        _MockEmailProvider,
+    UNCONFIGURED:  _UnconfiguredEmailProvider,
 }
 
 
@@ -148,7 +169,7 @@ def _get_provider():
     from stapel_notifications.conf import notifications_settings
 
     return _resolve_provider(
-        notifications_settings.EMAIL_PROVIDER, _PROVIDERS, _MockEmailProvider, "email"
+        notifications_settings.EMAIL_PROVIDER, _PROVIDERS, "email", "EMAIL_PROVIDER"
     )
 
 

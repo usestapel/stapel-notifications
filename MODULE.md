@@ -47,9 +47,9 @@ lazily (never frozen at import) and reload on `setting_changed` in tests.
 | `TYPES` | `{}` | Notification-type registry, merged **over** built-ins (see §2) |
 | `EMAIL_TEMPLATES` | `{}` | Per-type email template map, merged over `DEFAULT_EMAIL_TEMPLATES` |
 | `TEXT` | `{}` | Per-key copy registry, merged **over** `NOTIFICATION_KEYS` — the string counterpart of `EMAIL_TEMPLATES` (see §4a) |
-| `EMAIL_PROVIDER` | `"mock"` | `resend` / `smtp` / `mailgun` / `mock` or dotted path (see §3) |
-| `SMS_PROVIDER` | `"mock"` | `gatewayapi` / `twilio` / `mock` or dotted path |
-| `PUSH_PROVIDER` | `"fcm"` | `fcm` / `mock` or dotted path |
+| `EMAIL_PROVIDER` | `"unconfigured"` | `resend` / `smtp` / `mailgun` / `mock` / `unconfigured` or dotted path (see §3) |
+| `SMS_PROVIDER` | `"unconfigured"` | `gatewayapi` / `twilio` / `mock` / `unconfigured` or dotted path |
+| `PUSH_PROVIDER` | `"fcm"` | `fcm` / `mock` / `unconfigured` or dotted path |
 | `RESEND_API_KEY` | `""` | Resend credentials |
 | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN` | `""` | Mailgun credentials |
 | `GATEWAYAPI_TOKEN`, `GATEWAYAPI_SENDER` | `""`, `"Stapel"` | GatewayAPI credentials + sender name |
@@ -64,6 +64,9 @@ lazily (never frozen at import) and reload on `setting_changed` in tests.
 | `BRAND_BG` | `"#F5F5F6"` | Page background (`brand_bg`) |
 | `BRAND_TEXT` | `"#1C1D20"` | Headings + body copy (`brand_text`) |
 | `LANGUAGES` | `["en"]` | Languages prefetched by `manage.py sync_translations` (lazy resolve-on-miss covers the rest) |
+| `RAW_CONTENT` | `"off"` | May a caller supply the body of a branded letter? `off` / `text` (body yes, markup no) / `html` (trusted producers only, boot-warns `W004`) — see §2a |
+| `TELEMETRY` | `{}` | Per-type journal allowlist, `{"<type>": [...], "*": [...]}` — deny-by-default, see §2b |
+| `DELIVERY_CLAIM_TTL` | `900` | Seconds after which a delivery claim whose process died may be taken over by a redelivery (§2c) |
 
 Note: this namespace declares no `import_strings` — the `*_PROVIDER` dotted
 paths are resolved at send time by `channels.sms._resolve_provider` (shared by
@@ -99,6 +102,11 @@ STAPEL_NOTIFICATIONS = {
   names the recipient's preference field, so mail under a misspelled group is
   mail nobody can switch off. `auth` = mandatory security/authentication mail;
   `messages` / `system` = per-channel user preference checked.
+- The **channel** half of the same pair is `notifications.E004`: a non-`auth`
+  type routed to a channel with no `{channel}_{group}` field on
+  `UserNotificationSettings` (`{"channels": ["webhook"], "group": "system"}`
+  passes E001 and still has no switch). `_should_send` refuses a preference it
+  cannot read rather than defaulting to send.
 - **Unsubscribe policy** (`routing.unsubscribe_allowed`, one decision behind
   both the footer and the `List-Unsubscribe` / `List-Unsubscribe-Post:
   One-Click` headers): an **allowlist** — the group must be in
@@ -114,22 +122,82 @@ STAPEL_NOTIFICATIONS = {
   security mail sitting in a bulk-mail group.
 - Ad-hoc escape hatch: `request_notification(..., content_html=/content_text=)`
   renders the given body inside the brand layout (`_raw_content.html`) and
-  permits an **unregistered** type (group defaults to `system`).
+  permits an **unregistered** type (group defaults to `system`) — **only where
+  the deployment opened it**, `RAW_CONTENT` is `"off"` by default (§2a).
 - CI gate: `manage.py check_notifications` statically verifies literal
-  `request_notification` call sites against the effective registry.
+  `request_notification` call sites against the effective registry, and
+  follows `RAW_CONTENT`: with the hatch shut a `content_html=` call site on an
+  unregistered type is an error, because it sends nothing.
+
+### 2a. `RAW_CONTENT` — who may compose branded mail (`raw_content.py`)
+
+Caller-supplied markup rendered with `|safe` inside this brand's layout, for a
+notification type that need not be registered, is a phishing kit for anything
+that can reach the bus (security audit 2026-08-11, NOTIFY-02). No sanitiser
+answers it — `<a href="https://not-us.example/login">` is valid markup and is
+the attack — so the hatch is a declaration, not a default:
+
+| `RAW_CONTENT` | Unregistered types | Caller markup |
+|---|---|---|
+| `"off"` (default) | refused, ERROR names the setting | ignored |
+| `"text"` | allowed | reduced to its text, escaped by the layout |
+| `"html"` | allowed | rendered as given; boot-warns `W004` |
+
+An unrecognised value falls back to `"off"`. Authenticating and scoping the
+producers on the bus is the deployment's job — this setting removes the value
+of reaching the bus, it does not replace producer authentication.
+
+### 2b. `TELEMETRY` — what the delivery journal may remember (`telemetry.py`)
+
+`NotificationLog.data` used to hold every scalar the caller passed, which for
+the built-in types means passcodes, sign-in links, invitation URLs and
+provisioned passwords (NOTIFY-01). It is now deny-by-default in two layers:
+a **key** is journalled only where declared — the routing entry's
+`"telemetry": [...]`, `STAPEL_NOTIFICATIONS["TELEMETRY"]`, or the deep links
+the push feed needs (`chat_url`, `listing_url`, `notifications_chat_url`) —
+and a declared key is still replaced by `[redacted]` when its **value** is
+credential-shaped (token links, JWTs, opaque runs, 4–10 digit runs). UUIDs,
+numbers and prose survive; `title`/`body` are stripped of credential carriers
+rather than filtered by key, because a human reads them back in the feed.
+
+Both layers run in `NotificationLog.save()`, so this is a property of the
+table: host code and future channels get it without opting in. Rows written
+before the change are rewritten by `manage.py scrub_notification_logs`
+(dry run by default; `--commit`, `--older-than-days`, `--delete-older-than-days`).
+
+### 2c. Delivery claims (`delivery.py`, `models.NotificationDelivery`)
+
+Idempotency is a row, not a `.exists()` check: a claim unique on
+`(event_id, channel, recipient, template_version)` taken before the dispatch,
+confirmed when the provider accepts the message, released when nothing was
+delivered. Per channel and recipient, so one channel's success no longer
+suppresses another channel's retry; atomic, so two consumers handed the same
+event cannot both send. A claim whose process died is taken over after
+`DELIVERY_CLAIM_TTL` seconds.
 
 ### 3. Channel providers — dotted paths (`channels/{email,sms,push}.py`)
 
 Each channel resolves its provider per send via `_resolve_provider(name_or_path,
-registry, fallback, kind)`: built-in short name, else any dotted path imported
-with `django.utils.module_loading.import_string`, else fall back to `mock`
-with a warning (never crash on misconfig).
+registry, kind, setting)`: built-in short name, else any dotted path imported
+with `django.utils.module_loading.import_string`, else **raise**
+`ImproperlyConfigured`. `checks.E003` asks the same question at boot.
+
+There is no mock fallback. It used to answer a typo — and an `ImportError`
+from inside a working provider module — with the channel's mock, which logs a
+line and RETURNS; `_dispatch` counts a provider that returned as a delivery, so
+the misconfiguration was recorded in the journal as `status="sent"`.
+
+For the same reason `EMAIL_PROVIDER`/`SMS_PROVIDER` default to
+`unconfigured`, a provider that raises on every send, rather than to `mock`.
+Log-only delivery is still one setting away — it is just no longer what you get
+by saying nothing, and `checks.W005` warns when a non-delivering provider is in
+force with `DEBUG=False`.
 
 | Channel | Setting | Built-ins | Provider duck type |
 |---|---|---|---|
-| Email | `EMAIL_PROVIDER` | `resend`, `smtp`, `mailgun`, `mock` | `.send(recipient, subject, html_body, headers: dict \| None) -> None` |
-| SMS | `SMS_PROVIDER` | `gatewayapi`, `twilio`, `mock` | `.send(phone, body) -> None` |
-| Push | `PUSH_PROVIDER` | `fcm`, `mock` | `.send(user_id, title, body, data: dict \| None) -> int` (count sent) |
+| Email | `EMAIL_PROVIDER` | `resend`, `smtp`, `mailgun`, `mock`, `unconfigured` | `.send(recipient, subject, html_body, headers: dict \| None) -> None` |
+| SMS | `SMS_PROVIDER` | `gatewayapi`, `twilio`, `mock`, `unconfigured` | `.send(phone, body) -> None` |
+| Push | `PUSH_PROVIDER` | `fcm`, `mock`, `unconfigured` | `.send(user_id, title, body, data: dict \| None) -> int` (count sent) |
 
 A new provider (SendGrid, Postmark, APNs direct, …) is a class in the **host
 project** with the matching `send` signature plus
@@ -380,7 +448,7 @@ then commit `docs/{schema,flows,errors}.json`.
 
 ## Admin categories (`stapel_core.access`, admin-suite AS-5)
 
-Five models, reviewed against the doc's business/ops/secret cut:
+Six models, reviewed against the doc's business/ops/secret cut:
 
 - `UserNotificationSettings`, `UserContact` — business (undecorated, implicit
   `@access.standard`). Per-user preference/contact projections a support
@@ -397,7 +465,11 @@ Five models, reviewed against the doc's business/ops/secret cut:
 - `NotificationLog` — `@access.ops`. A passive delivery/audit journal:
   `services.process_notification` is the only writer (`sent`/`failed`/
   `skipped` rows per channel attempt), plus a GDPR-erasure `update()` in
-  `gdpr.py`. Matches the doc's own worked example verbatim.
+  `gdpr.py`. Matches the doc's own worked example verbatim. Its payload
+  columns filter themselves in `save()` (§2b) — the admin renders this table.
+- `NotificationDelivery` — `@access.ops`. The delivery-claim ledger (§2c);
+  answers "why was this redelivery suppressed", written only by
+  `delivery.claim`/`confirm`/`release`.
 - `DevicePushToken` — `@access.secret`. Carries a bearer FCM push-token
   string (`token`, unique) that authorizes sending to a device; deactivated
   automatically on delivery failure (`channels/push.py`), never staff-edited.
@@ -422,7 +494,8 @@ Attribute-only change: no migrations (`makemigrations notifications --check
 | Fork to add or re-route a notification type | `STAPEL_NOTIFICATIONS["TYPES"]` entry (§2); verify with `manage.py check_notifications` |
 | Fork or edit site-packages to rebrand emails | `LOGO_URL` + `BRAND_*` + `COMPANY_*` settings; per-type `EMAIL_TEMPLATES`; `eject_notification_templates` for structural edits (§4) |
 | Fork to add an email/SMS/push provider (SendGrid, Postmark, …) | Provider class in your project + dotted path in `*_PROVIDER` (§3) |
-| One-off email for an unregistered type by hacking templates | `request_notification(..., content_html=/content_text=)` — rendered inside the brand layout (§2) |
+| One-off email for an unregistered type by hacking templates | `request_notification(..., content_html=/content_text=)` after opening `RAW_CONTENT` (§2a) — off by default |
+| Read your own variables back out of `NotificationLog.data` | Declare them: `"telemetry"` in the routing entry or `TELEMETRY` in settings (§2b) |
 | Import `stapel_translate` (or any stapel module) from here, or vice versa | Comm surface only: `translate.resolve` Function + `translations.changed` event (§5) |
 | Mirror another module's fact into a local table and read the copy | Ask the owner by name over comm at the moment you need it (`profiles.language` is the worked example: the mirror it replaced was empty for every user, silently) |
 | Write to `UserContact` / `UserNotificationSettings` directly from app code | They are event-synced projections — emit the auth/profile events; direct writes are overwritten by the next sync |

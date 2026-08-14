@@ -112,11 +112,22 @@ def test_sms_provider_dotted_path():
     assert _FakeProvider.sent == [("+100", "hi")]
 
 
-def test_unknown_provider_falls_back_to_mock():
-    from stapel_notifications.channels.sms import _MockSMSProvider, _get_provider
+def test_unknown_provider_raises_instead_of_becoming_a_mock():
+    """A name nobody can resolve is a configuration error, not a mock.
+
+    This used to substitute the channel's mock provider and log a WARNING.
+    The mock RETURNS, and ``services._dispatch`` counts a provider that
+    returned as a delivery — so one typo in ``SMS_PROVIDER`` sent nothing
+    for as long as it took someone to notice, with every passcode recorded
+    in the delivery journal as ``status="sent"``.
+    """
+    from django.core.exceptions import ImproperlyConfigured
+
+    from stapel_notifications.channels.sms import _get_provider
 
     with override_settings(STAPEL_NOTIFICATIONS={"SMS_PROVIDER": "does-not-exist"}):
-        assert isinstance(_get_provider(), _MockSMSProvider)
+        with pytest.raises(ImproperlyConfigured, match="does-not-exist"):
+            _get_provider()
 
 
 

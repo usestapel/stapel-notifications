@@ -56,10 +56,43 @@ DEFAULTS = {
     # Keys for a host's OWN type (registered via TYPES) work too — that type
     # has no entry in NOTIFICATION_KEYS, so TEXT is its only copy source.
     "TEXT": {},
+    # Raw-content escape hatch: may a caller supply the body of a branded
+    # letter, and may it supply MARKUP? "off" (default) | "text" | "html".
+    # Anything a producer can reach can otherwise send byte-perfect
+    # first-party phishing — see raw_content.py for the whole reasoning.
+    "RAW_CONTENT": "off",
+    # Per-type telemetry allowlist for the delivery journal:
+    # {"<type>": ["order_id", ...], "*": ["tenant_id"]}. Deny-by-default —
+    # a caller variable that nobody declared here (or in the routing entry's
+    # "telemetry" key) is not written to NotificationLog.data, and a declared
+    # one is still dropped when its VALUE is credential-shaped. See
+    # telemetry.py: the journal used to persist passcodes, sign-in links and
+    # provisioned passwords verbatim into a table the admin renders.
+    "TELEMETRY": {},
+    # Seconds after which a delivery claim whose process died is taken over
+    # by a redelivery (models.NotificationDelivery). Long enough to cover a
+    # slow SMTP round trip, short enough that a crashed consumer does not
+    # silence a notification for the rest of the day.
+    "DELIVERY_CLAIM_TTL": 900,
     # Channel backends: short registry name or dotted path to a provider
-    # class with .send(...)
-    "EMAIL_PROVIDER": "mock",
-    "SMS_PROVIDER": "mock",
+    # class with .send(...).
+    #
+    # The email/SMS defaults are "unconfigured", NOT "mock". A mock provider
+    # returns, and services._dispatch counts a provider that returned as a
+    # delivery — so a zero-config deployment used to write status="sent" into
+    # the delivery journal for every OTP, password reset and account-closure
+    # notice it had only logged. "unconfigured" raises instead: the same
+    # deployment now records status="failed" and escalates through the
+    # "NOTIFICATION UNDELIVERABLE" path.
+    #
+    # Log-only delivery is still available — it is now an explicit act:
+    # {"EMAIL_PROVIDER": "mock", "SMS_PROVIDER": "mock"}. checks.W005 warns
+    # when that lands in a non-DEBUG deployment.
+    #
+    # PUSH_PROVIDER keeps "fcm": it already refuses loudly without
+    # credentials, so it was never the silent-success shape.
+    "EMAIL_PROVIDER": "unconfigured",
+    "SMS_PROVIDER": "unconfigured",
     "PUSH_PROVIDER": "fcm",
     # Provider credentials (read lazily, never frozen at import)
     "RESEND_API_KEY": "",

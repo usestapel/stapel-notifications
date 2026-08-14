@@ -20,8 +20,13 @@ from .models import (
     NotificationLog,
 )
 from .conf import notifications_settings
+from .delivery import claim as claim_delivery
+from .delivery import confirm as confirm_delivery
+from .delivery import release as release_delivery
 from .language import resolve as resolve_language
+from .raw_content import apply_policy as apply_raw_content_policy
 from .routing import get_email_template, get_routing, unsubscribe_allowed
+from .telemetry import telemetry
 from .translation_keys import NOTIFICATION_KEYS, keys_for_type
 from .channels.email import send_email
 from .channels.push import send_push
@@ -183,6 +188,11 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
     return translations
 
 
+#: Sentinel for "this settings object does not carry the field at all",
+#: distinct from a field that carries False. ``getattr(..., True)`` used to
+#: paper over the difference by defaulting to send.
+_NO_PREFERENCE = object()
+
 _VALID_PREF_FIELDS = {
     "email_messages",
     "email_system",
@@ -202,12 +212,37 @@ def _should_send(group: str, channel: str, settings_obj: UserNotificationSetting
     if not settings_obj:
         return True
 
-    # Check channel+group specific preference
+    # Check channel+group specific preference.
+    #
+    # An unrecognised pair is REFUSED, not sent. It used to log a warning and
+    # return True, which made a mistyped channel or a host-registered type
+    # whose channel/group pair has no field into mail the recipient could
+    # never switch off — the exact harm checks.E001 refuses at boot for the
+    # group half, and checks.E004 now refuses for the channel half. Sending
+    # is the half of this decision that cannot be taken back once it is
+    # wrong, so the unknown case has to be the quiet one.
     pref_field = f"{channel}_{group}"
     if pref_field not in _VALID_PREF_FIELDS:
-        logger.warning("No preference field '%s' for channel=%s group=%s, defaulting to send", pref_field, channel, group)
-        return True
-    return getattr(settings_obj, pref_field, True)
+        logger.error(
+            "No preference field '%s' for channel=%s group=%s — refusing to "
+            "send, because a recipient has no way to switch off mail whose "
+            "preference does not exist. Register the type on a channel this "
+            "library carries a preference for (see notifications.E004).",
+            pref_field, channel, group,
+        )
+        return False
+    allowed = getattr(settings_obj, pref_field, _NO_PREFERENCE)
+    if allowed is _NO_PREFERENCE:
+        # The field is in the vocabulary but not on this object: a settings
+        # row from a model that has drifted from _VALID_PREF_FIELDS. Same
+        # rule — an unreadable preference is not consent.
+        logger.error(
+            "%s has no attribute '%s' — refusing to send; the preference "
+            "vocabulary and UserNotificationSettings have drifted apart.",
+            type(settings_obj).__name__, pref_field,
+        )
+        return False
+    return bool(allowed)
 
 
 def default_language() -> str:
@@ -252,16 +287,22 @@ def process_notification(
     and dispatch to all configured channels.
 
     ``content_html`` / ``content_text`` are the raw-content escape hatch:
-    when given, the email body is rendered from them (wrapped in the base
-    brand layout) instead of a registered per-type template, and an
+    when a deployment has opened it (``STAPEL_NOTIFICATIONS["RAW_CONTENT"]``,
+    "off" by default), the email body is rendered from them — wrapped in the
+    base brand layout — instead of a registered per-type template, and an
     unregistered ``notification_type`` is allowed (group defaults to
-    "system", channels derived from the content given).
-    """
-    # Idempotency: skip if this event was already processed
-    if event_id and NotificationLog.objects.filter(data__event_id=event_id, status="sent").exists():
-        logger.info("Skipping duplicate event_id=%s", event_id)
-        return
+    "system", channels derived from the content given). With the hatch shut
+    the content is dropped and an unregistered type is refused, because a
+    caller-supplied body inside this brand's letterhead is a phishing kit
+    for anything that can reach the bus (see raw_content.py).
 
+    Idempotency is per channel and per recipient, claimed in the database
+    before the dispatch rather than checked before the send — see
+    ``delivery.claim`` / ``models.NotificationDelivery``.
+    """
+    content_html, content_text = apply_raw_content_policy(
+        notification_type, content_html, content_text
+    )
     has_content = bool(content_html or content_text)
     routing = get_routing(notification_type)
     if not routing:
@@ -401,6 +442,17 @@ def process_notification(
             )
             continue
 
+        recipient = _get_recipient(channel, recipient_email, recipient_phone, user_id)
+        template_version = _template_version(
+            channel, notification_type, content_html, content_text
+        )
+        if not claim_delivery(event_id, channel, recipient, template_version):
+            logger.info(
+                "Skipping duplicate delivery: event_id=%s channel=%s recipient=%s",
+                event_id, channel, recipient,
+            )
+            continue
+
         try:
             delivered = _dispatch(
                 channel, notification_type, routing,
@@ -410,14 +462,13 @@ def process_notification(
                 content_text=content_text,
             )
             if not delivered:
+                release_delivery(event_id, channel, recipient, template_version)
                 # Nothing was handed to a provider — there was no address on
                 # this channel for this recipient. Recording that as "sent"
                 # (which it was, for years) made the delivery log lie about
                 # the single most common shape in the library: an OTP for an
                 # email-only recipient still wrote an sms row reading
-                # "sent → unknown". It also fed the idempotency guard above,
-                # which keys on status="sent", so a retry that COULD have
-                # delivered was suppressed by a delivery that never happened.
+                # "sent → unknown".
                 logger.warning(
                     "Skipped %s/%s: no %s address for this recipient",
                     notification_type, channel, channel,
@@ -428,26 +479,30 @@ def process_notification(
                     channel=channel,
                     status="skipped",
                     language=lang,
-                    recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
+                    recipient=recipient,
                     error_message=f"no {channel} address for this recipient",
                 )
                 any_reachability_gap = True
                 continue
             any_delivered = True
+            confirm_delivery(event_id, channel, recipient, template_version)
             NotificationLog.objects.create(
                 user_id=user_id,
                 notification_type=notification_type,
                 channel=channel,
                 status="sent",
                 language=lang,
-                recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
+                recipient=recipient,
                 title=all_vars.get("push_title", all_vars.get("heading", "")),
                 body=all_vars.get("push_body", all_vars.get("body", "")),
                 data={
-                    # Caller variables first: the log's own keys below are
-                    # facts about the delivery and must not be overwritable
-                    # by a template variable that happens to share a name.
-                    **{k: v for k, v in variables.items() if isinstance(v, (str, int, float, bool))},
+                    # Declared telemetry only, and never a credential-shaped
+                    # value even then: this is a delivery journal, not a copy
+                    # of the passcode/sign-in link/initial password the
+                    # letter carried (telemetry.py). The log's own keys below
+                    # are facts about the delivery and must not be
+                    # overwritable by a template variable of the same name.
+                    **telemetry(notification_type, variables, routing),
                     "notification_type": notification_type,
                     # WHY this letter is in this language. A row reading
                     # "sender" is a letter addressed on a guess; counting
@@ -460,6 +515,7 @@ def process_notification(
                 },
             )
         except Exception as e:
+            release_delivery(event_id, channel, recipient, template_version)
             logger.error(
                 "Failed to send %s/%s to user %s: %s",
                 notification_type, channel, user_id, e,
@@ -470,7 +526,7 @@ def process_notification(
                 channel=channel,
                 status="failed",
                 language=lang,
-                recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
+                recipient=recipient,
                 error_message=str(e)[:500],
             )
             any_reachability_gap = True
@@ -591,6 +647,28 @@ def _dispatch(
 
     else:
         raise ValueError(f"Unknown channel: {channel}")
+
+
+def _template_version(
+    channel: str,
+    notification_type: str,
+    content_html: str | None,
+    content_text: str | None,
+) -> str:
+    """Which rendering of this notification a delivery claim is claiming.
+
+    This library's version of a letter is the template it renders from, so
+    re-pointing a type at a new template (``EMAIL_TEMPLATES``, a host's own
+    entry) makes a redelivery a NEW delivery rather than a duplicate of the
+    one the old template produced. Only email renders a template; the other
+    channels compose their text from the type's translations, so the type
+    itself is the version.
+    """
+    if content_html or content_text:
+        return "raw"
+    if channel != "email":
+        return notification_type
+    return get_email_template(notification_type) or notification_type
 
 
 def _get_recipient(channel: str, email: str | None, phone: str | None, user_id: str | None) -> str:

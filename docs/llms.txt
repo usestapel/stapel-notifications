@@ -7,12 +7,12 @@ Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drif
 
 ## Configuration axes — what a product switches on
 Settings keys; `default` is what you get by saying nothing. Turning an axis off unmounts the operations it gates.
-- EMAIL_PROVIDER [enum, default "mock"] — Email delivery service
-  Which service sends the emails: Resend, SMTP, Mailgun, a mock for development, or any custom provider class supplied by the host project.
+- EMAIL_PROVIDER [enum, default "unconfigured"] — Email delivery service
+  Which service sends the emails: Resend, SMTP, Mailgun, or any custom provider class supplied by the host project. Defaults to 'unconfigured', which refuses to send until a backend is chosen; 'mock' (log only, no delivery) must be asked for by name.
 - PUSH_PROVIDER [enum, default "fcm"] — Push notification service
-  Which service delivers mobile/web push: Firebase Cloud Messaging (default), a mock for development, or any custom provider class supplied by the host project.
-- SMS_PROVIDER [enum, default "mock"] — SMS delivery service
-  Which service sends the text messages: GatewayAPI, Twilio, a mock for development, or any custom provider class supplied by the host project.
+  Which service delivers mobile/web push: Firebase Cloud Messaging (default), 'mock' for log-only development, 'unconfigured' to close the channel outright, or any custom provider class supplied by the host project.
+- SMS_PROVIDER [enum, default "unconfigured"] — SMS delivery service
+  Which service sends the text messages: GatewayAPI, Twilio, or any custom provider class supplied by the host project. Defaults to 'unconfigured', which refuses to send until a backend is chosen; 'mock' (log only, no delivery) must be asked for by name.
 
 ## Usage surface — call these before writing your own
 This is the answer to "does Stapel already have something for X?". `instead of` names the outside symbol this one displaces.
