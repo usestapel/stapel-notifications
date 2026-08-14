@@ -15,7 +15,9 @@ fork-free escape hatch as the email/SMS channels and captcha backends.
 import logging
 import threading
 
+from django.core.exceptions import ImproperlyConfigured
 
+from stapel_notifications.channels.sms import UNCONFIGURED, UNCONFIGURED_MESSAGE
 from stapel_notifications.models import DevicePushToken
 
 logger = logging.getLogger(__name__)
@@ -76,6 +78,19 @@ class _MockPushProvider:
         return count
 
 
+class _UnconfiguredPushProvider:
+    """Push's half of the "nobody chose a backend" contract.
+
+    Not the shipped default here — ``PUSH_PROVIDER`` still defaults to
+    ``fcm``, which already refuses loudly without credentials. It exists so
+    ``unconfigured`` means the same thing on every channel and a host can
+    close push explicitly.
+    """
+
+    def send(self, user_id: str, title: str, body: str, data: dict | None) -> int:
+        raise ImproperlyConfigured(UNCONFIGURED_MESSAGE.format(setting="PUSH_PROVIDER"))
+
+
 class _FCMPushProvider:
     def send(self, user_id: str, title: str, body: str, data: dict | None) -> int:
         if not _ensure_firebase():
@@ -126,8 +141,9 @@ class _FCMPushProvider:
 # ──────────────────────────────────────────────────────────────────
 
 _PROVIDERS: dict[str, type] = {
-    'fcm':  _FCMPushProvider,
-    'mock': _MockPushProvider,
+    'fcm':         _FCMPushProvider,
+    'mock':        _MockPushProvider,
+    UNCONFIGURED:  _UnconfiguredPushProvider,
 }
 
 
@@ -136,7 +152,7 @@ def _get_provider():
     from stapel_notifications.conf import notifications_settings
 
     return _resolve_provider(
-        notifications_settings.PUSH_PROVIDER, _PROVIDERS, _MockPushProvider, "push"
+        notifications_settings.PUSH_PROVIDER, _PROVIDERS, "push", "PUSH_PROVIDER"
     )
 
 

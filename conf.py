@@ -75,9 +75,24 @@ DEFAULTS = {
     # silence a notification for the rest of the day.
     "DELIVERY_CLAIM_TTL": 900,
     # Channel backends: short registry name or dotted path to a provider
-    # class with .send(...)
-    "EMAIL_PROVIDER": "mock",
-    "SMS_PROVIDER": "mock",
+    # class with .send(...).
+    #
+    # The email/SMS defaults are "unconfigured", NOT "mock". A mock provider
+    # returns, and services._dispatch counts a provider that returned as a
+    # delivery — so a zero-config deployment used to write status="sent" into
+    # the delivery journal for every OTP, password reset and account-closure
+    # notice it had only logged. "unconfigured" raises instead: the same
+    # deployment now records status="failed" and escalates through the
+    # "NOTIFICATION UNDELIVERABLE" path.
+    #
+    # Log-only delivery is still available — it is now an explicit act:
+    # {"EMAIL_PROVIDER": "mock", "SMS_PROVIDER": "mock"}. checks.W005 warns
+    # when that lands in a non-DEBUG deployment.
+    #
+    # PUSH_PROVIDER keeps "fcm": it already refuses loudly without
+    # credentials, so it was never the silent-success shape.
+    "EMAIL_PROVIDER": "unconfigured",
+    "SMS_PROVIDER": "unconfigured",
     "PUSH_PROVIDER": "fcm",
     # Provider credentials (read lazily, never frozen at import)
     "RESEND_API_KEY": "",

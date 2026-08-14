@@ -2,6 +2,60 @@
 
 ## Unreleased
 
+### Fixed — a zero-config deployment could believe it had delivered an OTP (BREAKING: `EMAIL_PROVIDER`/`SMS_PROVIDER` no longer default to `mock`, and an unresolvable provider raises)
+
+Security audit 2026-08-11, NOTIFY-02 (P1). Two halves of the same defect.
+
+**The shipped default sent nothing and said it had.** `EMAIL_PROVIDER` and
+`SMS_PROVIDER` defaulted to `"mock"`, whose `send` logs a line and returns —
+and `services._dispatch` counts a provider that returned as a delivery. So a
+production service that had never been pointed at a mailer wrote
+`NotificationLog(status="sent")` for every passcode, magic link, password
+reset and account-closure notice it had only logged. Nothing in the system
+disagreed: the deliberate `skipped` path exists for "no address on this
+channel", and this was not that.
+
+**Any unresolvable provider name silently became that mock.** The shared
+resolver answered an unknown short name (`"resedn"`) — or a dotted path whose
+import raised — with the channel's mock class and a `WARNING`. That is a typo
+downgrading a live mailer to a log line, and, worse, a provider module that
+lost a dependency in a deploy doing the same to a mailer that worked
+yesterday.
+
+Now:
+
+* `EMAIL_PROVIDER` and `SMS_PROVIDER` default to **`"unconfigured"`**, a
+  provider that raises `ImproperlyConfigured` on every send. The same
+  zero-config deployment now journals `status="failed"` and escalates through
+  the existing `NOTIFICATION UNDELIVERABLE` error. `PUSH_PROVIDER` keeps
+  `"fcm"`, which already refused loudly without credentials.
+* An unknown short name or an unimportable dotted path **raises** instead of
+  falling back. There is deliberately no fallback left: the fallback was a
+  mock that reported success.
+* New system check **`notifications.E003`** — a provider setting that names
+  nothing this process can load, asked at boot instead of at the first
+  passcode.
+* New system check **`notifications.W005`** — a routed channel whose provider
+  delivers nothing (`mock` or `unconfigured`) while `DEBUG=False`. Silent
+  under `DEBUG`; silence it in production with `SILENCED_SYSTEM_CHECKS` if the
+  channel is deliberately dark.
+
+**Upgrade note.** A deployment that relied on the implicit `mock` default —
+CI, a local checkout, a staging box that must not mail real people — now
+raises on send. The opt-out restoring the old behaviour is one explicit
+setting, and it is explicit on purpose:
+
+```python
+STAPEL_NOTIFICATIONS = {
+    "EMAIL_PROVIDER": "mock",   # log only, no delivery — was the silent default
+    "SMS_PROVIDER": "mock",
+}
+```
+
+A deployment that already names its providers is unaffected, except that a
+name which never resolved — and had therefore been sending nothing for as long
+as it had been wrong — now fails the boot check rather than the recipient.
+
 ### Fixed — the delivery journal kept the credentials it delivered (BREAKING: `NotificationLog.data` is now deny-by-default)
 
 Security audit 2026-08-11, NOTIFY-01 (P1). Every scalar the caller passed in

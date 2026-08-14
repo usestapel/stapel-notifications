@@ -7,15 +7,19 @@ sender's language, to everybody, forever, and the only feedback loop is a
 recipient complaining. That belongs in ``manage.py check``, not in a
 support ticket.
 
-E-level for the two type registrations that are defects under every reading
-— an unknown group, and a host override that demotes a built-in security
-type out of its class. Both produce mail a recipient cannot control or a
-passcode carrying a one-click opt-out from all security mail; neither has a
-legitimate use, so they stop the boot rather than warn.
+E-level for the registrations and settings that are defects under every
+reading — an unknown group, a channel with no preference field, a provider
+name that resolves to nothing, and a host override that demotes a built-in
+security type out of its class. Each produces mail a recipient cannot
+control, mail nobody sends, or a passcode carrying a one-click opt-out from
+all security mail; none has a legitimate use, so they stop the boot rather
+than warn.
 """
 import re
 
+from django.conf import settings as django_settings
 from django.core import checks
+from django.core.exceptions import ImproperlyConfigured
 
 from .language import PROFILES_LANGUAGE
 from .routing import (
@@ -236,5 +240,117 @@ def check_security_shaped_types_are_classified(app_configs, **kwargs):
             "them their account is under attack.",
             hint=_SECURITY_HINT,
             id="stapel_notifications.W003",
+        ))
+    return warnings
+
+
+# ── Channel providers: what actually happens to a passcode ───────────
+
+#: Short names whose provider accepts a message and delivers it NOWHERE.
+#: ``mock`` writes a log line; ``unconfigured`` raises. Both mean "no mail
+#: leaves this deployment on this channel".
+_NON_DELIVERING = frozenset({"mock", "unconfigured"})
+
+
+def _provider_axes():
+    """(setting key, channel name, provider registry) for the three channels.
+
+    Imported lazily: ``channels.push`` imports models at module scope, and
+    this module is loaded from ``AppConfig.ready``.
+    """
+    from .channels.email import _PROVIDERS as EMAIL_PROVIDERS
+    from .channels.push import _PROVIDERS as PUSH_PROVIDERS
+    from .channels.sms import _PROVIDERS as SMS_PROVIDERS
+
+    return (
+        ("EMAIL_PROVIDER", "email", EMAIL_PROVIDERS),
+        ("SMS_PROVIDER", "sms", SMS_PROVIDERS),
+        ("PUSH_PROVIDER", "push", PUSH_PROVIDERS),
+    )
+
+
+@checks.register(checks.Tags.security)
+def check_channel_providers_resolve(app_configs, **kwargs):
+    """E: a provider setting that names nothing this process can load.
+
+    The resolver used to answer an unknown short name — or a dotted path
+    whose import raised — with the channel's MOCK provider and a WARNING.
+    The mock returns, and ``services._dispatch`` counts a provider that
+    returned as a delivery, so a typo or a missing dependency after a deploy
+    downgraded a working mailer to "log the subject, journal it as sent".
+    It now raises at send time; asking the same question at boot is what
+    turns that into a failed deploy instead of a quiet week of lost OTPs.
+    """
+    from .channels.sms import _resolve_provider_class
+    from .conf import notifications_settings
+
+    errors = []
+    for setting, channel, registry in _provider_axes():
+        try:
+            _resolve_provider_class(
+                getattr(notifications_settings, setting), registry, channel, setting
+            )
+        except ImproperlyConfigured as exc:
+            errors.append(checks.Error(
+                str(exc),
+                hint=(
+                    "Fix the value, or install whatever the dotted path needs. "
+                    "There is deliberately no fallback: the fallback was a mock "
+                    "that reported success."
+                ),
+                id="stapel_notifications.E003",
+            ))
+    return errors
+
+
+@checks.register(checks.Tags.security)
+def check_channel_providers_deliver(app_configs, **kwargs):
+    """W: a routed channel whose provider sends nothing, outside DEBUG.
+
+    Warn-level, not error: a deployment that never sends SMS, or a staging
+    box that must not mail real people, is a legitimate reason to run a
+    non-delivering provider — which is exactly why it must not be possible
+    to INHERIT one. ``mock`` set for a local checkout three releases ago and
+    carried into production is total, silent mail loss on a channel that
+    every built-in security type routes to.
+
+    Silent under DEBUG: that deployment has already said it is not
+    production.
+    """
+    from .conf import notifications_settings
+
+    if django_settings.DEBUG:
+        return []
+
+    routed = {
+        channel
+        for routing in _effective_types().values()
+        for channel in ((routing or {}).get("channels") or [])
+    }
+
+    warnings = []
+    for setting, channel, _registry in _provider_axes():
+        if channel not in routed:
+            continue
+        name = (getattr(notifications_settings, setting) or "").strip().lower()
+        if name not in _NON_DELIVERING:
+            continue
+        what = (
+            "writes a log line and returns"
+            if name == "mock"
+            else "raises on every send, because no backend was ever chosen"
+        )
+        warnings.append(checks.Warning(
+            f"STAPEL_NOTIFICATIONS['{setting}']={name!r} with DEBUG=False: the "
+            f"{channel} provider {what}, so nothing this deployment sends on "
+            f"the {channel} channel reaches anybody — including the passcodes, "
+            "password resets and account-closure notices the built-in types "
+            f"route to {channel}.",
+            hint=(
+                f"Point {setting} at a real provider (short name or dotted "
+                "path). Silence with SILENCED_SYSTEM_CHECKS if this "
+                "deployment is deliberately not delivering on this channel."
+            ),
+            id="stapel_notifications.W005",
         ))
     return warnings

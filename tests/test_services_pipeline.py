@@ -530,9 +530,17 @@ class TestUndeliverableIsLoud:
 
     def test_partial_delivery_is_not_escalated(self, user, caplog):
         """One reachable channel is enough to stay quiet — the recipient
-        WAS told, just not on every channel the type could have used."""
+        WAS told, just not on every channel the type could have used.
+
+        The email provider is named explicitly because the shipped default
+        no longer delivers: EMAIL_PROVIDER defaults to 'unconfigured', which
+        raises rather than logging a line and calling it a delivery.
+        """
         UserContact.objects.create(user_id=user.id, email="u@example.com")
-        with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+        with (
+            override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}),
+            caplog.at_level("ERROR", logger="stapel_notifications.services"),
+        ):
             process_notification(
                 notification_type="otp_code",
                 user_id=str(user.id),
@@ -607,3 +615,33 @@ def test_last_resort_language_follows_the_project_not_a_hardcoded_en(
     assert NotificationLog.objects.get(
         notification_type="new_device_login"
     ).language == "ru"
+
+
+# ── Zero config must not be able to claim a delivery ─────────────
+
+
+@pytest.mark.django_db
+def test_zero_config_otp_is_journalled_as_failed_not_sent(user, caplog):
+    """The whole point of dropping the "mock" default.
+
+    With EMAIL_PROVIDER defaulting to "mock", this exact call — a
+    zero-config deployment sending a passcode to a reachable address —
+    wrote a NotificationLog row reading status="sent" and stayed at INFO.
+    The passcode had gone to a log line. Now the send raises, the row reads
+    "failed", and the undeliverable escalation fires.
+    """
+    UserContact.objects.create(user_id=user.id, email="u@example.com")
+    with override_settings(STAPEL_NOTIFICATIONS={}):
+        with caplog.at_level("ERROR", logger="stapel_notifications.services"):
+            process_notification(
+                notification_type="otp_code",
+                user_id=str(user.id),
+                variables={"code": "1234", "expiry_minutes": 3},
+            )
+    log = NotificationLog.objects.get(channel="email")
+    assert log.status == "failed"
+    assert "EMAIL_PROVIDER" in log.error_message
+    assert NotificationLog.objects.filter(status="sent").count() == 0
+    assert any(
+        "NOTIFICATION UNDELIVERABLE" in r.getMessage() for r in caplog.records
+    )

@@ -6,28 +6,28 @@
     {
       "key": "EMAIL_PROVIDER",
       "kind": "enum",
-      "default": "mock",
+      "default": "unconfigured",
       "group": "notifications.providers",
       "gates": {
         "operations": [],
         "co_gates": []
       },
       "curated": {
-        "summary": "Which service sends the emails: Resend, SMTP, Mailgun, a mock for development, or any custom provider class supplied by the host project.",
+        "summary": "Which service sends the emails: Resend, SMTP, Mailgun, or any custom provider class supplied by the host project. Defaults to 'unconfigured', which refuses to send until a backend is chosen; 'mock' (log only, no delivery) must be asked for by name.",
         "business_label": "Email delivery service"
       }
     },
     {
       "key": "SMS_PROVIDER",
       "kind": "enum",
-      "default": "mock",
+      "default": "unconfigured",
       "group": "notifications.providers",
       "gates": {
         "operations": [],
         "co_gates": []
       },
       "curated": {
-        "summary": "Which service sends the text messages: GatewayAPI, Twilio, a mock for development, or any custom provider class supplied by the host project.",
+        "summary": "Which service sends the text messages: GatewayAPI, Twilio, or any custom provider class supplied by the host project. Defaults to 'unconfigured', which refuses to send until a backend is chosen; 'mock' (log only, no delivery) must be asked for by name.",
         "business_label": "SMS delivery service"
       }
     },
@@ -41,7 +41,7 @@
         "co_gates": []
       },
       "curated": {
-        "summary": "Which service delivers mobile/web push: Firebase Cloud Messaging (default), a mock for development, or any custom provider class supplied by the host project.",
+        "summary": "Which service delivers mobile/web push: Firebase Cloud Messaging (default), 'mock' for log-only development, 'unconfigured' to close the channel outright, or any custom provider class supplied by the host project.",
         "business_label": "Push notification service"
       }
     }

@@ -47,9 +47,9 @@ lazily (never frozen at import) and reload on `setting_changed` in tests.
 | `TYPES` | `{}` | Notification-type registry, merged **over** built-ins (see §2) |
 | `EMAIL_TEMPLATES` | `{}` | Per-type email template map, merged over `DEFAULT_EMAIL_TEMPLATES` |
 | `TEXT` | `{}` | Per-key copy registry, merged **over** `NOTIFICATION_KEYS` — the string counterpart of `EMAIL_TEMPLATES` (see §4a) |
-| `EMAIL_PROVIDER` | `"mock"` | `resend` / `smtp` / `mailgun` / `mock` or dotted path (see §3) |
-| `SMS_PROVIDER` | `"mock"` | `gatewayapi` / `twilio` / `mock` or dotted path |
-| `PUSH_PROVIDER` | `"fcm"` | `fcm` / `mock` or dotted path |
+| `EMAIL_PROVIDER` | `"unconfigured"` | `resend` / `smtp` / `mailgun` / `mock` / `unconfigured` or dotted path (see §3) |
+| `SMS_PROVIDER` | `"unconfigured"` | `gatewayapi` / `twilio` / `mock` / `unconfigured` or dotted path |
+| `PUSH_PROVIDER` | `"fcm"` | `fcm` / `mock` / `unconfigured` or dotted path |
 | `RESEND_API_KEY` | `""` | Resend credentials |
 | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN` | `""` | Mailgun credentials |
 | `GATEWAYAPI_TOKEN`, `GATEWAYAPI_SENDER` | `""`, `"Stapel"` | GatewayAPI credentials + sender name |
@@ -173,15 +173,26 @@ event cannot both send. A claim whose process died is taken over after
 ### 3. Channel providers — dotted paths (`channels/{email,sms,push}.py`)
 
 Each channel resolves its provider per send via `_resolve_provider(name_or_path,
-registry, fallback, kind)`: built-in short name, else any dotted path imported
-with `django.utils.module_loading.import_string`, else fall back to `mock`
-with a warning (never crash on misconfig).
+registry, kind, setting)`: built-in short name, else any dotted path imported
+with `django.utils.module_loading.import_string`, else **raise**
+`ImproperlyConfigured`. `checks.E003` asks the same question at boot.
+
+There is no mock fallback. It used to answer a typo — and an `ImportError`
+from inside a working provider module — with the channel's mock, which logs a
+line and RETURNS; `_dispatch` counts a provider that returned as a delivery, so
+the misconfiguration was recorded in the journal as `status="sent"`.
+
+For the same reason `EMAIL_PROVIDER`/`SMS_PROVIDER` default to
+`unconfigured`, a provider that raises on every send, rather than to `mock`.
+Log-only delivery is still one setting away — it is just no longer what you get
+by saying nothing, and `checks.W005` warns when a non-delivering provider is in
+force with `DEBUG=False`.
 
 | Channel | Setting | Built-ins | Provider duck type |
 |---|---|---|---|
-| Email | `EMAIL_PROVIDER` | `resend`, `smtp`, `mailgun`, `mock` | `.send(recipient, subject, html_body, headers: dict \| None) -> None` |
-| SMS | `SMS_PROVIDER` | `gatewayapi`, `twilio`, `mock` | `.send(phone, body) -> None` |
-| Push | `PUSH_PROVIDER` | `fcm`, `mock` | `.send(user_id, title, body, data: dict \| None) -> int` (count sent) |
+| Email | `EMAIL_PROVIDER` | `resend`, `smtp`, `mailgun`, `mock`, `unconfigured` | `.send(recipient, subject, html_body, headers: dict \| None) -> None` |
+| SMS | `SMS_PROVIDER` | `gatewayapi`, `twilio`, `mock`, `unconfigured` | `.send(phone, body) -> None` |
+| Push | `PUSH_PROVIDER` | `fcm`, `mock`, `unconfigured` | `.send(user_id, title, body, data: dict \| None) -> int` (count sent) |
 
 A new provider (SendGrid, Postmark, APNs direct, …) is a class in the **host
 project** with the matching `send` signature plus

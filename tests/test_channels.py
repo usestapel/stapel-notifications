@@ -4,6 +4,7 @@ import sys
 import types
 
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
 
 from stapel_notifications.conf import notifications_settings
@@ -328,3 +329,88 @@ class TestFCMPush:
 
         assert _FCMPushProvider().send(str(user.id), "t", "b", None) == 0
         assert fake_firebase == []
+
+
+# ── Provider resolution: no silent downgrade to mock ─────────────
+#
+# The resolver used to answer an unknown short name, or a dotted path whose
+# import raised, with the channel's MOCK provider plus a WARNING. The mock
+# returns, and services._dispatch counts a provider that returned as a
+# delivery — so both accidents produced total mail loss that the delivery
+# journal recorded as status="sent".
+
+
+class TestProviderResolutionRefusesToGuess:
+    def test_unknown_short_name_raises(self):
+        from stapel_notifications.channels.email import send_email
+
+        with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": "resedn"}):
+            with pytest.raises(ImproperlyConfigured, match="resedn"):
+                send_email("d@example.com", "s", "<b/>", None)
+
+    def test_dotted_path_with_no_such_attribute_raises(self):
+        from stapel_notifications.channels.sms import send_sms
+
+        with override_settings(
+            STAPEL_NOTIFICATIONS={"SMS_PROVIDER": "tests.test_channels._NoSuchClass"}
+        ):
+            with pytest.raises(ImproperlyConfigured, match="cannot be imported"):
+                send_sms("+4512345678", "hi")
+
+    def test_provider_module_that_stops_importing_raises(self, monkeypatch):
+        """The sharpest case: a WORKING mailer, one deploy later.
+
+        A provider module that loses a dependency raises ImportError on
+        import. That used to demote the live mailer to a log line, so the
+        product kept "sending" passcodes to nobody until a human noticed.
+        """
+        from django.utils import module_loading
+
+        def _boom(path):
+            raise ImportError("No module named 'vendor_sdk'")
+
+        monkeypatch.setattr(module_loading, "import_string", _boom)
+
+        from stapel_notifications.channels.email import send_email
+
+        with override_settings(
+            STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": "myapp.email.WorkingProvider"}
+        ):
+            with pytest.raises(ImproperlyConfigured, match="cannot be imported"):
+                send_email("d@example.com", "s", "<b/>", None)
+
+
+class TestZeroConfigDeliversNothingAndSaysSo:
+    """The shipped default must not be able to claim a delivery.
+
+    EMAIL_PROVIDER/SMS_PROVIDER used to default to "mock": a zero-config
+    deployment logged the subject line and journalled status="sent" for
+    every OTP, password reset and account-closure notice.
+    """
+
+    def test_email_default_refuses_to_send(self):
+        from stapel_notifications.channels.email import send_email
+        from stapel_notifications.conf import DEFAULTS
+
+        assert DEFAULTS["EMAIL_PROVIDER"] == "unconfigured"
+        with override_settings(STAPEL_NOTIFICATIONS={}):
+            with pytest.raises(ImproperlyConfigured, match="EMAIL_PROVIDER"):
+                send_email("d@example.com", "Your code is 1234", "<b/>", None)
+
+    def test_sms_default_refuses_to_send(self):
+        from stapel_notifications.channels.sms import send_sms
+        from stapel_notifications.conf import DEFAULTS
+
+        assert DEFAULTS["SMS_PROVIDER"] == "unconfigured"
+        with override_settings(STAPEL_NOTIFICATIONS={}):
+            with pytest.raises(ImproperlyConfigured, match="SMS_PROVIDER"):
+                send_sms("+4512345678", "Your code is 1234")
+
+    def test_log_only_delivery_is_still_available_by_name(self, caplog):
+        """The opt-out restoring the old behaviour is one explicit setting."""
+        from stapel_notifications.channels.email import send_email
+
+        with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": "mock"}):
+            with caplog.at_level("INFO", logger="stapel_notifications.channels.email"):
+                send_email("d@example.com", "Subj", "<b/>", None)
+        assert any("[mock email]" in r.getMessage() for r in caplog.records)
