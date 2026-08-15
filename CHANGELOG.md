@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.11.1] — 2026-08-15
+
+### Changed — `stapel-core` floor raised to 0.26.0
+
+`docs/errors.json` carries an `owner` per entry, and only stapel-core 0.26.0
+emits it. The floor stayed at `>=0.24.0`, so a consumer resolving an older
+core regenerated an artifact without `owner` and the drift gate went red —
+the field was declared but never required. The floor now matches the
+artifact that is committed.
+
 ## [0.11.0] — 2026-08-14
 
 ### Security — an environment variable could choose who sends your one-time passcodes (BREAKING for a deployment that set `EMAIL_PROVIDER`/`SMS_PROVIDER`/`PUSH_PROVIDER` as a bare env var)
