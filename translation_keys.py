@@ -89,6 +89,21 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.workspace.invitation.reminder.cta": "Accept invitation",
     "notification.workspace.invitation.reminder.role_line": "You're invited to join as {role_name}.",
     "notification.workspace.invitation.reminder.warning": "If you don't want to join, you can simply ignore this email.",
+    # ── Invitation declined — the receipt, to the invited address ──
+    # Declining takes no account and creates none, so this letter says both:
+    # the invitation is closed, and nothing was created in order to close it.
+    # No link: there is nothing left to act on.
+    "notification.workspace.invitation.decline_confirmed.subject": "You declined the invitation to {workspace_name}",
+    "notification.workspace.invitation.decline_confirmed.heading": "Invitation declined",
+    "notification.workspace.invitation.decline_confirmed.body": "You declined the invitation to join the workspace “{workspace_name}”. No account was created for you, and the invitation link no longer works.",
+    "notification.workspace.invitation.decline_confirmed.warning": "If you didn't do this, no action is needed — the invitation is closed and cannot be used by anyone. Ask whoever invited you to send a new one.",
+    # ── Invitation declined — the answer, to the inviter ──
+    # The inviter learns the outcome and the address they themselves typed.
+    # Nothing else about the person who declined belongs in this letter.
+    "notification.workspace.invitation.declined.subject": "Your invitation to {workspace_name} was declined",
+    "notification.workspace.invitation.declined.heading": "Invitation declined",
+    "notification.workspace.invitation.declined.body": "{invitee_email} declined your invitation to the workspace “{workspace_name}”. Nobody was added, and that invitation can no longer be used.",
+    "notification.workspace.invitation.declined.warning": "If this was a mistake, you can invite the same address again.",
     # ── Org-provisioned account (§F) ──
     "notification.workspace.provisioned_account.subject": "Your {workspace_name} account is ready",
     "notification.workspace.provisioned_account.heading": "Your account is ready",

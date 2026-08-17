@@ -113,6 +113,20 @@ NOTIFICATION_ROUTING = {
     # different message a host may route or template independently.
     "workspace.invitation.reminder": {"channels": ["email"], "group": "system",
                                       "transactional": True},
+    # The two sides of a refusal. Declining used to send nothing at all: the
+    # invitee got no receipt for a decision they cannot undo, and the inviter
+    # kept waiting for an answer that had already been given.
+    #
+    # To the address that was invited — the receipt for saying no. It carries
+    # no link and asks for nothing: the invitation is closed, and the letter's
+    # whole job is to say so and that no account was created in the process.
+    "workspace.invitation.decline_confirmed": {"channels": ["email"],
+                                               "group": "system",
+                                               "transactional": True},
+    # To the person who sent the invitation — their invitation was refused.
+    # Names the address THEY typed and nothing else about whoever declined.
+    "workspace.invitation.declined": {"channels": ["email"], "group": "system",
+                                      "transactional": True},
 
     # Org-provisioned account (org creates a login/password user directly) —
     # auth-class notification: mandatory, no unsubscribe, same as the other
@@ -153,6 +167,8 @@ DEFAULT_EMAIL_TEMPLATES = {
     "workspace.invitation": "notifications/email/workspace_invitation.html",
     "workspace.invitation.new_user": "notifications/email/workspace_invitation_new_user.html",
     "workspace.invitation.reminder": "notifications/email/workspace_invitation_reminder.html",
+    "workspace.invitation.decline_confirmed": "notifications/email/workspace_invitation_decline_confirmed.html",
+    "workspace.invitation.declined": "notifications/email/workspace_invitation_declined.html",
     "workspace.provisioned_account": "notifications/email/workspace_provisioned_account.html",
     "workspace.mfa_suspension": "notifications/email/workspace_mfa_suspension.html",
     "workspace.mfa_restored": "notifications/email/workspace_mfa_restored.html",

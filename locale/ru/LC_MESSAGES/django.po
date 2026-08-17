@@ -227,6 +227,35 @@ msgstr "{inviter_name} приглашает вас в рабочее прост�
 msgid "If you don't want to join, you can simply ignore this email."
 msgstr "Если вы не хотите присоединяться, просто проигнорируйте это письмо."
 
+#: notification.workspace.invitation.decline_confirmed.subject
+msgid "You declined the invitation to {workspace_name}"
+msgstr "Вы отклонили приглашение в {workspace_name}"
+
+#: notification.workspace.invitation.decline_confirmed.heading
+#: notification.workspace.invitation.declined.heading
+msgid "Invitation declined"
+msgstr "Приглашение отклонено"
+
+#: notification.workspace.invitation.decline_confirmed.body
+msgid "You declined the invitation to join the workspace “{workspace_name}”. No account was created for you, and the invitation link no longer works."
+msgstr "Вы отклонили приглашение в рабочее пространство «{workspace_name}». Учётная запись для вас не создавалась, а ссылка из приглашения больше не работает."
+
+#: notification.workspace.invitation.decline_confirmed.warning
+msgid "If you didn't do this, no action is needed — the invitation is closed and cannot be used by anyone. Ask whoever invited you to send a new one."
+msgstr "Если это были не вы, делать ничего не нужно: приглашение закрыто и им уже никто не воспользуется. Попросите пригласившего прислать новое."
+
+#: notification.workspace.invitation.declined.subject
+msgid "Your invitation to {workspace_name} was declined"
+msgstr "Ваше приглашение в {workspace_name} отклонено"
+
+#: notification.workspace.invitation.declined.body
+msgid "{invitee_email} declined your invitation to the workspace “{workspace_name}”. Nobody was added, and that invitation can no longer be used."
+msgstr "Приглашение в рабочее пространство «{workspace_name}» отклонено адресатом {invitee_email}. Никто не добавлен, и это приглашение больше не действует."
+
+#: notification.workspace.invitation.declined.warning
+msgid "If this was a mistake, you can invite the same address again."
+msgstr "Если это ошибка, вы можете пригласить тот же адрес заново."
+
 #: notification.workspace.member_password_reset.subject
 msgid "Your {workspace_name} password was reset"
 msgstr "Ваш пароль в {workspace_name} сброшен"

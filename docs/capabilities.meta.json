@@ -186,6 +186,12 @@
     "notifications/email/workspace_invitation_reminder.html": {
       "intent": "The re-delivery of a pending invitation — notification_type `workspace.invitation.reminder`. An admin resend rotates the token and restarts the TTL, so this is \"you are being reminded, here is a fresh link\", a different message from the original invitation rather than a repeat of it."
     },
+    "notifications/email/workspace_invitation_decline_confirmed.html": {
+      "intent": "The receipt for the person who refused an invitation — notification_type `workspace.invitation.decline_confirmed`, system group, transactional. Declining rests on the token and creates no account, so the letter carries no link and its whole job is to say the invitation is closed and that nothing was created in order to close it."
+    },
+    "notifications/email/workspace_invitation_declined.html": {
+      "intent": "The answer to the person who sent an invitation — notification_type `workspace.invitation.declined`, system group, transactional. It names the address the inviter themselves typed, the workspace and the outcome, and nothing else about whoever declined."
+    },
     "notifications/email/workspace_provisioned_account.html": {
       "intent": "\"Your account is ready\" for a member an organization provisioned directly — notification_type `workspace.provisioned_account`, auth group: credentials mail is mandatory and carries no unsubscribe, like every other account-credential letter here."
     },

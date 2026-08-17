@@ -1,6 +1,6 @@
 {
   "module": "stapel-notifications",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
   "axes": [
     {
@@ -275,6 +275,18 @@
       "kind": "template",
       "path": "templates/notifications/email/workspace_invitation.html",
       "intent": "The workspace invitation letter for an invitee who already has an account — notification_type `workspace.invitation`, system group, email only. stapel-workspaces requests it from create_invitation; nothing else should be minting invitation mail, because the single-use token and its TTL belong to that flow."
+    },
+    {
+      "name": "notifications/email/workspace_invitation_decline_confirmed.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_invitation_decline_confirmed.html",
+      "intent": "The receipt for the person who refused an invitation — notification_type `workspace.invitation.decline_confirmed`, system group, transactional. Declining rests on the token and creates no account, so the letter carries no link and its whole job is to say the invitation is closed and that nothing was created in order to close it."
+    },
+    {
+      "name": "notifications/email/workspace_invitation_declined.html",
+      "kind": "template",
+      "path": "templates/notifications/email/workspace_invitation_declined.html",
+      "intent": "The answer to the person who sent an invitation — notification_type `workspace.invitation.declined`, system group, transactional. It names the address the inviter themselves typed, the workspace and the outcome, and nothing else about whoever declined."
     },
     {
       "name": "notifications/email/workspace_invitation_new_user.html",

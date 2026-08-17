@@ -1,8 +1,8 @@
-# stapel-notifications 0.11.1
+# stapel-notifications 0.12.0
 
 Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
 
-Contract: axes 3 · surface 34 · extension points 5 · operations 4 · error codes 43.
+Contract: axes 3 · surface 36 · extension points 5 · operations 4 · error codes 43.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -51,6 +51,10 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
   The "suspicious sign-in detected" security notice — notification_type `suspicious_login`, auth group, email only. The sharper sibling of new_device_login, for a sign-in the risk logic actually distrusts.
 - notifications/email/workspace_invitation.html — templates/notifications/email/workspace_invitation.html
   The workspace invitation letter for an invitee who already has an account — notification_type `workspace.invitation`, system group, email only. stapel-workspaces requests it from create_invitation; nothing else should be minting invitation mail, because the single-use token and its TTL belong to that flow.
+- notifications/email/workspace_invitation_decline_confirmed.html — templates/notifications/email/workspace_invitation_decline_confirmed.html
+  The receipt for the person who refused an invitation — notification_type `workspace.invitation.decline_confirmed`, system group, transactional. Declining rests on the token and creates no account, so the letter carries no link and its whole job is to say the invitation is closed and that nothing was created in order to close it.
+- notifications/email/workspace_invitation_declined.html — templates/notifications/email/workspace_invitation_declined.html
+  The answer to the person who sent an invitation — notification_type `workspace.invitation.declined`, system group, transactional. It names the address the inviter themselves typed, the workspace and the outcome, and nothing else about whoever declined.
 - notifications/email/workspace_invitation_new_user.html — templates/notifications/email/workspace_invitation_new_user.html
   The invitation letter for a recipient with no account yet — notification_type `workspace.invitation.new_user`. Its own type rather than an override of `workspace.invitation`, because the link both creates the account and joins the workspace and the copy has to say so.
 - notifications/email/workspace_invitation_reminder.html — templates/notifications/email/workspace_invitation_reminder.html

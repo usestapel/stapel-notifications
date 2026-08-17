@@ -71,15 +71,16 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # live in tests/test_template_contract.py, which runs on any interpreter
 # because this artifact needs neither Django settings nor drf-spectacular.
 #
-# The usage surface (services.py + routing.py + the 23 packaged email
+# The usage surface (services.py + routing.py + the 25 packaged email
 # templates — the dispatch entry point, the routing readers and one line per
 # ready-made letter) does not fit the generator's default 4000-token budget.
 # Same exception stapel-auth and stapel-workspaces already take: raise the
 # ceiling for this module, do not shorten intents to fit. Raised 4500 -> 5200
-# when the unsubscribe policy added its three predicates to the surface. The
-# budget stays enforced — matching the Makefile's contract targets.
+# when the unsubscribe policy added its three predicates to the surface, and
+# 5200 -> 5400 for the two sides of a declined invitation. The budget stays
+# enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 5200
+LLMS_TXT_BUDGET = 5400
 
 
 def _emit(out_dir: Path) -> None:

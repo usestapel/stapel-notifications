@@ -281,6 +281,87 @@ def test_invitation_reminder_carries_no_unsubscribe_either(
     assert "List-Unsubscribe" not in mail["headers"]
 
 
+# ── the two sides of a refusal ───────────────────────────────────
+
+
+@pytest.mark.django_db
+def test_decline_confirmed_is_a_receipt_with_nothing_to_click(capture_email):
+    """The invitee's receipt: the invitation is closed, and closing it
+    created no account — which is the whole point of declining on the token
+    alone (stapel-workspaces 0.27.0). No link, because there is nothing
+    left to act on."""
+    with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        process_notification(
+            notification_type="workspace.invitation.decline_confirmed",
+            user_id=None,
+            variables={"workspace_name": "Acme"},
+            email="invitee@example.com",
+        )
+    (mail,) = capture_email
+    assert "Acme" in mail["subject"]
+    assert "No account was created" in mail["html"]
+    # Nothing to click: no CTA slot in the copy, no button in the template.
+    assert "notification.workspace.invitation.decline_confirmed.cta" not in (
+        NOTIFICATION_KEYS
+    )
+    assert 'class="button-link"' not in mail["html"]
+    log = NotificationLog.objects.get(
+        notification_type="workspace.invitation.decline_confirmed"
+    )
+    assert log.status == "sent"
+
+
+@pytest.mark.django_db
+def test_declined_tells_the_inviter_the_address_they_typed(capture_email):
+    """The inviter's answer names the invited address — the one fact they
+    supplied themselves — the workspace, and the outcome. Nothing else
+    about the person who declined is available to this letter."""
+    with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        process_notification(
+            notification_type="workspace.invitation.declined",
+            user_id=None,
+            variables={
+                "workspace_name": "Acme",
+                "invitee_email": "invitee@example.com",
+            },
+            email="inviter@example.com",
+        )
+    (mail,) = capture_email
+    assert "declined" in mail["subject"]
+    assert "invitee@example.com" in mail["html"]
+    assert "Acme" in mail["html"]
+    log = NotificationLog.objects.get(
+        notification_type="workspace.invitation.declined"
+    )
+    assert log.status == "sent"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "ntype,variables",
+    [
+        ("workspace.invitation.decline_confirmed", {"workspace_name": "Acme"}),
+        (
+            "workspace.invitation.declined",
+            {"workspace_name": "Acme", "invitee_email": "invitee@example.com"},
+        ),
+    ],
+)
+def test_decline_letters_carry_no_unsubscribe(user, capture_email, ntype, variables):
+    """A refusal is as one-to-one as the invitation it answers: same
+    transactional class, no List-Unsubscribe on either side."""
+    UserContact.objects.create(user_id=user.id, email="u@example.com")
+    with override_settings(STAPEL_NOTIFICATIONS={"EMAIL_PROVIDER": CAPTURE}):
+        process_notification(
+            notification_type=ntype,
+            user_id=str(user.id),
+            variables=variables,
+        )
+    (mail,) = capture_email
+    assert "List-Unsubscribe" not in mail["headers"]
+    assert "/unsubscribe/" not in mail["html"]
+
+
 # ── workspace.member_password_reset (#110) ───────────────────────
 
 
@@ -361,6 +442,14 @@ def test_member_password_reset_is_auth_group_no_unsubscribe(user, capture_email)
         (
             "workspace.member_password_reset",
             ("subject", "heading", "body", "cta", "warning"),
+        ),
+        (
+            "workspace.invitation.decline_confirmed",
+            ("subject", "heading", "body", "warning"),
+        ),
+        (
+            "workspace.invitation.declined",
+            ("subject", "heading", "body", "warning"),
         ),
     ],
 )

@@ -2,6 +2,38 @@
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-08-18
+
+### Added — the two sides of a declined invitation
+
+Declining an invitation sent nothing at all. The person who refused got no
+receipt for a decision they cannot undo, and the person who invited them kept
+waiting for an answer that had already been given. Two new types, both `system`
+group, both `transactional` (no `List-Unsubscribe`, like every other invitation
+letter here):
+
+- **`workspace.invitation.decline_confirmed`** →
+  `notifications/email/workspace_invitation_decline_confirmed.html`, to the
+  invited address. Since stapel-workspaces 0.27.0 a refusal rests on the invite
+  token and creates no account, so the letter says exactly that — the invitation
+  is closed, and nothing was created in order to close it. It carries no link:
+  there is nothing left to act on, and the type has no `cta` key.
+  Variables: `workspace_name`.
+- **`workspace.invitation.declined`** →
+  `notifications/email/workspace_invitation_declined.html`, to the inviter.
+  Names the address THEY typed, the workspace and the outcome, and nothing else
+  about whoever declined. Variables: `workspace_name`, `invitee_email`.
+
+Both follow the established letter canon: built-in routing entry, packaged
+template, English defaults in `translation_keys.py`, ru catalogue. Both are
+overridable by a host through the existing seams and no new one — a
+`STAPEL_NOTIFICATIONS["TYPES"]`/`["EMAIL_TEMPLATES"]` entry, `["TEXT"]` for the
+copy, or a project template of the same name earlier on the template path.
+
+`docs/llms.txt` ceiling raised 5200 → 5400 (two more letters on the usage
+surface), the same deliberate exception this module already takes rather than
+shortening intents to fit.
+
 ## [0.11.1] — 2026-08-15
 
 ### Changed — `stapel-core` floor raised to 0.26.0

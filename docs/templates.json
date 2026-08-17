@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.11.1",
+  "module_version": "0.12.0",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -1297,6 +1297,133 @@
       "transactional": true
     },
     {
+      "key": "workspace.invitation.decline_confirmed",
+      "template": "notifications/email/workspace_invitation_decline_confirmed.html",
+      "chain": [
+        "notifications/email/workspace_invitation_decline_confirmed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "system",
+      "transactional": true
+    },
+    {
+      "key": "workspace.invitation.declined",
+      "template": "notifications/email/workspace_invitation_declined.html",
+      "chain": [
+        "notifications/email/workspace_invitation_declined.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "invitee_email",
+          "workspace_name"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "system",
+      "transactional": true
+    },
+    {
       "key": "workspace.invitation.new_user",
       "template": "notifications/email/workspace_invitation_new_user.html",
       "chain": [
@@ -1739,6 +1866,8 @@
         "report_reviewed",
         "suspicious_login",
         "workspace.invitation",
+        "workspace.invitation.decline_confirmed",
+        "workspace.invitation.declined",
         "workspace.invitation.new_user",
         "workspace.invitation.reminder",
         "workspace.member_password_reset",
@@ -1801,6 +1930,7 @@
         "footer_unsubscribe",
         "heading",
         "initial_password",
+        "invitee_email",
         "inviter_name",
         "ip_address",
         "link",
@@ -1855,6 +1985,8 @@
         "report_reviewed",
         "suspicious_login",
         "workspace.invitation",
+        "workspace.invitation.decline_confirmed",
+        "workspace.invitation.declined",
         "workspace.invitation.new_user",
         "workspace.invitation.reminder",
         "workspace.member_password_reset",
@@ -1909,6 +2041,7 @@
         "footer_unsubscribe",
         "heading",
         "initial_password",
+        "invitee_email",
         "inviter_name",
         "ip_address",
         "link",
@@ -2630,6 +2763,91 @@
         "role_line",
         "role_name",
         "subject",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_invitation_decline_confirmed.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.invitation.decline_confirmed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "subject",
+        "warning",
+        "workspace_name"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/workspace_invitation_declined.html",
+      "role": "letter",
+      "used_by": [
+        "workspace.invitation.declined"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "invitee_email",
+        "logo_url",
+        "subject",
+        "warning",
         "workspace_name"
       ],
       "unknown_tags": []
