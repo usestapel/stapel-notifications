@@ -2,7 +2,7 @@
 
 Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
 
-Contract: axes 3 · surface 36 · extension points 5 · operations 4 · error codes 43.
+Contract: axes 3 · surface 36 · extension points 5 · operations 4 · error codes 44.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -131,7 +131,7 @@ Paths are relative to `/notifications/api/v1/`.
 ### Translation Keys
 - GET /notification-keys/ — get_notification_keys
 
-## Error codes (43) — the StapelError envelope
+## Error codes (44) — the StapelError envelope
 Render `t(code, params)`; branch UX on the remediation. Localized text lives in docs/errors.<lang>.md, not here.
 - error.400.bad_request [400] fix_input
 - error.400.captcha_invalid [400] retry
@@ -176,3 +176,4 @@ Render `t(code, params)`; branch UX on the remediation. Localized text lives in 
 - error.429.rate_limit [429] wait_and_retry {retry_after_minutes}
 - error.429.too_many_requests [429] wait_and_retry
 - error.500.internal [500] contact_support
+- error.503.mandate_unavailable [503] retry
