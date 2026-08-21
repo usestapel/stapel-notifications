@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.13.1",
+  "module_version": "0.14.0",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -683,14 +683,17 @@
           "logo_url"
         ],
         "caller": [
+          "appeal_url",
           "listing_title",
-          "notifications_chat_url"
+          "notifications_chat_url",
+          "reason_label"
         ],
         "conditional": [
           "manage_notifications_url",
           "unsubscribe_url"
         ],
         "translation": [
+          "appeal_cta",
           "body",
           "cta",
           "footer_address",
@@ -701,11 +704,14 @@
           "heading",
           "push_body",
           "push_title",
+          "reason_line",
           "subject",
           "warning"
         ]
       },
       "consumed": {
+        "appeal_cta": "required",
+        "appeal_url": "required",
         "body": "required",
         "brand_bg": "optional",
         "brand_primary": "optional",
@@ -724,6 +730,8 @@
         "logo_url": "required",
         "manage_notifications_url": "optional",
         "notifications_chat_url": "required",
+        "reason_label": "optional",
+        "reason_line": "required",
         "subject": "required",
         "unsubscribe_url": "optional",
         "warning": "required"
@@ -872,6 +880,228 @@
         "email"
       ],
       "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "moderation.appeal_resolved",
+      "template": "notifications/email/moderation_appeal_resolved.html",
+      "chain": [
+        "notifications/email/moderation_appeal_resolved.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "appeal_note",
+          "outcome_label"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "note_line",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "appeal_note": "optional",
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "note_line": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "moderation.report_received",
+      "template": "notifications/email/moderation_report_received.html",
+      "chain": [
+        "notifications/email/moderation_report_received.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "case_ref",
+          "notifications_chat_url",
+          "target_label"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "notifications_chat_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "moderation.sanction_issued",
+      "template": "notifications/email/moderation_sanction_issued.html",
+      "chain": [
+        "notifications/email/moderation_sanction_issued.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "appeal_url",
+          "expires_label",
+          "reason_label",
+          "sanction_kind"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "expiry_line",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "appeal_url": "required",
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "expires_label": "optional",
+        "expiry_line": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
       "transactional": false
     },
     {
@@ -1860,6 +2090,9 @@
         "listing_blocked",
         "listing_expiring",
         "magic_link_login",
+        "moderation.appeal_resolved",
+        "moderation.report_received",
+        "moderation.sanction_issued",
         "new_device_login",
         "new_message",
         "otp_code",
@@ -1901,12 +2134,16 @@
       "declared": [
         "accept_url",
         "actor_name",
+        "appeal_cta",
+        "appeal_note",
+        "appeal_url",
         "badge",
         "body",
         "brand_bg",
         "brand_primary",
         "brand_primary_dark",
         "brand_text",
+        "case_ref",
         "change_type",
         "chat_url",
         "code",
@@ -1921,7 +2158,9 @@
         "days_remaining",
         "device_name",
         "download_url",
+        "expires_label",
         "expiry",
+        "expiry_line",
         "expiry_minutes",
         "footer_address",
         "footer_consent",
@@ -1941,19 +2180,25 @@
         "manage_notifications_url",
         "masked_new_value",
         "message_preview",
+        "note_line",
         "notifications_chat_url",
+        "outcome_label",
         "password_label",
         "push_body",
         "push_title",
+        "reason_label",
+        "reason_line",
         "revoke_url",
         "role_line",
         "role_name",
+        "sanction_kind",
         "scheduled_date",
         "secure_url",
         "security_url",
         "sender_name",
         "sms",
         "subject",
+        "target_label",
         "unsubscribe_url",
         "username",
         "username_label",
@@ -1979,6 +2224,9 @@
         "listing_blocked",
         "listing_expiring",
         "magic_link_login",
+        "moderation.appeal_resolved",
+        "moderation.report_received",
+        "moderation.sanction_issued",
         "new_device_login",
         "new_message",
         "otp_code",
@@ -2012,12 +2260,16 @@
       "declared": [
         "accept_url",
         "actor_name",
+        "appeal_cta",
+        "appeal_note",
+        "appeal_url",
         "badge",
         "body",
         "brand_bg",
         "brand_primary",
         "brand_primary_dark",
         "brand_text",
+        "case_ref",
         "change_type",
         "chat_url",
         "code",
@@ -2032,7 +2284,9 @@
         "days_remaining",
         "device_name",
         "download_url",
+        "expires_label",
         "expiry",
+        "expiry_line",
         "expiry_minutes",
         "footer_address",
         "footer_consent",
@@ -2052,19 +2306,25 @@
         "manage_notifications_url",
         "masked_new_value",
         "message_preview",
+        "note_line",
         "notifications_chat_url",
+        "outcome_label",
         "password_label",
         "push_body",
         "push_title",
+        "reason_label",
+        "reason_line",
         "revoke_url",
         "role_line",
         "role_name",
+        "sanction_kind",
         "scheduled_date",
         "secure_url",
         "security_url",
         "sender_name",
         "sms",
         "subject",
+        "target_label",
         "unsubscribe_url",
         "username",
         "username_label",
@@ -2343,15 +2603,21 @@
         "preheader"
       ],
       "consumed": {
+        "appeal_cta": "required",
+        "appeal_url": "required",
         "body": "required",
         "brand_primary_dark": "optional",
         "brand_text": "optional",
         "cta": "required",
         "heading": "required",
         "notifications_chat_url": "required",
+        "reason_label": "optional",
+        "reason_line": "required",
         "warning": "required"
       },
       "declared": [
+        "appeal_cta",
+        "appeal_url",
         "body",
         "brand_bg",
         "brand_primary",
@@ -2375,6 +2641,8 @@
         "notifications_chat_url",
         "push_body",
         "push_title",
+        "reason_label",
+        "reason_line",
         "subject",
         "unsubscribe_url",
         "warning"
@@ -2472,6 +2740,158 @@
         "link",
         "logo_url",
         "subject",
+        "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/moderation_appeal_resolved.html",
+      "role": "letter",
+      "used_by": [
+        "moderation.appeal_resolved"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "appeal_note": "optional",
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "note_line": "required"
+      },
+      "declared": [
+        "appeal_note",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "note_line",
+        "outcome_label",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/moderation_report_received.html",
+      "role": "letter",
+      "used_by": [
+        "moderation.report_received"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "notifications_chat_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "case_ref",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "notifications_chat_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "target_label",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/moderation_sanction_issued.html",
+      "role": "letter",
+      "used_by": [
+        "moderation.sanction_issued"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "appeal_url": "required",
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "expires_label": "optional",
+        "expiry_line": "required",
+        "heading": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "appeal_url",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "expires_label",
+        "expiry_line",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "reason_label",
+        "sanction_kind",
+        "subject",
+        "unsubscribe_url",
         "warning"
       ],
       "unknown_tags": []

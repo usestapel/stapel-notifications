@@ -97,7 +97,24 @@ NOTIFICATION_ROUTING = {
     # Group C: System (user can disable per channel)
     "report_reviewed":       {"channels": ["push", "email"],        "group": "system"},
     "listing_expiring":      {"channels": ["push", "email"],        "group": "system"},
-    "listing_blocked":       {"channels": ["push", "email"],        "group": "system"},
+    # Statement of reasons + appeal path (DSA Art. 17), upstream for
+    # stapel-moderation (moderation-design.md §16.3). "telemetry" declares
+    # appeal_url journallable in NotificationLog.data — an undeclared caller
+    # variable is dropped by telemetry.telemetry_keys() before it ever
+    # reaches the journal.
+    "listing_blocked":       {"channels": ["push", "email"],        "group": "system",
+                               "telemetry": ["appeal_url"]},
+    # Moderation notifications (stapel-moderation upstream,
+    # moderation-design.md §6.3/§16.3): the report submitter gets a
+    # receipt (DSA Art. 16(4)), the sanctioned user gets the decision with
+    # its appeal path (DSA Art. 17), the appellant gets the outcome (DSA
+    # Art. 20). Same "system" group and channel pair as their siblings
+    # above — a moderation decision is mail the recipient can switch off
+    # per channel, same as being told a report was reviewed.
+    "moderation.report_received": {"channels": ["push", "email"],   "group": "system"},
+    "moderation.sanction_issued":  {"channels": ["push", "email"],  "group": "system",
+                                     "telemetry": ["appeal_url"]},
+    "moderation.appeal_resolved":  {"channels": ["push", "email"],  "group": "system"},
     "workspace.invitation":  {"channels": ["email"], "group": "system",
                               "transactional": True},
     # Invite variant for a not-yet-registered recipient: the acceptance link
@@ -157,6 +174,9 @@ DEFAULT_EMAIL_TEMPLATES = {
     "report_reviewed": "notifications/email/report_reviewed.html",
     "listing_expiring": "notifications/email/listing_expiring.html",
     "listing_blocked": "notifications/email/listing_blocked.html",
+    "moderation.report_received": "notifications/email/moderation_report_received.html",
+    "moderation.sanction_issued": "notifications/email/moderation_sanction_issued.html",
+    "moderation.appeal_resolved": "notifications/email/moderation_appeal_resolved.html",
     "magic_link_login": "notifications/email/magic_link_login.html",
     "new_device_login": "notifications/email/new_device_login.html",
     "suspicious_login": "notifications/email/suspicious_login.html",

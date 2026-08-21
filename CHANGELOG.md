@@ -2,6 +2,50 @@
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-08-21
+
+### Added — moderation notification types (stapel-moderation upstream)
+
+`stapel-moderation` (tasks/stapel-moderation-design.md) is a target-generic
+moderation queue built on top of this library's `request_notification` seam,
+not on its own templates/SMTP. Its "mandatory upstreams" section (§16.3)
+named three notification types this registry did not have and one existing
+type that could not carry a DSA-compliant decision letter; this release adds
+all four, registry-only — no producer lives in this package, the same shape
+as `report_reviewed`/`listing_blocked` before their first caller landed.
+
+- **Three new types**, `"system"` group / `push`+`email` channels, same as
+  their `report_reviewed`/`listing_blocked` siblings:
+  - `moderation.report_received` — receipt to the person who filed a report
+    (DSA Art. 16(4)). Caller variables: `target_label`, `case_ref`,
+    `notifications_chat_url`.
+  - `moderation.sanction_issued` — the decision that acted on an account,
+    with its statement of reasons and appeal path (DSA Art. 17). Caller
+    variables: `sanction_kind`, `reason_label`, `expires_label` (additive —
+    an indefinite sanction omits it), `appeal_url`.
+  - `moderation.appeal_resolved` — the outcome of an appeal to the appellant
+    (DSA Art. 20). Caller variables: `outcome_label`, `appeal_note`. No
+    link: unlike its siblings this letter carries no
+    `notifications_chat_url`, so its template has no CTA button.
+- **`listing_blocked` gains `reason_label` and `appeal_url`** — until now
+  neither existed on this type (`translation_keys.py`), so a blocked
+  listing's owner got no statement of reasons and no appeal path, which
+  Art. 17 requires. Both are additive, same rule as `workspace.invitation`'s
+  `role_name`: omitting them renders byte-identical to before this release.
+  The routing entry also gains `"telemetry": ["appeal_url"]` (and the same
+  on `moderation.sanction_issued`) — without it the link would be dropped
+  before it ever reaches `NotificationLog.data`
+  (`telemetry.telemetry_keys()` is deny-by-default; declaring it does not
+  exempt a token-bearing URL from the credential-shape sieve, it only lets
+  a plain link through).
+- None of the four route to `telegram`: the built-in catalog still routes
+  nothing there (0.13.0's posture stands), and nothing in the moderation
+  design calls for it.
+
+No model or migration change; `docs/{templates,capabilities}.json` and
+`docs/llms.txt` regenerated (`make contract`) for the four new/changed
+routes.
+
 ## [0.13.1] — 2026-08-21
 
 ### Added — the CONFIG.MD that `pyproject.toml` has been shipping all along

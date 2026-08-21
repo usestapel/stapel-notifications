@@ -77,10 +77,12 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # Same exception stapel-auth and stapel-workspaces already take: raise the
 # ceiling for this module, do not shorten intents to fit. Raised 4500 -> 5200
 # when the unsubscribe policy added its three predicates to the surface, and
-# 5200 -> 5400 for the two sides of a declined invitation. The budget stays
-# enforced — matching the Makefile's contract targets.
+# 5200 -> 5400 for the two sides of a declined invitation, 5400 -> 5600 for
+# the telegram channel's provider axis, and 5600 -> 5800 for the three
+# stapel-moderation upstream letters plus listing_blocked's appeal path. The
+# budget stays enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 5600
+LLMS_TXT_BUDGET = 5800
 
 
 def _emit(out_dir: Path) -> None:

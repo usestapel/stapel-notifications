@@ -1,6 +1,6 @@
 {
   "module": "stapel-notifications",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
   "axes": [
     {
@@ -240,7 +240,7 @@
       "name": "notifications/email/listing_blocked.html",
       "kind": "template",
       "path": "templates/notifications/email/listing_blocked.html",
-      "intent": "\"Your listing has been blocked\" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner."
+      "intent": "\"Your listing has been blocked\" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner. Carries an optional statement of reasons (`reason_label`) and appeal link (`appeal_url`) for DSA Art. 17."
     },
     {
       "name": "notifications/email/listing_expiring.html",
@@ -253,6 +253,24 @@
       "kind": "template",
       "path": "templates/notifications/email/magic_link_login.html",
       "intent": "The passwordless sign-in link letter — notification_type `magic_link_login`, auth group, email only."
+    },
+    {
+      "name": "notifications/email/moderation_appeal_resolved.html",
+      "kind": "template",
+      "path": "templates/notifications/email/moderation_appeal_resolved.html",
+      "intent": "\"Your appeal has been resolved\" — notification_type `moderation.appeal_resolved`, system group, push and email: the outcome letter for the appellant (DSA Art. 20). No link — this is the one moderation letter with no notifications_chat_url. stapel-moderation upstream — registry-only, no producer in this package yet."
+    },
+    {
+      "name": "notifications/email/moderation_report_received.html",
+      "kind": "template",
+      "path": "templates/notifications/email/moderation_report_received.html",
+      "intent": "\"Your report has been received\" — notification_type `moderation.report_received`, system group, push and email: the receipt for the person who filed a report, before any verdict (DSA Art. 16(4)). stapel-moderation upstream — registry-only, no producer in this package yet."
+    },
+    {
+      "name": "notifications/email/moderation_sanction_issued.html",
+      "kind": "template",
+      "path": "templates/notifications/email/moderation_sanction_issued.html",
+      "intent": "\"Action has been taken on your account\" — notification_type `moderation.sanction_issued`, system group, push and email: the decision letter for a sanctioned account, with its statement of reasons and appeal path (DSA Art. 17). stapel-moderation upstream — registry-only, no producer in this package yet."
     },
     {
       "name": "notifications/email/new_device_login.html",

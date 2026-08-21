@@ -1,8 +1,8 @@
-# stapel-notifications 0.13.1
+# stapel-notifications 0.14.0
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
 
-Contract: axes 4 · surface 36 · extension points 5 · operations 4 · error codes 44.
+Contract: axes 4 · surface 39 · extension points 5 · operations 4 · error codes 44.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -36,11 +36,17 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
 - notifications/email/gdpr_inactivity_warning.html — templates/notifications/email/gdpr_inactivity_warning.html
   "Your account will be closed in N days" — notification_type `gdpr.inactivity_warning`, auth group, email only: the warning a retention-driven closure owes the account before it happens.
 - notifications/email/listing_blocked.html — templates/notifications/email/listing_blocked.html
-  "Your listing has been blocked" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner.
+  "Your listing has been blocked" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner. Carries an optional statement of reasons (`reason_label`) and appeal link (`appeal_url`) for DSA Art. 17.
 - notifications/email/listing_expiring.html — templates/notifications/email/listing_expiring.html
   "Your listing is expiring" — notification_type `listing_expiring`, system group, push and email: the marketplace lifecycle reminder.
 - notifications/email/magic_link_login.html — templates/notifications/email/magic_link_login.html
   The passwordless sign-in link letter — notification_type `magic_link_login`, auth group, email only.
+- notifications/email/moderation_appeal_resolved.html — templates/notifications/email/moderation_appeal_resolved.html
+  "Your appeal has been resolved" — notification_type `moderation.appeal_resolved`, system group, push and email: the outcome letter for the appellant (DSA Art. 20). No link — this is the one moderation letter with no notifications_chat_url. stapel-moderation upstream — registry-only, no producer in this package yet.
+- notifications/email/moderation_report_received.html — templates/notifications/email/moderation_report_received.html
+  "Your report has been received" — notification_type `moderation.report_received`, system group, push and email: the receipt for the person who filed a report, before any verdict (DSA Art. 16(4)). stapel-moderation upstream — registry-only, no producer in this package yet.
+- notifications/email/moderation_sanction_issued.html — templates/notifications/email/moderation_sanction_issued.html
+  "Action has been taken on your account" — notification_type `moderation.sanction_issued`, system group, push and email: the decision letter for a sanctioned account, with its statement of reasons and appeal path (DSA Art. 17). stapel-moderation upstream — registry-only, no producer in this package yet.
 - notifications/email/new_device_login.html — templates/notifications/email/new_device_login.html
   The "new sign-in to your account" security notice — notification_type `new_device_login`, auth group, email only: the letter to send when a session appears from a device the account has not used before.
 - notifications/email/new_message.html — templates/notifications/email/new_message.html

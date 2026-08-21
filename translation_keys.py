@@ -155,10 +155,50 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.listing_blocked.subject": "Your listing has been blocked",
     "notification.listing_blocked.heading": "Your listing has been blocked",
     "notification.listing_blocked.body": "Your listing \u201c{listing_title}\u201d has been blocked for violating {company_name} guidelines.",
+    # Statement of reasons (DSA Art. 17): additive, only rendered when the
+    # caller passes "reason_label" (see listing_blocked.html
+    # {% if reason_label %}) — omitting it keeps subject/heading/body/cta
+    # byte-identical to before this key existed, same rule as
+    # workspace.invitation's role_line.
+    "notification.listing_blocked.reason_line": "Reason: {reason_label}.",
     "notification.listing_blocked.cta": "Learn More",
     "notification.listing_blocked.warning": "If you believe this was a mistake, please contact our support team.",
+    # Appeal path (DSA Art. 17): additive, only rendered when the caller
+    # passes "appeal_url" (see listing_blocked.html {% if appeal_url %}).
+    "notification.listing_blocked.appeal_cta": "Appeal this decision",
     "notification.listing_blocked.push_title": "Listing blocked",
     "notification.listing_blocked.push_body": "\u201c{listing_title}\u201d was blocked for guideline violations.",
+    # ── Moderation: report received (stapel-moderation upstream) ────────
+    # Receipt to the person who filed a report (DSA Art. 16(4)) — not the
+    # verdict, which arrives later as report_reviewed.
+    "notification.moderation.report_received.subject": "Your report has been received",
+    "notification.moderation.report_received.heading": "Your report has been received",
+    "notification.moderation.report_received.body": "We received your report about \u201c{target_label}\u201d (ref. {case_ref}). We'll let you know once it has been reviewed.",
+    "notification.moderation.report_received.cta": "View Details",
+    "notification.moderation.report_received.push_title": "Report received",
+    "notification.moderation.report_received.push_body": "We received your report about \u201c{target_label}\u201d.",
+    # ── Moderation: sanction issued (stapel-moderation upstream) ────────
+    # The decision that acted on an account (DSA Art. 17 statement of
+    # reasons + appeal path). "expiry_line" is additive like
+    # listing_blocked's "reason_line": only rendered when the caller passes
+    # "expires_label" (a sanction with no expiry is indefinite).
+    "notification.moderation.sanction_issued.subject": "Action has been taken on your account",
+    "notification.moderation.sanction_issued.heading": "Action has been taken on your account",
+    "notification.moderation.sanction_issued.body": "Your account has received a {sanction_kind}. Reason: {reason_label}.",
+    "notification.moderation.sanction_issued.expiry_line": "This restriction lasts until {expires_label}.",
+    "notification.moderation.sanction_issued.warning": "If you believe this is a mistake, you can appeal this decision.",
+    "notification.moderation.sanction_issued.cta": "Appeal this decision",
+    "notification.moderation.sanction_issued.push_title": "Account action taken",
+    "notification.moderation.sanction_issued.push_body": "Your account has received a {sanction_kind}.",
+    # ── Moderation: appeal resolved (stapel-moderation upstream) ────────
+    # DSA Art. 20: the appellant learns the outcome and the reasoning
+    # behind it. No link — the caller passes no notifications_chat_url for
+    # this type (moderation-design.md §6.3), so this letter is informational
+    # only, same shape as workspace.invitation.decline_confirmed.
+    "notification.moderation.appeal_resolved.subject": "Your appeal has been resolved",
+    "notification.moderation.appeal_resolved.heading": "Your appeal has been resolved",
+    "notification.moderation.appeal_resolved.body": "Your appeal has been reviewed. Outcome: {outcome_label}.",
+    "notification.moderation.appeal_resolved.note_line": "{appeal_note}",
     # ── Magic Link Login (A6) ───────────────────────────────────
     "notification.magic_link_login.subject": "Your {company_name} sign-in link",
     "notification.magic_link_login.heading": "Sign in to {company_name}",

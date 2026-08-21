@@ -179,7 +179,16 @@
       "intent": "\"Your listing is expiring\" — notification_type `listing_expiring`, system group, push and email: the marketplace lifecycle reminder."
     },
     "notifications/email/listing_blocked.html": {
-      "intent": "\"Your listing has been blocked\" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner."
+      "intent": "\"Your listing has been blocked\" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner. Carries an optional statement of reasons (`reason_label`) and appeal link (`appeal_url`) for DSA Art. 17."
+    },
+    "notifications/email/moderation_report_received.html": {
+      "intent": "\"Your report has been received\" — notification_type `moderation.report_received`, system group, push and email: the receipt for the person who filed a report, before any verdict (DSA Art. 16(4)). stapel-moderation upstream — registry-only, no producer in this package yet."
+    },
+    "notifications/email/moderation_sanction_issued.html": {
+      "intent": "\"Action has been taken on your account\" — notification_type `moderation.sanction_issued`, system group, push and email: the decision letter for a sanctioned account, with its statement of reasons and appeal path (DSA Art. 17). stapel-moderation upstream — registry-only, no producer in this package yet."
+    },
+    "notifications/email/moderation_appeal_resolved.html": {
+      "intent": "\"Your appeal has been resolved\" — notification_type `moderation.appeal_resolved`, system group, push and email: the outcome letter for the appellant (DSA Art. 20). No link — this is the one moderation letter with no notifications_chat_url. stapel-moderation upstream — registry-only, no producer in this package yet."
     },
     "notifications/email/workspace_invitation.html": {
       "intent": "The workspace invitation letter for an invitee who already has an account — notification_type `workspace.invitation`, system group, email only. stapel-workspaces requests it from create_invitation; nothing else should be minting invitation mail, because the single-use token and its TTL belong to that flow."

@@ -17,13 +17,14 @@ PYTHON ?= python3
 # (stapel_tools.llms_txt — the module's own context slice for an agent, rendered
 # from capabilities.json + the triad; badge-canon §3) into docs/.
 #
-# The usage-surface section (services.py + routing.py + the 25 packaged email
-# templates — 36 entries: the dispatch entry point, the routing readers, and
+# The usage-surface section (services.py + routing.py + the 28 packaged email
+# templates — 39 entries: the dispatch entry point, the routing readers, and
 # one line per ready-made letter so "is there already an email for X" has an
 # answer) does not fit the generator's default 4000-token budget (~4320 tokens
 # at honest intent length; ~5005 once the unsubscribe policy added its three
 # predicates; ~5292 with the two sides of a declined invitation; ~5417 with the
-# telegram channel's provider axis). The owner's
+# telegram channel's provider axis; ~5757 with the three stapel-moderation
+# upstream letters + listing_blocked's appeal path). The owner's
 # call, the same exception stapel-auth
 # and stapel-workspaces already take: raise the ceiling for this module rather
 # than shorten intents to fit — a trimmed-to-fit context file is
@@ -41,7 +42,7 @@ contract:
 	$(PYTHON) -m stapel_notifications._codegen --out docs
 	$(PYTHON) -m stapel_notifications._capabilities --out docs
 	$(PYTHON) -m stapel_notifications._template_contract --out docs
-	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 5600
+	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 5800
 
 # Drift gate: regenerate into a temp dir and diff against the committed docs/*.json
 # (mirrors the monolith's `make codegen-check` and the frontend's `gen:*:check`).
@@ -53,7 +54,7 @@ contract-check:
 	$(PYTHON) -m stapel_notifications._codegen --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._capabilities --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._template_contract --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
-	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 5600 || { rm -rf "$$tmp"; exit 1; }; \
+	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 5800 || { rm -rf "$$tmp"; exit 1; }; \
 	rc=0; \
 	for f in schema.json flows.json errors.json capabilities.json templates.json llms.txt; do \
 		if ! diff -q "docs/$$f" "$$tmp/docs/$$f" >/dev/null 2>&1; then \
