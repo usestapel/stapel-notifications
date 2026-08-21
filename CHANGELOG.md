@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## [0.13.1] — 2026-08-21
+
+### Added — the CONFIG.MD that `pyproject.toml` has been shipping all along
+
+`[tool.setuptools.package-data]` has listed `CONFIG.MD` since this package
+started declaring package data, and the file has never existed. Every wheel was
+therefore missing a file it declared, `stapel-config-lint` reported `CFG000`
+("no CONFIG.MD at the root — the config registry does not exist, so CFG002 and
+CFG003 cannot run at all"), and `config_manifest.locate_lib_config_md` returned
+`None` for this module — so a generated project's aggregated root registry knew
+nothing about the settings that decide who sends its passcodes. Every sibling
+already ships one.
+
+It is written from the actual `conf.py` surface, not from prose: all 31 keys of
+`DEFAULTS`, one row each, with type, source, purpose, required and default,
+under the `## stapel-notifications` owner heading `stapel-config-manifest`
+aggregates on. Grouped as channel providers / provider credentials /
+notification registry and policy / branding / delivery and i18n tuning, plus
+the three `NOTIFICATIONS_CONSUMER_GROUP*` variables the bus consumers read
+directly with a deliberate `# noqa: CFG001` — real operational knobs, and a
+registry that omits them hides them from ops.
+
+Two things the format could not say on its own, so they are said in prose above
+the tables: the four `*_PROVIDER` keys are **env-closed** (`import_strings` ⇒
+implicitly `no_env`; a same-named environment variable is ignored and reported
+as `stapel_core.conf.W001`), and the closed-by-default posture —
+`unconfigured` providers that raise rather than `mock` providers that return
+and get journalled as `sent`, `RAW_CONTENT: off`, deny-by-default `TELEMETRY`,
+and nothing built-in routed to `telegram`. The eight
+`{email,push,sms,telegram}_{messages,system}` preference booleans get a closing
+section stating what they are *not*: user data projected over the bus, not
+deployment configuration.
+
+`stapel-config-lint .` and `--strict` are clean; the manifest parser reads all
+34 rows with a purpose on every one (no `CFG004`), and `MODULE.md` §1 now points
+at the registry the way stapel-cdn's does.
+
+No code change — `stapel_notifications` is byte-identical to 0.13.0.
+
 ## [0.13.0] — 2026-08-21
 
 ### Added — `telegram`, a first-class channel

@@ -42,6 +42,11 @@ Resolution per key: `settings.STAPEL_NOTIFICATIONS[key]` → environment
 variable → default. Values are read
 lazily (never frozen at import) and reload on `setting_changed` in tests.
 
+See [CONFIG.MD](CONFIG.MD) for the complete registry — every key with its type,
+source (`env`/`vault`), purpose and default, in the format
+`stapel-config-manifest` aggregates into a generated project's root registry.
+The table below is the same surface, annotated for a reader of this document.
+
 **Exception — the `*_PROVIDER` keys are never read from the
 environment.** They are declared `import_strings`, which stapel-core (≥0.24.0)
 treats as implicitly `no_env`: such a key names the class the process imports
