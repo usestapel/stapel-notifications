@@ -1,6 +1,6 @@
 {
   "_comment": "Hand-curated layer of docs/capabilities.json (capability-config.md §2 p.3). The emitter (stapel_notifications/_capabilities.py) merges this over the derived axes; an axis present in conf.py DEFAULTS but missing here (or vice versa) is a loud emission error. Keep business_label/summary in business language — they surface in CTO conversations, not in code. Since the usage-surface wave the file also carries surface_roots + one intent line per selected symbol (stapel_tools.surface): the routing readers, the dispatch entry point and every packaged email template, so \"is there already a letter/mechanism for X\" has a machine-readable answer. A symbol a root selects and this map does not explain is a loud emission error too.",
-  "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
+  "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
   "requires": [
     {
       "module": "stapel-core",
@@ -10,7 +10,7 @@
     {
       "module": "stapel-auth",
       "optional": true,
-      "reason": "source of the user-contact sync (email/phone projections) and the user.deleted / user.deletion_initiated events this module consumes; decoupled via the comm bus"
+      "reason": "source of the user-contact sync (email/phone/telegram_chat_id projections) and the user.deleted / user.deletion_initiated events this module consumes; decoupled via the comm bus"
     },
     {
       "module": "stapel-profiles",
@@ -37,7 +37,7 @@
     {
       "name": "channel_providers",
       "kind": "dotted_path",
-      "summary": "The EMAIL/SMS/PUSH provider settings accept any dotted path to a class with the matching send() signature — add SendGrid, Postmark, APNs etc. as host-project classes, no fork."
+      "summary": "The EMAIL/SMS/PUSH/TELEGRAM provider settings accept any dotted path to a class with the matching send() signature — add SendGrid, Postmark, APNs, a Telegram bot client etc. as host-project classes, no fork."
     },
     {
       "name": "template_overrides",
@@ -62,6 +62,10 @@
     "PUSH_PROVIDER": {
       "business_label": "Push notification service",
       "summary": "Which service delivers mobile/web push: Firebase Cloud Messaging (default), 'mock' for log-only development, 'unconfigured' to close the channel outright, or any custom provider class supplied by the host project."
+    },
+    "TELEGRAM_PROVIDER": {
+      "business_label": "Telegram delivery bot",
+      "summary": "Which class writes the Telegram messages. There is no built-in one: a bot token is the deployment's own sending identity, so the client is always a host-project class named by dotted path ('mock' for log-only development). Defaults to 'unconfigured', which keeps the channel shut until the business decides to run a bot."
     }
   },
   "surface_roots": [

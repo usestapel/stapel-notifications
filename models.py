@@ -28,6 +28,8 @@ class UserNotificationSettings(models.Model):
     push_system = models.BooleanField(default=True)
     sms_messages = models.BooleanField(default=True)
     sms_system = models.BooleanField(default=True)
+    telegram_messages = models.BooleanField(default=True)
+    telegram_system = models.BooleanField(default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -44,6 +46,18 @@ class UserContact(models.Model):
     user_id = models.UUIDField(primary_key=True)
     email = models.CharField(max_length=255, blank=True, default="")
     phone = models.CharField(max_length=20, blank=True, default="")
+    telegram_chat_id = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text=(
+            "Telegram chat id this user can be written to — the address of "
+            "the telegram channel, the exact counterpart of email/phone. A "
+            "numeric id (the value a bot reads off an incoming update), not "
+            "an @username: a username can be changed by its owner and a bot "
+            "cannot open a conversation from one."
+        ),
+    )
     is_active = models.BooleanField(
         default=True,
         help_text=(
@@ -89,7 +103,7 @@ class NotificationLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     user_id = models.UUIDField(null=True, db_index=True)
     notification_type = models.CharField(max_length=50, db_index=True)
-    channel = models.CharField(max_length=10)  # email | push | sms
+    channel = models.CharField(max_length=10)  # email | push | sms | telegram
     status = models.CharField(max_length=10)  # sent | failed | skipped
     language = models.CharField(max_length=5, default="en")
     recipient = models.CharField(max_length=255)

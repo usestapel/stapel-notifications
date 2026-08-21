@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.12.0"
+version = "0.13.0"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
-keywords = ["django", "stapel", "notifications", "push", "firebase"]
+keywords = ["django", "stapel", "notifications", "push", "firebase", "telegram"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: Django",

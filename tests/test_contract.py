@@ -80,7 +80,7 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # 5200 -> 5400 for the two sides of a declined invitation. The budget stays
 # enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 5400
+LLMS_TXT_BUDGET = 5600
 
 
 def _emit(out_dir: Path) -> None:
@@ -235,7 +235,12 @@ def test_matches_monolith_notifications_slice():
 
 # --- capabilities.json content sanity (capability-config.md §2) ---------------
 
-_EXPECTED_AXES = {"EMAIL_PROVIDER", "SMS_PROVIDER", "PUSH_PROVIDER"}
+_EXPECTED_AXES = {
+    "EMAIL_PROVIDER",
+    "SMS_PROVIDER",
+    "PUSH_PROVIDER",
+    "TELEGRAM_PROVIDER",
+}
 
 
 def _capabilities() -> dict:
@@ -243,7 +248,7 @@ def _capabilities() -> dict:
 
 
 def test_capabilities_axes_inventory():
-    """Three channel-provider selectors, all enum, all in notifications.providers."""
+    """One channel-provider selector per channel, all enum, all in notifications.providers."""
     doc = _capabilities()
     assert {a["key"] for a in doc["axes"]} == _EXPECTED_AXES
     for axis in doc["axes"]:

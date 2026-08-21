@@ -35,7 +35,11 @@ class TestGDPRExport:
         uid = uuid.uuid4()
         _seed(uid)
         data = NotificationsGDPRProvider().export(uid)
-        assert data["contact"] == {"email": "u@example.com", "phone": "+45999"}
+        assert data["contact"] == {
+            "email": "u@example.com",
+            "phone": "+45999",
+            "telegram_chat_id": "",
+        }
         assert data["settings"]["email_system"] is False
         assert len(data["devices"]) == 1
         assert data["devices"][0]["platform"] == "ios"

@@ -38,6 +38,8 @@ class Command(BaseKafkaConsumerCommand):
             defaults["email"] = payload["email"] or ""
         if "phone" in payload:
             defaults["phone"] = payload["phone"] or ""
+        if "telegram_chat_id" in payload:
+            defaults["telegram_chat_id"] = str(payload["telegram_chat_id"] or "")
 
         if defaults:
             # A fresh contact sync reactivates a contact that was soft-

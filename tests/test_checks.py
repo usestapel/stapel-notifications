@@ -163,6 +163,64 @@ def test_the_shipped_default_warns_until_a_backend_is_chosen():
     assert settings_named == {"EMAIL_PROVIDER", "SMS_PROVIDER"}
 
 
+@override_settings(DEBUG=False)
+def test_an_unrouted_closed_channel_is_not_a_warning():
+    """Telegram ships closed and unrouted, so a stock deployment must stay
+    quiet about it: W005 speaks for channels the registry actually uses."""
+    from stapel_notifications.checks import check_channel_providers_deliver
+
+    with override_settings(
+        STAPEL_NOTIFICATIONS={
+            "EMAIL_PROVIDER": "smtp",
+            "SMS_PROVIDER": "gatewayapi",
+            "PUSH_PROVIDER": "fcm",
+        }
+    ):
+        assert check_channel_providers_deliver(None) == []
+
+
+@override_settings(DEBUG=False)
+def test_routing_to_a_channel_with_no_backend_warns():
+    """...and the moment a host routes a type to telegram without naming a
+    bot client, the same check says so rather than letting the messages
+    disappear."""
+    from stapel_notifications.checks import check_channel_providers_deliver
+
+    with override_settings(
+        STAPEL_NOTIFICATIONS={
+            "EMAIL_PROVIDER": "smtp",
+            "SMS_PROVIDER": "gatewayapi",
+            "PUSH_PROVIDER": "fcm",
+            "TYPES": {"x": {"channels": ["telegram"], "group": "system"}},
+        }
+    ):
+        (warning,) = check_channel_providers_deliver(None)
+        assert warning.id == "stapel_notifications.W005"
+        assert "TELEGRAM_PROVIDER" in warning.msg
+
+
+def test_an_unresolvable_telegram_provider_stops_the_boot():
+    from stapel_notifications.checks import check_channel_providers_resolve
+
+    with override_settings(STAPEL_NOTIFICATIONS={"TELEGRAM_PROVIDER": "telgram"}):
+        (error,) = check_channel_providers_resolve(None)
+        assert error.id == "stapel_notifications.E003"
+        assert "telgram" in error.msg
+
+
+def test_telegram_is_a_channel_a_type_may_be_routed_to():
+    """E004's other half: routing to telegram must NOT be an error — the
+    library carries telegram_messages/telegram_system for it."""
+    from stapel_notifications.checks import check_notification_channels_have_a_preference
+
+    with override_settings(
+        STAPEL_NOTIFICATIONS={
+            "TYPES": {"x": {"channels": ["telegram"], "group": "system"}}
+        }
+    ):
+        assert check_notification_channels_have_a_preference(None) == []
+
+
 @override_settings(DEBUG=True)
 def test_debug_says_this_is_not_production():
     from stapel_notifications.checks import check_channel_providers_deliver

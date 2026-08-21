@@ -1,4 +1,5 @@
-"""Channel backends: SMTP/Resend/Mailgun email, GatewayAPI/Twilio SMS, FCM push."""
+"""Channel backends: SMTP/Resend/Mailgun email, GatewayAPI/Twilio SMS, FCM
+push, and the provider-less Telegram channel."""
 
 import sys
 import types
@@ -222,6 +223,87 @@ def test_sms_mask():
 
     assert _mask("+4512345678") == "+4***5678"
     assert _mask("123") == "***"
+
+
+# ── Telegram ────────────────────────────────────────────────────
+#
+# The one channel that ships no delivering backend at all: a bot token is
+# the deployment's own sending identity, so the client is app-layer by
+# dotted path — the same seam stapel-mailtrap uses to plug a mail catcher
+# into EMAIL_PROVIDER from its own package. What this library owns is the
+# duck type and the closed default.
+
+
+class _ReferenceTelegramProvider:
+    """The reference host-project provider, exactly as MODULE.md §3 states
+    the contract: a class with ``.send(chat_id, text) -> None``, holding its
+    own bot token. Registered nowhere — it is reached by dotted path, which
+    is the whole point of the test."""
+
+    sent: list[tuple[str, str]] = []
+
+    def send(self, chat_id: str, text: str) -> None:
+        type(self).sent.append((chat_id, text))
+
+
+REFERENCE_TELEGRAM = (
+    f"{_ReferenceTelegramProvider.__module__}._ReferenceTelegramProvider"
+)
+
+
+class TestTelegramChannel:
+    def test_ships_no_delivering_builtin(self):
+        """`mock` and `unconfigured` only — a shipped bot client would ask
+        every host to hand its sending identity to a class it did not write."""
+        from stapel_notifications.channels.telegram import _PROVIDERS
+
+        assert set(_PROVIDERS) == {"mock", "unconfigured"}
+
+    def test_default_refuses_to_send(self):
+        from stapel_notifications.channels.telegram import send_telegram
+        from stapel_notifications.conf import DEFAULTS
+
+        assert DEFAULTS["TELEGRAM_PROVIDER"] == "unconfigured"
+        with override_settings(STAPEL_NOTIFICATIONS={}):
+            with pytest.raises(ImproperlyConfigured, match="TELEGRAM_PROVIDER"):
+                send_telegram("123456789", "Your code is 1234")
+
+    def test_a_host_provider_is_reached_by_dotted_path(self):
+        from stapel_notifications.channels.telegram import send_telegram
+
+        _ReferenceTelegramProvider.sent = []
+        with override_settings(
+            STAPEL_NOTIFICATIONS={"TELEGRAM_PROVIDER": REFERENCE_TELEGRAM}
+        ):
+            send_telegram("123456789", "hello")
+        assert _ReferenceTelegramProvider.sent == [("123456789", "hello")]
+
+    def test_unknown_short_name_raises(self):
+        from stapel_notifications.channels.telegram import send_telegram
+
+        with override_settings(STAPEL_NOTIFICATIONS={"TELEGRAM_PROVIDER": "telgram"}):
+            with pytest.raises(ImproperlyConfigured, match="telgram"):
+                send_telegram("123456789", "hi")
+
+    def test_log_only_delivery_is_available_by_name(self, caplog):
+        from stapel_notifications.channels.telegram import send_telegram
+
+        with override_settings(STAPEL_NOTIFICATIONS={"TELEGRAM_PROVIDER": "mock"}):
+            with caplog.at_level(
+                "INFO", logger="stapel_notifications.channels.telegram"
+            ):
+                send_telegram("123456789", "Subj")
+        assert any("[mock telegram]" in r.getMessage() for r in caplog.records)
+        # The chat id is an address: the log line must not spell it out.
+        assert not any("123456789" in r.getMessage() for r in caplog.records)
+
+
+def test_telegram_mask():
+    from stapel_notifications.channels.telegram import _mask
+
+    assert _mask("123456789") == "12***6789"
+    assert _mask("123") == "***"
+    assert _mask(123456789) == "12***6789"  # a bot hands ints back
 
 
 # ── Push (FCM) ──────────────────────────────────────────────────

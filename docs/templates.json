@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.12.0",
+  "module_version": "0.13.0",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -58,13 +58,13 @@
             "content_html",
             "content_text"
           ],
-          "line": 604
+          "line": 627
         },
         {
           "template": "template",
           "context": "all_vars",
           "extra_keys": [],
-          "line": 612
+          "line": 635
         }
       ]
     }

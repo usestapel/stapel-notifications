@@ -289,7 +289,7 @@ def check_notification_channels_have_a_preference(app_configs, **kwargs):
                 "type is silently undeliverable on that channel.",
                 hint=(
                     "Route the type to a channel this library carries a "
-                    "preference for (email, sms, push), or drop the channel "
+                    "preference for (email, sms, push, telegram), or drop the channel "
                     "from the entry. The pairs are fixed by the model: "
                     f"{sorted(_VALID_PREF_FIELDS)}."
                 ),
@@ -307,7 +307,7 @@ _NON_DELIVERING = frozenset({"mock", "unconfigured"})
 
 
 def _provider_axes():
-    """(setting key, channel name, provider registry) for the three channels.
+    """(setting key, channel name, provider registry), one per channel.
 
     Imported lazily: ``channels.push`` imports models at module scope, and
     this module is loaded from ``AppConfig.ready``.
@@ -315,11 +315,13 @@ def _provider_axes():
     from .channels.email import _PROVIDERS as EMAIL_PROVIDERS
     from .channels.push import _PROVIDERS as PUSH_PROVIDERS
     from .channels.sms import _PROVIDERS as SMS_PROVIDERS
+    from .channels.telegram import _PROVIDERS as TELEGRAM_PROVIDERS
 
     return (
         ("EMAIL_PROVIDER", "email", EMAIL_PROVIDERS),
         ("SMS_PROVIDER", "sms", SMS_PROVIDERS),
         ("PUSH_PROVIDER", "push", PUSH_PROVIDERS),
+        ("TELEGRAM_PROVIDER", "telegram", TELEGRAM_PROVIDERS),
     )
 
 
@@ -397,9 +399,9 @@ def check_channel_providers_deliver(app_configs, **kwargs):
         warnings.append(checks.Warning(
             f"STAPEL_NOTIFICATIONS['{setting}']={name!r} with DEBUG=False: the "
             f"{channel} provider {what}, so nothing this deployment sends on "
-            f"the {channel} channel reaches anybody — including the passcodes, "
-            "password resets and account-closure notices the built-in types "
-            f"route to {channel}.",
+            f"the {channel} channel reaches anybody — including any passcode, "
+            "password reset or account-closure notice the effective registry "
+            f"routes to {channel}.",
             hint=(
                 f"Point {setting} at a real provider (short name or dotted "
                 "path). Silence with SILENCED_SYSTEM_CHECKS if this "

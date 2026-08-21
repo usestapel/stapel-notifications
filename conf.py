@@ -19,6 +19,7 @@ Everything a host project previously had to fork is an override here::
         "EMAIL_PROVIDER": "myproject.email.SendgridProvider",
         "SMS_PROVIDER": "twilio",
         "PUSH_PROVIDER": "fcm",
+        "TELEGRAM_PROVIDER": "myproject.telegram.BotProvider",
     }
 
 Resolution per key: STAPEL_NOTIFICATIONS dict → env → default — except for
@@ -43,7 +44,12 @@ from stapel_core.conf import AppSettings
 #: A deployment that genuinely must pick a provider per environment says so
 #: once, by name, with ``env_overridable=`` — deliberately not preconfigured
 #: here: forgetting a flag must leave the process closed, never open.
-PROVIDER_SETTINGS = ("EMAIL_PROVIDER", "SMS_PROVIDER", "PUSH_PROVIDER")
+PROVIDER_SETTINGS = (
+    "EMAIL_PROVIDER",
+    "SMS_PROVIDER",
+    "PUSH_PROVIDER",
+    "TELEGRAM_PROVIDER",
+)
 
 
 class NotificationsAppSettings(AppSettings):
@@ -141,9 +147,15 @@ DEFAULTS = {
     #
     # PUSH_PROVIDER keeps "fcm": it already refuses loudly without
     # credentials, so it was never the silent-success shape.
+    #
+    # TELEGRAM_PROVIDER has no built-in delivering backend at all — the bot
+    # token is the deployment's own sending identity, so the client is
+    # app-layer by dotted path (channels/telegram.py). "unconfigured" is
+    # therefore both the default and the only closed state.
     "EMAIL_PROVIDER": "unconfigured",
     "SMS_PROVIDER": "unconfigured",
     "PUSH_PROVIDER": "fcm",
+    "TELEGRAM_PROVIDER": "unconfigured",
     # Provider credentials (read lazily, never frozen at import)
     "RESEND_API_KEY": "",
     "MAILGUN_API_KEY": "",

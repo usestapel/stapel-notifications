@@ -3,11 +3,11 @@ from pathlib import Path
 
 from stapel_tools.capabilities import axis_group_rules, run_capabilities_cli
 
-#: The three channel-backend selectors are the module's CTO-facing axes
-#: (provider choice per channel). Credentials, branding, template variables
-#: and LANGUAGES are tuning; TYPES / EMAIL_TEMPLATES are merge-registry
+#: The channel-backend selectors are the module's CTO-facing axes (provider
+#: choice per channel). Credentials, branding, template variables and
+#: LANGUAGES are tuning; TYPES / EMAIL_TEMPLATES are merge-registry
 #: extension points (curated in docs/capabilities.meta.json), not axes.
-_AXES = ("EMAIL_PROVIDER", "SMS_PROVIDER", "PUSH_PROVIDER")
+_AXES = ("EMAIL_PROVIDER", "SMS_PROVIDER", "PUSH_PROVIDER", "TELEGRAM_PROVIDER")
 
 
 def main(argv=None):

@@ -2,6 +2,79 @@
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-08-21
+
+### Added — `telegram`, a first-class channel
+
+The channel set was `email | sms | push` and `_dispatch` is closed by design
+(MODULE.md: a provider is app-layer, a channel is not), so every product that
+wanted to reach a person on Telegram had to compose the message itself —
+outside the preference plane, outside the delivery journal, outside
+idempotency. `telegram` now sits beside the other three, with the same seams
+and no new ones:
+
+- **Dispatch** — a `telegram` branch in `services._dispatch`. Its text is the
+  type's `telegram` translation key, falling back to `body` (then
+  `content_text`): the same two-step SMS uses. It deliberately does **not**
+  fall through the `sms` string — a host shortened that one for a carrier, not
+  for a chat window.
+- **Address** — `UserContact.telegram_chat_id`, the numeric chat id, synced by
+  `consume_contacts` from the auth contact projection exactly like
+  `email`/`phone`, and overridable per send with
+  `process_notification(..., telegram_chat_id=...)`. A recipient with no chat
+  id is journalled `skipped` ("no telegram address"), never `sent`.
+- **Preferences** — `telegram_messages` / `telegram_system` on
+  `UserNotificationSettings`, synced by `consume_profiles`, exported by the
+  GDPR provider. Opt-out semantics identical to SMS; `auth` stays mandatory.
+  `notifications.E004` accordingly accepts `telegram` as a channel a type may
+  be routed to.
+- **Provider** — `TELEGRAM_PROVIDER`, a `PROVIDER_SETTINGS` member (so the
+  environment cannot choose it, `stapel_core.conf.W001` names it if it tries),
+  resolved by the shared `channels.sms._resolve_provider`. `notifications.E003`
+  refuses an unresolvable name at boot; `W005` warns about a non-delivering one
+  under `DEBUG=False` **when the registry routes to that channel**.
+
+**Closed by default, twice over.** Nothing built-in routes to `telegram`, and
+`TELEGRAM_PROVIDER` defaults to `unconfigured` — a deployment that says nothing
+about Telegram never writes to it, and one that routes a type there without
+naming a client gets `status="failed"` plus a boot warning rather than silence.
+
+**No built-in delivering backend, on purpose.** A bot token is not a
+subscription like a Resend key — it *is* the deployment's sending identity, and
+whoever holds it can write to every chat the bot was ever added to. Shipping a
+token-reading class would ask every host to hand that identity to code it did
+not write, for a channel most hosts do not run. The registry is `mock` +
+`unconfigured`; the client is a host-project class named by dotted path, or a
+package of its own pointed at the same way `stapel-mailtrap` is pointed at
+`EMAIL_PROVIDER`:
+
+```python
+class BotProvider:
+    def send(self, chat_id: str, text: str) -> None:
+        ...  # your Bot API call, your token
+
+STAPEL_NOTIFICATIONS = {
+    "TELEGRAM_PROVIDER": "myproject.telegram.BotProvider",
+    "TYPES": {"shift_reminder": {"channels": ["telegram"], "group": "system"}},
+}
+```
+
+Migration `0007_telegram_channel` is expand-only: three additive columns, each
+with a default. The two preference booleans default to `True` like their SMS
+twins — the preference records "the recipient has not switched this off", and
+with nothing routed and no provider it cannot make an existing deployment start
+writing to anyone.
+
+Known gap, upstream of here: `stapel_core.notifications.request_notification`
+has no `telegram_chat_id` argument and its `notification.requested` schema is
+`additionalProperties: false`, so the **direct-address** path over the bus needs
+a stapel-core release. The per-user path (`UserContact`) is complete, and the
+consumer already reads the key when a producer publishes it.
+
+`docs/llms.txt` ceiling raised 5400 → 5600 (a fourth provider axis), the same
+deliberate exception this module already takes rather than shortening intents to
+fit.
+
 ## [0.12.0] — 2026-08-18
 
 ### Added — the two sides of a declined invitation

@@ -21,8 +21,8 @@ class UserNotificationSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(UserContact)
 class UserContactAdmin(admin.ModelAdmin):
-    list_display = ['user_id', 'email', 'phone', 'updated_at']
-    search_fields = ['user_id', 'email', 'phone']
+    list_display = ['user_id', 'email', 'phone', 'telegram_chat_id', 'updated_at']
+    search_fields = ['user_id', 'email', 'phone', 'telegram_chat_id']
     readonly_fields = ['updated_at']
 
 

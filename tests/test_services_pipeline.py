@@ -47,9 +47,30 @@ class _CapturingSMSProvider:
         type(self).sent.append((phone, body))
 
 
+class _CapturingTelegramProvider:
+    """The app-layer bot client the telegram channel always needs — this
+    library ships no delivering one. Same duck type as the SMS provider:
+    one address, one string."""
+
+    sent = []
+
+    def send(self, chat_id, text):
+        type(self).sent.append((chat_id, text))
+
+
 CAPTURE = f"{_CapturingEmailProvider.__module__}._CapturingEmailProvider"
 FAILING = f"{_FailingEmailProvider.__module__}._FailingEmailProvider"
 CAPTURE_SMS = f"{_CapturingSMSProvider.__module__}._CapturingSMSProvider"
+CAPTURE_TELEGRAM = (
+    f"{_CapturingTelegramProvider.__module__}._CapturingTelegramProvider"
+)
+
+#: A host registration: nothing built-in routes to telegram, so every
+#: telegram test declares the type the way a host would.
+TELEGRAM_TYPES = {
+    "shift_reminder": {"channels": ["telegram"], "group": "system"},
+    "shift_reminder_auth": {"channels": ["telegram"], "group": "auth"},
+}
 
 
 @pytest.fixture
@@ -523,6 +544,150 @@ def test_channel_with_no_address_is_skipped_not_reported_as_sent():
     assert "no sms address" in sms.error_message
     # The channel that DID have an address is unaffected.
     assert NotificationLog.objects.get(channel="email").status == "sent"
+
+
+@pytest.mark.django_db
+class TestTelegramChannel:
+    """The telegram channel through the full pipeline.
+
+    Nothing built-in routes to it and it has no delivering provider, so a
+    zero-config deployment never writes to Telegram at all — every test here
+    opens the channel the way a host does: a TYPES registration plus a
+    dotted-path provider.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _reset(self):
+        _CapturingTelegramProvider.sent = []
+
+    def test_sends_to_the_chat_id_on_the_contact_projection(self, user):
+        UserContact.objects.create(user_id=user.id, telegram_chat_id="123456789")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={
+                "TELEGRAM_PROVIDER": CAPTURE_TELEGRAM,
+                "TYPES": TELEGRAM_TYPES,
+                "TEXT": {"notification.shift_reminder.telegram": "Shift at {at}"},
+            }
+        ):
+            process_notification(
+                notification_type="shift_reminder",
+                user_id=str(user.id),
+                variables={"at": "09:00"},
+            )
+        assert _CapturingTelegramProvider.sent == [("123456789", "Shift at 09:00")]
+        log = NotificationLog.objects.get(channel="telegram")
+        assert log.status == "sent"
+        assert log.recipient == "123456789"
+
+    def test_a_directly_passed_chat_id_wins_over_the_projection(self, user):
+        """Same precedence as email/phone: the caller's address beats the
+        synced one, which is what an unauthenticated flow relies on."""
+        UserContact.objects.create(user_id=user.id, telegram_chat_id="111")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={
+                "TELEGRAM_PROVIDER": CAPTURE_TELEGRAM,
+                "TYPES": TELEGRAM_TYPES,
+                "TEXT": {"notification.shift_reminder.telegram": "hi"},
+            }
+        ):
+            process_notification(
+                notification_type="shift_reminder",
+                user_id=str(user.id),
+                variables={},
+                telegram_chat_id="222",
+            )
+        assert _CapturingTelegramProvider.sent == [("222", "hi")]
+
+    def test_no_chat_id_is_skipped_not_reported_as_sent(self, user):
+        UserContact.objects.create(user_id=user.id, email="u@example.com")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={
+                "TELEGRAM_PROVIDER": CAPTURE_TELEGRAM,
+                "TYPES": TELEGRAM_TYPES,
+            }
+        ):
+            process_notification(
+                notification_type="shift_reminder",
+                user_id=str(user.id),
+                variables={},
+            )
+        assert _CapturingTelegramProvider.sent == []
+        log = NotificationLog.objects.get(channel="telegram")
+        assert log.status == "skipped"
+        assert "no telegram address" in log.error_message
+
+    def test_the_closed_default_journals_failed_not_sent(self, user):
+        """The channel is inert until a host names a bot client, and says so
+        the way email/SMS do: status="failed", not a silent "sent"."""
+        UserContact.objects.create(user_id=user.id, telegram_chat_id="123456789")
+        with override_settings(STAPEL_NOTIFICATIONS={"TYPES": TELEGRAM_TYPES}):
+            process_notification(
+                notification_type="shift_reminder",
+                user_id=str(user.id),
+                variables={},
+            )
+        log = NotificationLog.objects.get(channel="telegram")
+        assert log.status == "failed"
+        assert "TELEGRAM_PROVIDER" in log.error_message
+
+    def test_the_recipient_can_switch_it_off_like_sms(self, user):
+        UserNotificationSettings.objects.create(
+            user_id=user.id, telegram_system=False
+        )
+        UserContact.objects.create(user_id=user.id, telegram_chat_id="123456789")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={
+                "TELEGRAM_PROVIDER": CAPTURE_TELEGRAM,
+                "TYPES": TELEGRAM_TYPES,
+            }
+        ):
+            process_notification(
+                notification_type="shift_reminder",
+                user_id=str(user.id),
+                variables={},
+            )
+        assert _CapturingTelegramProvider.sent == []
+        assert NotificationLog.objects.get(channel="telegram").status == "skipped"
+
+    def test_the_auth_group_ignores_the_opt_out(self, user):
+        UserNotificationSettings.objects.create(
+            user_id=user.id, telegram_system=False, telegram_messages=False
+        )
+        UserContact.objects.create(user_id=user.id, telegram_chat_id="123456789")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={
+                "TELEGRAM_PROVIDER": CAPTURE_TELEGRAM,
+                "TYPES": TELEGRAM_TYPES,
+                "TEXT": {"notification.shift_reminder_auth.telegram": "code 1234"},
+            }
+        ):
+            process_notification(
+                notification_type="shift_reminder_auth",
+                user_id=str(user.id),
+                variables={},
+            )
+        assert _CapturingTelegramProvider.sent == [("123456789", "code 1234")]
+
+    def test_the_body_is_the_fallback_when_the_type_has_no_telegram_copy(self, user):
+        """Same two-step as SMS — and deliberately NOT the `sms` string: a
+        host shortens that one for the carrier, not for a chat window."""
+        UserContact.objects.create(user_id=user.id, telegram_chat_id="123456789")
+        with override_settings(
+            STAPEL_NOTIFICATIONS={
+                "TELEGRAM_PROVIDER": CAPTURE_TELEGRAM,
+                "TYPES": TELEGRAM_TYPES,
+                "TEXT": {
+                    "notification.shift_reminder.body": "The long body",
+                    "notification.shift_reminder.sms": "short",
+                },
+            }
+        ):
+            process_notification(
+                notification_type="shift_reminder",
+                user_id=str(user.id),
+                variables={},
+            )
+        assert _CapturingTelegramProvider.sent == [("123456789", "The long body")]
 
 
 @pytest.mark.django_db

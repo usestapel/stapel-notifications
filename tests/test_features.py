@@ -180,6 +180,20 @@ class TestSmsOptOut:
         obj = self._settings_obj(user, sms_system=False, sms_messages=False)
         assert _should_send("auth", "sms", obj) is True
 
+    def test_telegram_pref_fields_are_valid(self, user):
+        """The telegram pair is the sms pair's twin — a channel the library
+        carries a preference for, so E004 lets a host route to it and
+        _should_send has a field to read."""
+        obj = self._settings_obj(user, telegram_system=False, telegram_messages=True)
+        assert _should_send("system", "telegram", obj) is False
+        assert _should_send("messages", "telegram", obj) is True
+        assert _should_send("auth", "telegram", obj) is True
+
+    def test_telegram_pref_defaults_to_send(self, user):
+        obj = self._settings_obj(user)
+        assert _should_send("system", "telegram", obj) is True
+        assert _should_send("messages", "telegram", obj) is True
+
     def test_process_notification_skips_opted_out_sms(self, user):
         self._settings_obj(user, sms_system=False)
         UserContact.objects.create(user_id=user.id, phone="+15550001111")

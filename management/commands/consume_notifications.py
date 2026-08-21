@@ -43,6 +43,12 @@ class Command(BaseKafkaConsumerCommand):
             variables=payload.get("variables", {}),
             email=payload.get("email"),
             phone=payload.get("phone"),
+            # Read alongside the other two direct addresses. stapel-core's
+            # request_notification does not put this key on the wire yet
+            # (its notification.requested schema is additionalProperties:
+            # false), so today it arrives only from a producer publishing the
+            # event itself; the per-user path is UserContact.telegram_chat_id.
+            telegram_chat_id=payload.get("telegram_chat_id"),
             language=payload.get("language"),
             event_id=event_id,
             content_html=payload.get("content_html"),

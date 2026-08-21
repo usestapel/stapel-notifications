@@ -31,6 +31,7 @@ from .translation_keys import NOTIFICATION_KEYS, keys_for_type
 from .channels.email import send_email
 from .channels.push import send_push
 from .channels.sms import send_sms
+from .channels.telegram import send_telegram
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +201,8 @@ _VALID_PREF_FIELDS = {
     "push_system",
     "sms_messages",
     "sms_system",
+    "telegram_messages",
+    "telegram_system",
 }
 
 
@@ -281,10 +284,16 @@ def process_notification(
     event_id: str | None = None,
     content_html: str | None = None,
     content_text: str | None = None,
+    telegram_chat_id: str | None = None,
 ) -> None:
     """
     Process a notification request: resolve language, contacts, translations,
     and dispatch to all configured channels.
+
+    ``email`` / ``phone`` / ``telegram_chat_id`` are the direct-address
+    arguments, each the address of one channel: they win over the
+    ``UserContact`` projection and are what an unauthenticated flow (an OTP
+    for somebody with no account yet) has instead of one.
 
     ``content_html`` / ``content_text`` are the raw-content escape hatch:
     when a deployment has opened it (``STAPEL_NOTIFICATIONS["RAW_CONTENT"]``,
@@ -316,7 +325,11 @@ def process_notification(
         # Ad-hoc notification: raw content, no registry entry required.
         channels = ["email"]
         if content_text:
-            channels += (["push"] if user_id else []) + (["sms"] if phone else [])
+            channels += (
+                (["push"] if user_id else [])
+                + (["sms"] if phone else [])
+                + (["telegram"] if telegram_chat_id else [])
+            )
         routing = {"channels": channels, "group": "system"}
 
     group = routing.get("group", "")
@@ -338,6 +351,9 @@ def process_notification(
     # Resolve recipient contact info
     recipient_email = email or (contact.email if contact else None)
     recipient_phone = phone or (contact.phone if contact else None)
+    recipient_telegram = telegram_chat_id or (
+        contact.telegram_chat_id if contact else None
+    )
 
     # Resolve translations
     keys = _get_keys_for_type(notification_type)
@@ -438,11 +454,16 @@ def process_notification(
                 channel=channel,
                 status="skipped",
                 language=lang,
-                recipient=_get_recipient(channel, recipient_email, recipient_phone, user_id),
+                recipient=_get_recipient(
+                    channel, recipient_email, recipient_phone,
+                    recipient_telegram, user_id,
+                ),
             )
             continue
 
-        recipient = _get_recipient(channel, recipient_email, recipient_phone, user_id)
+        recipient = _get_recipient(
+            channel, recipient_email, recipient_phone, recipient_telegram, user_id
+        )
         template_version = _template_version(
             channel, notification_type, content_html, content_text
         )
@@ -456,7 +477,7 @@ def process_notification(
         try:
             delivered = _dispatch(
                 channel, notification_type, routing,
-                recipient_email, recipient_phone, user_id,
+                recipient_email, recipient_phone, recipient_telegram, user_id,
                 all_vars, lang,
                 content_html=content_html,
                 content_text=content_text,
@@ -548,10 +569,10 @@ def process_notification(
     if routing["channels"] and any_reachability_gap and not any_delivered:
         logger.error(
             "NOTIFICATION UNDELIVERABLE: %s reached no channel at all "
-            "(tried %s) for user_id=%s email=%s phone=%s event_id=%s — "
-            "the recipient was never notified",
+            "(tried %s) for user_id=%s email=%s phone=%s telegram=%s "
+            "event_id=%s — the recipient was never notified",
             notification_type, routing["channels"], user_id,
-            recipient_email, recipient_phone, event_id,
+            recipient_email, recipient_phone, recipient_telegram, event_id,
         )
 
 
@@ -561,6 +582,7 @@ def _dispatch(
     routing: dict,
     recipient_email: str | None,
     recipient_phone: str | None,
+    recipient_telegram: str | None,
     user_id: str | None,
     all_vars: dict,
     lang: str,
@@ -570,8 +592,9 @@ def _dispatch(
     """Dispatch to a specific channel.
 
     Returns True when the message was handed to the channel's provider, and
-    False when there was nothing to deliver it TO — no email address / no
-    phone number for this recipient. That distinction is the caller's to
+    False when there was nothing to deliver it TO — no email address, no
+    phone number, no telegram chat id for this recipient. That distinction
+    is the caller's to
     log: "no address" is not a delivery and must not be recorded as one
     (see ``process_notification``). A provider that is reached and then
     fails raises, as before.
@@ -645,6 +668,17 @@ def _dispatch(
         send_sms(recipient_phone, sms_text)
         return True
 
+    elif channel == "telegram":
+        if not recipient_telegram:
+            return False
+        # Same two-step as SMS: a per-type ``telegram`` string when the type
+        # declares one, the letter's body otherwise. Deliberately NOT falling
+        # through the ``sms`` key — a host that shortened its copy to fit 160
+        # GSM characters did that for the carrier, not for a chat window.
+        text = all_vars.get("telegram", all_vars.get("body", content_text or ""))
+        send_telegram(recipient_telegram, text)
+        return True
+
     else:
         raise ValueError(f"Unknown channel: {channel}")
 
@@ -671,12 +705,20 @@ def _template_version(
     return get_email_template(notification_type) or notification_type
 
 
-def _get_recipient(channel: str, email: str | None, phone: str | None, user_id: str | None) -> str:
+def _get_recipient(
+    channel: str,
+    email: str | None,
+    phone: str | None,
+    telegram_chat_id: str | None,
+    user_id: str | None,
+) -> str:
     """Get recipient identifier for logging."""
     if channel == "email":
         return email or "unknown"
     elif channel == "sms":
         return phone or "unknown"
+    elif channel == "telegram":
+        return telegram_chat_id or "unknown"
     elif channel == "push":
         return str(user_id) if user_id else "unknown"
     return "unknown"

@@ -10,7 +10,11 @@ class NotificationsGDPRProvider(GDPRProvider):
         contact = {}
         try:
             c = UserContact.objects.get(user_id=user_id)
-            contact = {'email': c.email, 'phone': c.phone}
+            contact = {
+                'email': c.email,
+                'phone': c.phone,
+                'telegram_chat_id': c.telegram_chat_id,
+            }
         except UserContact.DoesNotExist:
             pass
 
@@ -24,6 +28,8 @@ class NotificationsGDPRProvider(GDPRProvider):
                 'push_system':    s.push_system,
                 'sms_messages':   s.sms_messages,
                 'sms_system':     s.sms_system,
+                'telegram_messages': s.telegram_messages,
+                'telegram_system':   s.telegram_system,
             }
         except UserNotificationSettings.DoesNotExist:
             pass

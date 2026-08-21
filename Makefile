@@ -22,7 +22,8 @@ PYTHON ?= python3
 # one line per ready-made letter so "is there already an email for X" has an
 # answer) does not fit the generator's default 4000-token budget (~4320 tokens
 # at honest intent length; ~5005 once the unsubscribe policy added its three
-# predicates; ~5292 with the two sides of a declined invitation). The owner's
+# predicates; ~5292 with the two sides of a declined invitation; ~5417 with the
+# telegram channel's provider axis). The owner's
 # call, the same exception stapel-auth
 # and stapel-workspaces already take: raise the ceiling for this module rather
 # than shorten intents to fit — a trimmed-to-fit context file is
@@ -40,7 +41,7 @@ contract:
 	$(PYTHON) -m stapel_notifications._codegen --out docs
 	$(PYTHON) -m stapel_notifications._capabilities --out docs
 	$(PYTHON) -m stapel_notifications._template_contract --out docs
-	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 5400
+	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 5600
 
 # Drift gate: regenerate into a temp dir and diff against the committed docs/*.json
 # (mirrors the monolith's `make codegen-check` and the frontend's `gen:*:check`).
@@ -52,7 +53,7 @@ contract-check:
 	$(PYTHON) -m stapel_notifications._codegen --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._capabilities --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._template_contract --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
-	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 5400 || { rm -rf "$$tmp"; exit 1; }; \
+	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 5600 || { rm -rf "$$tmp"; exit 1; }; \
 	rc=0; \
 	for f in schema.json flows.json errors.json capabilities.json templates.json llms.txt; do \
 		if ! diff -q "docs/$$f" "$$tmp/docs/$$f" >/dev/null 2>&1; then \

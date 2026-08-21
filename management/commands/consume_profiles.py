@@ -51,6 +51,8 @@ class Command(BaseKafkaConsumerCommand):
             "push_system",
             "sms_messages",
             "sms_system",
+            "telegram_messages",
+            "telegram_system",
         ):
             if field in payload:
                 defaults[field] = payload[field]

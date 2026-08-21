@@ -16,10 +16,10 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 
 | Area | Details |
 |---|---|
-| Multi-channel dispatch | `services.process_notification` resolves language → contacts → translations → templates and dispatches to `email` / `sms` / `push` channels, with per-channel `NotificationLog` rows (`sent` / `failed` / `skipped`) and `event_id` idempotency |
+| Multi-channel dispatch | `services.process_notification` resolves language → contacts → translations → templates and dispatches to `email` / `sms` / `push` / `telegram` channels, with per-channel `NotificationLog` rows (`sent` / `failed` / `skipped`) and `event_id` idempotency |
 | Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (25 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*`, `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `workspace.invitation` + `.new_user`/`.reminder`/`.decline_confirmed`/`.declined`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
-| User preferences | `UserNotificationSettings` (per channel×group booleans; **no language** — see §5), enforced in `services._should_send`; `auth` group always sends |
-| Contact projection | `UserContact` (email/phone synced from auth via bus; `is_active` soft-off during account-closure grace period) |
+| User preferences | `UserNotificationSettings` (per channel×group booleans — `{email,push,sms,telegram}_{messages,system}`; **no language** — see §5), enforced in `services._should_send`; `auth` group always sends |
+| Contact projection | `UserContact` (email/phone/telegram_chat_id synced from auth via bus; `is_active` soft-off during account-closure grace period) |
 | Push tokens + feed | `DevicePushToken` model; REST API: `POST/DELETE devices/`, `GET feed/` (push log as feed), `GET notification-keys/` (translation-key export for the translate collector) |
 | Branded email layer | `templates/notifications/email/_base.html` shared shell + 16 per-type templates + `_raw_content.html` escape hatch; branding driven entirely by settings |
 | i18n | `TranslationCache` model, lazy pull through the `translate.resolve` comm Function, English defaults in `translation_keys.NOTIFICATION_KEYS` |
@@ -42,7 +42,7 @@ Resolution per key: `settings.STAPEL_NOTIFICATIONS[key]` → environment
 variable → default. Values are read
 lazily (never frozen at import) and reload on `setting_changed` in tests.
 
-**Exception — the three `*_PROVIDER` keys are never read from the
+**Exception — the `*_PROVIDER` keys are never read from the
 environment.** They are declared `import_strings`, which stapel-core (≥0.24.0)
 treats as implicitly `no_env`: such a key names the class the process imports
 and runs to deliver a passcode, so a stray or leaked env var must not choose
@@ -60,6 +60,7 @@ select a provider per environment adds that key to `env_overridable=` in
 | `EMAIL_PROVIDER` | `"unconfigured"` | `resend` / `smtp` / `mailgun` / `mock` / `unconfigured` or dotted path (see §3) |
 | `SMS_PROVIDER` | `"unconfigured"` | `gatewayapi` / `twilio` / `mock` / `unconfigured` or dotted path |
 | `PUSH_PROVIDER` | `"fcm"` | `fcm` / `mock` / `unconfigured` or dotted path |
+| `TELEGRAM_PROVIDER` | `"unconfigured"` | `mock` / `unconfigured` or dotted path — **no built-in delivering backend**, the bot client is app-layer (see §3) |
 | `RESEND_API_KEY` | `""` | Resend credentials |
 | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN` | `""` | Mailgun credentials |
 | `GATEWAYAPI_TOKEN`, `GATEWAYAPI_SENDER` | `""`, `"Stapel"` | GatewayAPI credentials + sender name |
@@ -78,9 +79,10 @@ select a provider per environment adds that key to `env_overridable=` in
 | `TELEMETRY` | `{}` | Per-type journal allowlist, `{"<type>": [...], "*": [...]}` — deny-by-default, see §2b |
 | `DELIVERY_CLAIM_TTL` | `900` | Seconds after which a delivery claim whose process died may be taken over by a redelivery (§2c) |
 
-Note: this namespace declares no `import_strings` — the `*_PROVIDER` dotted
-paths are resolved at send time by `channels.sms._resolve_provider` (shared by
-all three channels), so they behave as dotted-path seams anyway.
+Note: the `*_PROVIDER` dotted paths are resolved at send time by
+`channels.sms._resolve_provider` (shared by every channel) rather than eagerly
+by `AppSettings`, because a provider value is *either* a built-in short name
+*or* a dotted path — see `conf.NotificationsAppSettings`.
 
 ### 2. Notification types registry (`routing.py`) — the key extension point
 
@@ -95,7 +97,7 @@ Add a new type (no fork, no code in this package):
 STAPEL_NOTIFICATIONS = {
     "TYPES": {
         "invoice_ready": {
-            "channels": ["email", "push"],          # any of email|sms|push
+            "channels": ["email", "push"],          # any of email|sms|push|telegram
             "group": "system",                       # auth|messages|system
             "template": "myapp/email/invoice_ready.html",
         },
@@ -116,7 +118,8 @@ STAPEL_NOTIFICATIONS = {
   type routed to a channel with no `{channel}_{group}` field on
   `UserNotificationSettings` (`{"channels": ["webhook"], "group": "system"}`
   passes E001 and still has no switch). `_should_send` refuses a preference it
-  cannot read rather than defaulting to send.
+  cannot read rather than defaulting to send. The channels that have one are
+  `email`, `sms`, `push`, `telegram`.
 - **Unsubscribe policy** (`routing.unsubscribe_allowed`, one decision behind
   both the footer and the `List-Unsubscribe` / `List-Unsubscribe-Post:
   One-Click` headers): an **allowlist** — the group must be in
@@ -185,7 +188,7 @@ suppresses another channel's retry; atomic, so two consumers handed the same
 event cannot both send. A claim whose process died is taken over after
 `DELIVERY_CLAIM_TTL` seconds.
 
-### 3. Channel providers — dotted paths (`channels/{email,sms,push}.py`)
+### 3. Channel providers — dotted paths (`channels/{email,sms,push,telegram}.py`)
 
 Each channel resolves its provider per send via `_resolve_provider(name_or_path,
 registry, kind, setting)`: built-in short name, else any dotted path imported
@@ -197,23 +200,54 @@ from inside a working provider module — with the channel's mock, which logs a
 line and RETURNS; `_dispatch` counts a provider that returned as a delivery, so
 the misconfiguration was recorded in the journal as `status="sent"`.
 
-For the same reason `EMAIL_PROVIDER`/`SMS_PROVIDER` default to
-`unconfigured`, a provider that raises on every send, rather than to `mock`.
+For the same reason `EMAIL_PROVIDER`/`SMS_PROVIDER`/`TELEGRAM_PROVIDER` default
+to `unconfigured`, a provider that raises on every send, rather than to `mock`.
 Log-only delivery is still one setting away — it is just no longer what you get
 by saying nothing, and `checks.W005` warns when a non-delivering provider is in
-force with `DEBUG=False`.
+force with `DEBUG=False` **on a channel the effective registry routes to**.
 
 | Channel | Setting | Built-ins | Provider duck type |
 |---|---|---|---|
 | Email | `EMAIL_PROVIDER` | `resend`, `smtp`, `mailgun`, `mock`, `unconfigured` | `.send(recipient, subject, html_body, headers: dict \| None) -> None` |
 | SMS | `SMS_PROVIDER` | `gatewayapi`, `twilio`, `mock`, `unconfigured` | `.send(phone, body) -> None` |
 | Push | `PUSH_PROVIDER` | `fcm`, `mock`, `unconfigured` | `.send(user_id, title, body, data: dict \| None) -> int` (count sent) |
+| Telegram | `TELEGRAM_PROVIDER` | `mock`, `unconfigured` — **no delivering built-in** | `.send(chat_id, text) -> None` |
 
-A new provider (SendGrid, Postmark, APNs direct, …) is a class in the **host
-project** with the matching `send` signature plus
+A new provider (SendGrid, Postmark, APNs direct, a Bot API client, …) is a
+class in the **host project** with the matching `send` signature plus
 `STAPEL_NOTIFICATIONS["EMAIL_PROVIDER"] = "myproject.email.SendgridProvider"`.
-Facades are `send_email` / `send_sms` / `send_push` — same pattern as
-`stapel_core` captcha backends.
+Facades are `send_email` / `send_sms` / `send_push` / `send_telegram` — same
+pattern as `stapel_core` captcha backends. A reference provider may also ship
+as its own package and be pointed at by dotted path, which is what
+`stapel-mailtrap` does to the email seam; nothing about that is privileged.
+
+**Telegram carries no built-in client on purpose.** A bot token is not a
+subscription like a Resend key — it *is* the deployment's sending identity, and
+whoever holds it can write to every chat the bot was ever added to. Shipping a
+token-reading class would ask every host to hand that identity to code it did
+not write, for a channel most hosts do not run. So the channel ships the seam,
+the preference fields, the address and the closed default; the client is
+app-layer:
+
+```python
+# myproject/telegram.py
+class BotProvider:
+    def send(self, chat_id: str, text: str) -> None:
+        ...  # your Bot API call, your token
+
+STAPEL_NOTIFICATIONS = {
+    "TELEGRAM_PROVIDER": "myproject.telegram.BotProvider",
+    "TYPES": {"shift_reminder": {"channels": ["telegram"], "group": "system"}},
+}
+```
+
+Its recipient address is `UserContact.telegram_chat_id` — the numeric chat id,
+synced from the auth contact projection exactly like `email`/`phone`, and
+overridable per send with `process_notification(..., telegram_chat_id=...)`.
+Copy comes from the type's `telegram` translation key, falling back to `body`
+(the `sms` string is deliberately NOT a fallback: it was shortened for a
+carrier, not for a chat window). Nothing built-in routes to telegram, so a
+deployment that says nothing about it never writes to Telegram at all.
 
 ### 4. Template overrides — Django loader mechanics + branding
 
@@ -355,7 +389,7 @@ Bus consumers (Kafka topics, `management/commands/consume_*.py`):
 | Topic / event | Command | Effect |
 |---|---|---|
 | `notification.requested` | `consume_notifications` | `process_notification(...)` — the module's main input |
-| user-contact-changed | `consume_contacts` | Upsert `UserContact` (email/phone from auth) |
+| user-contact-changed | `consume_contacts` | Upsert `UserContact` (email/phone/telegram_chat_id from auth) |
 | profile-changed | `consume_profiles` | Upsert `UserNotificationSettings` (channel preferences only — the language is asked over comm, not mirrored) |
 
 Functions: this module **calls** `translate.resolve` and `profiles.language`
@@ -503,7 +537,7 @@ Attribute-only change: no migrations (`makemigrations notifications --check
 |---|---|
 | Fork to add or re-route a notification type | `STAPEL_NOTIFICATIONS["TYPES"]` entry (§2); verify with `manage.py check_notifications` |
 | Fork or edit site-packages to rebrand emails | `LOGO_URL` + `BRAND_*` + `COMPANY_*` settings; per-type `EMAIL_TEMPLATES`; `eject_notification_templates` for structural edits (§4) |
-| Fork to add an email/SMS/push provider (SendGrid, Postmark, …) | Provider class in your project + dotted path in `*_PROVIDER` (§3) |
+| Fork to add an email/SMS/push/Telegram provider (SendGrid, Postmark, a Bot API client, …) | Provider class in your project + dotted path in `*_PROVIDER` (§3) |
 | One-off email for an unregistered type by hacking templates | `request_notification(..., content_html=/content_text=)` after opening `RAW_CONTENT` (§2a) — off by default |
 | Read your own variables back out of `NotificationLog.data` | Declare them: `"telemetry"` in the routing entry or `TELEMETRY` in settings (§2b) |
 | Import `stapel_translate` (or any stapel module) from here, or vice versa | Comm surface only: `translate.resolve` Function + `translations.changed` event (§5) |
@@ -521,8 +555,8 @@ provider dotted paths, languages; project-level template files; view/serializer
 subclasses on your own URLs; new event subscribers in your own app.
 
 **Upstream contribution** (PR to this package): a new **channel** (the
-`email|sms|push` set and `_dispatch` are closed — a provider is app-layer, a
-channel is not); new preference groups or `UserNotificationSettings` fields;
+`email|sms|push|telegram` set and `_dispatch` are closed — a provider is
+app-layer, a channel is not); new preference groups or `UserNotificationSettings` fields;
 new built-in types/templates useful to every host; changes to
 `process_notification` orchestration (idempotency, language resolution,
 `_should_send`); new consumed/emitted events or comm Functions; model/schema

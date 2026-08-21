@@ -1,4 +1,4 @@
-"""stapel-notifications — multi-channel notifications (email / SMS / push).
+"""stapel-notifications — multi-channel notifications (email / SMS / push / Telegram).
 
 Public API (lazily resolved, PEP 562 — importing this package pulls in
 no Django code until an attribute is actually accessed):

@@ -8,7 +8,7 @@
 [![license](https://img.shields.io/github/license/usestapel/stapel-notifications)](https://github.com/usestapel/stapel-notifications/blob/main/LICENSE)
 [![llms.txt](https://img.shields.io/badge/llms.txt-blue)](https://github.com/usestapel/stapel-notifications/blob/main/docs/llms.txt)
 
-> Notifications — push (Firebase), email, SMS channels with delivery logging
+> Notifications — push (Firebase), email, SMS and Telegram channels with delivery logging
 
 Part of the [Stapel framework](https://github.com/usestapel) — composable Django apps for building production-grade platforms.
 

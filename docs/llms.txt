@@ -1,8 +1,8 @@
-# stapel-notifications 0.12.0
+# stapel-notifications 0.13.0
 
-Multi-channel user notifications: routes typed notification requests to email, SMS and push with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
+Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
 
-Contract: axes 3 · surface 36 · extension points 5 · operations 4 · error codes 44.
+Contract: axes 4 · surface 36 · extension points 5 · operations 4 · error codes 44.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -13,6 +13,8 @@ Settings keys; `default` is what you get by saying nothing. Turning an axis off 
   Which service delivers mobile/web push: Firebase Cloud Messaging (default), 'mock' for log-only development, 'unconfigured' to close the channel outright, or any custom provider class supplied by the host project.
 - SMS_PROVIDER [enum, default "unconfigured"] — SMS delivery service
   Which service sends the text messages: GatewayAPI, Twilio, or any custom provider class supplied by the host project. Defaults to 'unconfigured', which refuses to send until a backend is chosen; 'mock' (log only, no delivery) must be asked for by name.
+- TELEGRAM_PROVIDER [enum, default "unconfigured"] — Telegram delivery bot
+  Which class writes the Telegram messages. There is no built-in one: a bot token is the deployment's own sending identity, so the client is always a host-project class named by dotted path ('mock' for log-only development). Defaults to 'unconfigured', which keeps the channel shut until the business decides to run a bot.
 
 ## Usage surface — call these before writing your own
 This is the answer to "does Stapel already have something for X?". `instead of` names the outside symbol this one displaces.
@@ -109,14 +111,14 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
 - TYPES [merge_registry]
   Register new notification types (channels + group + template) or override built-ins entirely from settings — merged over the packaged routing catalog, no fork.
 - channel_providers [dotted_path]
-  The EMAIL/SMS/PUSH provider settings accept any dotted path to a class with the matching send() signature — add SendGrid, Postmark, APNs etc. as host-project classes, no fork.
+  The EMAIL/SMS/PUSH/TELEGRAM provider settings accept any dotted path to a class with the matching send() signature — add SendGrid, Postmark, APNs, a Telegram bot client etc. as host-project classes, no fork.
 - serializer_seams [class_override]
   Every view declares request/response serializer seams (SerializerSeamMixin) — subclass the view, override the attribute, remount the URL.
 - template_overrides [django_templates]
   Packaged email templates live under a namespaced path and follow standard Django template-loader precedence; eject_notification_templates copies them into the host project for structural edits, and LOGO_URL/BRAND_*/COMPANY_* settings rebrand every email without touching a template.
 
 ## Fits with — fleet dependencies
-- stapel-auth (optional) — source of the user-contact sync (email/phone projections) and the user.deleted / user.deletion_initiated events this module consumes; decoupled via the comm bus
+- stapel-auth (optional) — source of the user-contact sync (email/phone/telegram_chat_id projections) and the user.deleted / user.deletion_initiated events this module consumes; decoupled via the comm bus
 - stapel-core (required) — comm bus (notification.requested input, translate.resolve calls), JWT authentication, GDPR provider registry, AppSettings config layer
 - stapel-profiles (optional) — source of the notification-preferences and language sync (profile-changed events consumed into UserNotificationSettings); decoupled via the comm bus
 - stapel-translate (optional) — notification texts are localized through the translate.resolve comm Function with lazy caching; without it the built-in English defaults are used
