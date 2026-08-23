@@ -385,7 +385,9 @@ in-process in a monolith, bus consumer in microservices — transport chosen by
 
 | Event consumed | Handler behavior |
 |---|---|
-| `user.deleted` | Erase this module's PII via `NotificationsGDPRProvider.delete` |
+| `gdpr.erasure.requested` | Erase the named subject and receipt with counts — see **6a. Erasure** below |
+| `gdpr.owner.probe` | Answer `gdpr.owner.alive` from the same module as the eraser — see **6a. Erasure** below |
+| `user.deleted` | Deprecated upstream (stapel-gdpr removes it in 0.6.0). Same `erasure.erase_account` as the erasure path, and it receipts too when the payload carries a `correlation_id` |
 | `user.deletion_initiated` | Soft-deactivate `UserContact` + `DevicePushToken` rows (reversible; reactivated by normal sync paths) |
 | `translations.changed` | Re-resolve changed `notification.*` keys through `translate.resolve` |
 
@@ -400,10 +402,47 @@ Bus consumers (Kafka topics, `management/commands/consume_*.py`):
 Functions: this module **calls** `translate.resolve` and `profiles.language`
 (the recipient's own language, asked at send time — stapel-profiles >= 0.12.1,
 or any provider registered under that name); it registers no comm Functions of
-its own. It publishes no events either — the publish side
-(`request_notification`) lives in `stapel_core.notifications.publish` so any
-module can request a notification without importing this package. JSON schemas
-for consumed events: `schemas/consumes/*.json`.
+its own. The only events it publishes are the two GDPR answers below —
+the notification publish side (`request_notification`) lives in
+`stapel_core.notifications.publish` so any module can request a notification
+without importing this package. JSON schemas: `schemas/consumes/*.json`,
+`schemas/emits/*.json`.
+
+### 6a. Erasure
+
+This module is a stapel-gdpr **data owner**. Declare it in the host's
+settings:
+
+```python
+STAPEL_GDPR = {"DATA_OWNERS": {"notifications": ["account"]}}
+```
+
+The name `notifications` is fixed (`erasure.GDPR_OWNER`) and is the same name
+`NotificationsGDPRProvider.section` has always carried, so a host that already
+declares this owner changes nothing.
+
+**One subject: `account`.** A notification is addressed to a person and is
+never partitioned by workspace or entity. Claiming a subject this module
+cannot erase would be worse than claiming none: the orchestrator would wait
+on a receipt that means nothing.
+
+`erasure.erase_account(user_id)` is idempotent and returns the `counts` its
+receipt carries. Two shapes, deliberately different:
+
+| Rows | What happens | Why |
+|---|---|---|
+| `UserContact`, `DevicePushToken`, `UserNotificationSettings` | destroyed | nothing may remain that could reach the person again |
+| `NotificationDelivery` | destroyed | keyed by the raw address with no `user_id`, so it is reached through the contact **before** that contact is deleted — the one place the order is load-bearing. Blanking is impossible: the address is part of the claim's uniqueness constraint |
+| `NotificationLog` | anonymised | a delivery audit trail with a hole in it is not an erasure, it is a missing record. The identifiers go, and so does every column that quotes the person — `title`, `body`, and `error_message`, which routinely carries a transport's reply quoting the address back |
+
+**The receipt and the probe are one subscriber.** `actions.py` handles
+`gdpr.erasure.requested` and `gdpr.owner.probe` side by side, deliberately:
+`gdpr.owner.alive` is only evidence that the erasure path is *consumed*
+because it is answered by the code that erases. Split them and `gdpr.W006` /
+`GET /gdpr/api/v1/owners/health` would report a running container instead.
+Deployment note: a service with this app installed and declared in
+`DATA_OWNERS` must run a `consume_actions` process, or nothing answers either
+event.
 
 ### 7. Swappable models
 

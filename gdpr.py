@@ -1,8 +1,13 @@
 from stapel_core.gdpr import GDPRProvider
 
+from .erasure import GDPR_OWNER
+
 
 class NotificationsGDPRProvider(GDPRProvider):
-    section = 'notifications'
+    #: Same name the comm receipts and probe answers carry — one owner, one
+    #: declaration in ``STAPEL_GDPR["DATA_OWNERS"]``, whichever of the two
+    #: participation modes a deployment uses.
+    section = GDPR_OWNER
 
     def export(self, user_id: int) -> dict:
         from .models import DevicePushToken, NotificationLog, UserContact, UserNotificationSettings
@@ -51,22 +56,19 @@ class NotificationsGDPRProvider(GDPRProvider):
         }
 
     def delete(self, user_id: int) -> None:
-        from .models import DevicePushToken, NotificationLog, UserContact, UserNotificationSettings
+        """Erase the account slice — one implementation, three callers.
 
-        UserContact.objects.filter(user_id=user_id).delete()
-        DevicePushToken.objects.filter(user_id=user_id).delete()
-        UserNotificationSettings.objects.filter(user_id=user_id).delete()
-        # Anonymise log rows rather than delete — preserves delivery audit
-        # trail. The payload columns go with the identifiers: a row whose
-        # user_id and recipient are gone but whose title/body still quote
-        # what was written to that person is not anonymised, it is merely
-        # harder to query.
-        NotificationLog.objects.filter(user_id=user_id).update(
-            recipient='',
-            user_id=None,
-            title='',
-            body='',
-        )
+        The in-process provider, the deprecated ``user.deleted`` subscriber
+        and the ``gdpr.erasure.requested`` subscriber all reach
+        :func:`~stapel_notifications.erasure.erase_account`, so a deployment
+        cannot get a different erasure depending on which participation
+        mode it happens to use. The journal is anonymised rather than
+        deleted there, for the reason it always was: a delivery audit trail
+        with a hole in it is not an erasure, it is a missing record.
+        """
+        from .erasure import erase_account
+
+        erase_account(user_id)
 
     def anonymize(self, user_id: int) -> None:
         # Handled in delete() — recipient and user_id cleared from logs.
