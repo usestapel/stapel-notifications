@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.1 — 2026-08-24
+
+- The test suite declares what it needs: a `test` extra (`.[realtime]` + `channels[daphne]` + pytest stack); CI and
+  the publish job install it instead of a hand-kept list. 0.17.0 never reached PyPI because `channels.testing`
+  imported daphne, which nothing had declared.
+
 ## [Unreleased]
 
 ## [0.17.0] — 2026-08-24

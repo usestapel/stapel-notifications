@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.17.0"
+version = "0.17.1"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -50,11 +50,21 @@ kafka = ["confluent-kafka>=2.3"]
 # so the extra buys the serving half: the consumer, the authorize gate, the
 # Channels stack. See MODULE.md § "Live feed" and checks W006.
 realtime = ["stapel-realtime[channels]>=0.1.2,<1.0"]
-# `all` deliberately does NOT include `realtime`: stapel-realtime is not on
-# PyPI yet, so folding it in here would make `pip install -e .[all]` fail to
-# resolve and take firebase + kafka down with it. Install the socket half
-# explicitly (`.[realtime]`, from git) until the substrate is published.
+# `all` deliberately does NOT include `realtime`: the socket half is a
+# deployment choice (a Channels stack), not a feature every host wants.
 all = ["stapel-notifications[firebase,kafka]"]
+# ONE declaration of what the suite needs. The feed-socket tests drive
+# channels.testing, which imports daphne — a sibling nobody declared is how
+# 0.17.0 shipped red. CI installs `.[test]`, never a hand-kept list.
+test = [
+    "stapel-notifications[realtime]",
+    "channels[daphne]>=4.0",
+    "pytest",
+    "pytest-django",
+    "pytest-asyncio",
+    "pytest-cov",
+    "stapel-tools>=0.35.0,<1",
+]
 
 [tool.setuptools]
 package-dir = {"stapel_notifications" = "."}
