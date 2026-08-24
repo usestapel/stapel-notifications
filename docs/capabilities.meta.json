@@ -30,6 +30,11 @@
       "summary": "Register new notification types (channels + group + template) or override built-ins entirely from settings — merged over the packaged routing catalog, no fork."
     },
     {
+      "name": "CHANNELS",
+      "kind": "merge_registry",
+      "summary": "Register a delivery channel the library does not ship — an in-app feed, a webhook, a chat gateway — or replace/disable a built-in; merged over email/push/sms/telegram, no fork. A registered channel keeps every guarantee email has (preference gate, delivery claim, journal row) and gains a recipient switch in UserNotificationSettings.channel_preferences."
+    },
+    {
       "name": "EMAIL_TEMPLATES",
       "kind": "merge_registry",
       "summary": "Remap any notification type to a host-project email template; merged over the packaged per-type template map."
@@ -241,6 +246,13 @@
     "may_carry_unsubscribe": {
       "kind": "predicate",
       "intent": "`unsubscribe_allowed` asked by type name — the reader to call from host code or a UI before promising an opt-out on a given notification type. Never re-derive the answer from get_group(): the group is only one of the three inputs, and reimplementing the rule is how the two copies drift.",
+      "instead_of": [
+        "django.conf.settings.STAPEL_NOTIFICATIONS"
+      ]
+    },
+    "valid_pref_fields": {
+      "kind": "factory",
+      "intent": "Every \"<channel>_<group>\" preference pair a recipient can be asked about here, derived from the CHANNELS registry rather than a literal — read it before building a notification-settings UI, because the pairs grow with the host's own registered channels. A pair missing from it is mail _should_send refuses to deliver (notifications.E004 at boot), not mail that goes out unswitchable.",
       "instead_of": [
         "django.conf.settings.STAPEL_NOTIFICATIONS"
       ]

@@ -30,6 +30,14 @@ class UserNotificationSettings(models.Model):
     sms_system = models.BooleanField(default=True)
     telegram_messages = models.BooleanField(default=True)
     telegram_system = models.BooleanField(default=True)
+    #: Switches for channels this library does not ship. The concrete
+    #: columns above are a closed set — they are columns — so a host that
+    #: registers a channel through STAPEL_NOTIFICATIONS["CHANNELS"] has
+    #: nowhere to put "this recipient turned the webhook off". Keys are the
+    #: same "<channel>_<group>" pairs, values booleans; a missing key means
+    #: the built-ins' own default, opted in. Read by services._should_send,
+    #: which refuses to send on a preference it cannot read.
+    channel_preferences = models.JSONField(default=dict, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

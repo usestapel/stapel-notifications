@@ -42,7 +42,7 @@ contract:
 	$(PYTHON) -m stapel_notifications._codegen --out docs
 	$(PYTHON) -m stapel_notifications._capabilities --out docs
 	$(PYTHON) -m stapel_notifications._template_contract --out docs
-	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 5800
+	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 6000
 
 # Drift gate: regenerate into a temp dir and diff against the committed docs/*.json
 # (mirrors the monolith's `make codegen-check` and the frontend's `gen:*:check`).
@@ -54,7 +54,7 @@ contract-check:
 	$(PYTHON) -m stapel_notifications._codegen --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._capabilities --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._template_contract --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
-	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 5800 || { rm -rf "$$tmp"; exit 1; }; \
+	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 6000 || { rm -rf "$$tmp"; exit 1; }; \
 	rc=0; \
 	for f in schema.json flows.json errors.json capabilities.json templates.json llms.txt; do \
 		if ! diff -q "docs/$$f" "$$tmp/docs/$$f" >/dev/null 2>&1; then \

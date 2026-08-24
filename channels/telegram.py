@@ -96,3 +96,31 @@ def _mask(chat_id: str) -> str:
     if len(chat_id) <= 4:
         return '***'
     return f"{chat_id[:2]}***{chat_id[-4:]}"
+
+
+# ─── The channel object (registry seam) ─────────────────────
+
+from .registry import Channel  # noqa: E402  (kept beside its use)
+
+
+def _deliver_telegram(msg) -> bool:
+    """Send the type's telegram copy, or the letter's body.
+
+    Same two-step as SMS, and deliberately NOT falling through the ``sms``
+    key: a host that shortened its copy to fit 160 GSM characters did that
+    for the carrier, not for a chat window.
+    """
+    if not msg.telegram_chat_id:
+        return False
+    send_telegram(msg.telegram_chat_id, msg.all_vars.get("telegram", msg.body))
+    return True
+
+
+def _telegram_address(msg) -> str:
+    return msg.telegram_chat_id or "unknown"
+
+
+#: The registry entry for this channel.
+telegram_channel = Channel(
+    name="telegram", deliver=_deliver_telegram, address=_telegram_address
+)

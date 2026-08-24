@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.15.0",
+  "module_version": "0.16.0",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -53,18 +53,18 @@
       "renders": [
         {
           "template": "'notifications/email/_raw_content.html'",
-          "context": "{**all_vars, 'content_html': content_html, 'content_text': content_text}",
+          "context": "{**msg.all_vars, 'content_html': msg.content_html, 'content_text': msg.content_text}",
           "extra_keys": [
             "content_html",
             "content_text"
           ],
-          "line": 627
+          "line": 235
         },
         {
           "template": "template",
-          "context": "all_vars",
+          "context": "msg.all_vars",
           "extra_keys": [],
-          "line": 635
+          "line": 249
         }
       ]
     }

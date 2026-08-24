@@ -89,6 +89,18 @@ DEFAULTS = {
     # {"<type>": {"channels": [...], "group": "auth|messages|system",
     #             "template": "myapp/email/x.html"}}
     "TYPES": {},
+    # Delivery-channel registry, merged OVER the four built-ins
+    # (email/push/sms/telegram), last-wins per name — the channel-set
+    # counterpart of TYPES. {"<channel>": Channel | "dotted.path" |
+    # deliver_callable | None}, where None switches a built-in off.
+    #
+    # The channel set used to be an if/elif chain in services._dispatch, so
+    # an in-app feed, a webhook or a chat gateway was an upstream patch and
+    # nothing less. A registered channel gets the same wrapping as email —
+    # preference gate, delivery claim, journal row, telemetry allowlist —
+    # and becomes switch-off-able through
+    # UserNotificationSettings.channel_preferences. See channels/registry.py.
+    "CHANNELS": {},
     # Per-type email template overrides, merged over
     # routing.DEFAULT_EMAIL_TEMPLATES.
     "EMAIL_TEMPLATES": {},

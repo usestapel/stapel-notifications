@@ -170,3 +170,44 @@ def send_push(user_id: str, title: str, body: str, data: dict | None = None) -> 
         Number of successfully sent messages.
     """
     return _get_provider().send(user_id, title, body, data)
+
+
+# ─── The channel object (registry seam) ─────────────────────
+
+from .registry import Channel  # noqa: E402  (kept beside its use)
+
+#: Variables whose value is a deep link the push payload may carry.
+_DEEP_LINK_KEYS = ("chat_url", "listing_url", "notifications_chat_url")
+
+
+def _deliver_push(msg) -> bool:
+    """Hand title/body/deep-links to the push provider for every device."""
+    import logging
+
+    if not msg.user_id:
+        raise ValueError("No user_id for push notification")
+
+    all_vars = msg.all_vars
+    title = all_vars.get(
+        "push_title", all_vars.get("heading", all_vars.get("company_name", ""))
+    )
+    body = all_vars.get("push_body", msg.body)
+    data = {"notification_type": msg.notification_type}
+    for key in _DEEP_LINK_KEYS:
+        if key in all_vars:
+            data[key] = all_vars[key]
+
+    sent_count = send_push(msg.user_id, title, body, data)
+    if sent_count == 0:
+        # Not False: the provider WAS reached, the recipient simply has no
+        # device registered. Returning False here would release the delivery
+        # claim and journal a reachability gap for a channel that worked.
+        logging.getLogger(__name__).warning(
+            "No active push tokens for user %s, notification_type=%s",
+            msg.user_id, msg.notification_type,
+        )
+    return True
+
+
+#: The registry entry for this channel.
+push_channel = Channel(name="push", deliver=_deliver_push)

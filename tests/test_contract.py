@@ -79,10 +79,13 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # when the unsubscribe policy added its three predicates to the surface, and
 # 5200 -> 5400 for the two sides of a declined invitation, 5400 -> 5600 for
 # the telegram channel's provider axis, and 5600 -> 5800 for the three
-# stapel-moderation upstream letters plus listing_blocked's appeal path. The
+# stapel-moderation upstream letters plus listing_blocked's appeal path, and
+# 5800 -> 6000 for the CHANNELS registry (an extension point that opens the
+# channel set is exactly the kind of thing an agent must not have to
+# rediscover) and the valid_pref_fields reader it makes necessary. The
 # budget stays enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 5800
+LLMS_TXT_BUDGET = 6000
 
 
 def _emit(out_dir: Path) -> None:

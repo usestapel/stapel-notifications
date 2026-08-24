@@ -43,19 +43,36 @@ class Command(BaseKafkaConsumerCommand):
         # below are the same shape and have the same exposure — they are the
         # next thing to move onto the comm plane.
 
-        # Sync notification preferences
-        for field in (
-            "email_messages",
-            "email_system",
-            "push_messages",
-            "push_system",
-            "sms_messages",
-            "sms_system",
-            "telegram_messages",
-            "telegram_system",
-        ):
-            if field in payload:
+        # Sync notification preferences. The pairs are the channel
+        # REGISTRY's, not a literal list: a host that registered a channel of
+        # its own (STAPEL_NOTIFICATIONS["CHANNELS"]) has switches for it too,
+        # and a hardcoded list would sync everything except them — leaving
+        # the one channel whose preference the host had to build the UI for
+        # as the one preference that never arrived.
+        from stapel_notifications.services import (
+            _MODEL_PREF_FIELDS,
+            valid_pref_fields,
+        )
+
+        channel_preferences = {}
+        for field in sorted(valid_pref_fields()):
+            if field not in payload:
+                continue
+            if field in _MODEL_PREF_FIELDS:
                 defaults[field] = payload[field]
+            else:
+                # A host channel's switch has no column; it lives in the
+                # JSON map beside them (see UserNotificationSettings).
+                channel_preferences[field] = bool(payload[field])
+
+        if channel_preferences:
+            existing = (
+                UserNotificationSettings.objects
+                .filter(user_id=user_id)
+                .values_list("channel_preferences", flat=True)
+                .first()
+            ) or {}
+            defaults["channel_preferences"] = {**existing, **channel_preferences}
 
         if defaults:
             UserNotificationSettings.objects.update_or_create(

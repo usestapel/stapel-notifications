@@ -188,3 +188,24 @@ def _mask(phone: str) -> str:
     if len(phone) <= 4:
         return '***'
     return f"{phone[:2]}***{phone[-4:]}"
+
+
+# ─── The channel object (registry seam) ─────────────────────
+
+from .registry import Channel  # noqa: E402  (kept beside its use)
+
+
+def _deliver_sms(msg) -> bool:
+    """Send the type's SMS copy, or the letter's body when it declares none."""
+    if not msg.phone:
+        return False
+    send_sms(msg.phone, msg.all_vars.get("sms", msg.body))
+    return True
+
+
+def _sms_address(msg) -> str:
+    return msg.phone or "unknown"
+
+
+#: The registry entry for this channel.
+sms_channel = Channel(name="sms", deliver=_deliver_sms, address=_sms_address)

@@ -1,8 +1,8 @@
-# stapel-notifications 0.15.0
+# stapel-notifications 0.16.0
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.
 
-Contract: axes 4 · surface 39 · extension points 5 · operations 4 · error codes 44.
+Contract: axes 4 · surface 40 · extension points 6 · operations 4 · error codes 44.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -110,8 +110,13 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
 - registered_types — stapel_notifications.routing.registered_types
   instead of: django.conf.settings.STAPEL_NOTIFICATIONS
   Every notification type this deployment knows, built-ins plus the host's TYPES registrations — ask it before requesting a type you are not sure exists, because an unregistered type without content_html/content_text is dropped with a logged error rather than delivered. `manage.py check_notifications` is the CI-time form of the same question over literal call sites.
+- valid_pref_fields — stapel_notifications.services.valid_pref_fields
+  instead of: django.conf.settings.STAPEL_NOTIFICATIONS
+  Every "<channel>_<group>" preference pair a recipient can be asked about here, derived from the CHANNELS registry rather than a literal — read it before building a notification-settings UI, because the pairs grow with the host's own registered channels. A pair missing from it is mail _should_send refuses to deliver (notifications.E004 at boot), not mail that goes out unswitchable.
 
 ## Extension points — what a product replaces, fork-free
+- CHANNELS [merge_registry]
+  Register a delivery channel the library does not ship — an in-app feed, a webhook, a chat gateway — or replace/disable a built-in; merged over email/push/sms/telegram, no fork. A registered channel keeps every guarantee email has (preference gate, delivery claim, journal row) and gains a recipient switch in UserNotificationSettings.channel_preferences.
 - EMAIL_TEMPLATES [merge_registry]
   Remap any notification type to a host-project email template; merged over the packaged per-type template map.
 - TYPES [merge_registry]

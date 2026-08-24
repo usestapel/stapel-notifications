@@ -60,12 +60,13 @@ select a provider per environment adds that key to `env_overridable=` in
 | Key | Default | Purpose |
 |---|---|---|
 | `TYPES` | `{}` | Notification-type registry, merged **over** built-ins (see §2) |
+| `CHANNELS` | `{}` | Delivery-channel registry, merged **over** `email`/`push`/`sms`/`telegram` (see §3) — a `Channel`, a dotted path, a `deliver` callable, or `None` to switch a built-in off |
 | `EMAIL_TEMPLATES` | `{}` | Per-type email template map, merged over `DEFAULT_EMAIL_TEMPLATES` |
 | `TEXT` | `{}` | Per-key copy registry, merged **over** `NOTIFICATION_KEYS` — the string counterpart of `EMAIL_TEMPLATES` (see §4a) |
-| `EMAIL_PROVIDER` | `"unconfigured"` | `resend` / `smtp` / `mailgun` / `mock` / `unconfigured` or dotted path (see §3) |
+| `EMAIL_PROVIDER` | `"unconfigured"` | `resend` / `smtp` / `mailgun` / `mock` / `unconfigured` or dotted path (see §4) |
 | `SMS_PROVIDER` | `"unconfigured"` | `gatewayapi` / `twilio` / `mock` / `unconfigured` or dotted path |
 | `PUSH_PROVIDER` | `"fcm"` | `fcm` / `mock` / `unconfigured` or dotted path |
-| `TELEGRAM_PROVIDER` | `"unconfigured"` | `mock` / `unconfigured` or dotted path — **no built-in delivering backend**, the bot client is app-layer (see §3) |
+| `TELEGRAM_PROVIDER` | `"unconfigured"` | `mock` / `unconfigured` or dotted path — **no built-in delivering backend**, the bot client is app-layer (see §4) |
 | `RESEND_API_KEY` | `""` | Resend credentials |
 | `MAILGUN_API_KEY`, `MAILGUN_DOMAIN` | `""` | Mailgun credentials |
 | `GATEWAYAPI_TOKEN`, `GATEWAYAPI_SENDER` | `""`, `"Stapel"` | GatewayAPI credentials + sender name |
@@ -120,11 +121,13 @@ STAPEL_NOTIFICATIONS = {
   mail nobody can switch off. `auth` = mandatory security/authentication mail;
   `messages` / `system` = per-channel user preference checked.
 - The **channel** half of the same pair is `notifications.E004`: a non-`auth`
-  type routed to a channel with no `{channel}_{group}` field on
-  `UserNotificationSettings` (`{"channels": ["webhook"], "group": "system"}`
-  passes E001 and still has no switch). `_should_send` refuses a preference it
-  cannot read rather than defaulting to send. The channels that have one are
-  `email`, `sms`, `push`, `telegram`.
+  type routed to a channel that is registered nowhere
+  (`{"channels": ["webhook"], "group": "system"}` passes E001 and still has
+  nothing to deliver it and no switch for the recipient). `_should_send`
+  refuses a preference it cannot read rather than defaulting to send. The fix
+  is a host-side one since the channel registry below: register `webhook` and
+  it gains both. `services.valid_pref_fields()` is the readable form of the
+  answer.
 - **Unsubscribe policy** (`routing.unsubscribe_allowed`, one decision behind
   both the footer and the `List-Unsubscribe` / `List-Unsubscribe-Post:
   One-Click` headers): an **allowlist** — the group must be in
@@ -193,7 +196,52 @@ suppresses another channel's retry; atomic, so two consumers handed the same
 event cannot both send. A claim whose process died is taken over after
 `DELIVERY_CLAIM_TTL` seconds.
 
-### 3. Channel providers — dotted paths (`channels/{email,sms,push,telegram}.py`)
+### 3. Channel registry (`channels/registry.py`) — the channel SET
+
+`STAPEL_NOTIFICATIONS["CHANNELS"]` merged **over** the four built-ins
+(`email`, `push`, `sms`, `telegram`), last-wins per name — the channel-set
+counterpart of `TYPES`. Read through `get_channel(name)` / `channels()` /
+`registered_channels()`.
+
+Until 0.16.0 the channel set was an `if/elif` over four hardcoded names in
+`services._dispatch`, plus two more chains beside it (`_get_recipient`,
+`_template_version`). An in-app feed, a webhook or a chat gateway was an
+upstream patch — or a reimplementation of `process_notification` that lost
+the preference gate, the delivery claim and the journal with it.
+
+```python
+STAPEL_NOTIFICATIONS = {
+    "CHANNELS": {
+        "webhook": "myproject.notify.webhook_channel",   # a Channel
+        "sms": "myproject.notify.my_sms_deliver",        # override a built-in
+        "telegram": None,                                # or switch one off
+    },
+    "TYPES": {"invoice_ready": {"channels": ["webhook"], "group": "system"}},
+}
+```
+
+A value is a `Channel`, a dotted path to one, a bare
+`deliver(msg: ChannelMessage) -> bool` callable, or `None`. `deliver` returns
+`True` when the message reached a provider and `False` when there was no
+address for this recipient — that difference is what keeps "no address" out
+of the journal as a delivery. A provider that is reached and fails raises.
+A `Channel` may also carry `address` (the recipient identifier, half the
+delivery-claim key; default: the user id) and `template_version` (only email
+renders a template, so only email declares one).
+
+**A registered channel opts out of nothing.** The preference gate, the
+per-`(event, channel, recipient, template_version)` claim, the journal row
+and the telemetry allowlist wrap it exactly as they wrap email — and the
+recipient gets a real switch: the `<channel>_<group>` pairs come from the
+registry (`valid_pref_fields()`), stored in
+`UserNotificationSettings.channel_preferences` because the concrete boolean
+columns are a closed set a host cannot add to. `notifications.E005` refuses
+at boot a `CHANNELS` entry that does not resolve.
+
+Distinguish this from the seam below: **CHANNELS is which channels exist**,
+`*_PROVIDER` is **which backend a channel sends through**.
+
+### 4. Channel providers — dotted paths (`channels/{email,sms,push,telegram}.py`)
 
 Each channel resolves its provider per send via `_resolve_provider(name_or_path,
 registry, kind, setting)`: built-in short name, else any dotted path imported
@@ -254,7 +302,7 @@ Copy comes from the type's `telegram` translation key, falling back to `body`
 carrier, not for a chat window). Nothing built-in routes to telegram, so a
 deployment that says nothing about it never writes to Telegram at all.
 
-### 4. Template overrides — Django loader mechanics + branding
+### 5. Template overrides — Django loader mechanics + branding
 
 All packaged templates live under the namespaced path
 `templates/notifications/email/` (so host `email/*` templates cannot collide).
@@ -330,7 +378,7 @@ STAPEL_NOTIFICATIONS = {
 Keys for a type YOU registered through `TYPES` work too — such a type has no
 entry in `NOTIFICATION_KEYS`, so `TEXT` is its only copy source.
 
-### 5. i18n — integration with the translate module (no import)
+### 6. i18n — integration with the translate module (no import)
 
 - Values are pulled through the comm Function **`translate.resolve`**
   (`translations.resolve_and_cache`): input `{"keys": [...], "language": "de"}`,
@@ -377,7 +425,7 @@ entry in `NOTIFICATION_KEYS`, so `TEXT` is its only copy source.
   the words move into `{% trans %}`, `STAPEL_NOTIFICATIONS["TEXT"]` or the
   key registry.
 
-### 6. Events & functions (comm surface)
+### 7. Events & functions (comm surface)
 
 Action subscriptions (`actions.py`, via `stapel_core.comm.on_action`;
 in-process in a monolith, bus consumer in microservices — transport chosen by
@@ -444,14 +492,14 @@ Deployment note: a service with this app installed and declared in
 `DATA_OWNERS` must run a `consume_actions` process, or nothing answers either
 event.
 
-### 7. Swappable models
+### 8. Swappable models
 
 None. No model here is swappable, and none needs to be: all models key on a
 plain `user_id` UUID (no FK to `AUTH_USER_MODEL`), populated via bus sync —
 the module works with any user model. If you believe a model must be swappable,
 that is an upstream contribution, not an app-layer workaround.
 
-### 8. Serializer seams (`views.py`)
+### 9. Serializer seams (`views.py`)
 
 Every APIView mixes in `SerializerSeamMixin`: class attributes
 `request_serializer_class` / `response_serializer_class` plus overridable
@@ -462,7 +510,7 @@ To change a payload shape: subclass the serializer (they are
 the class attribute, and route your URL to the subclass — the HTTP method
 bodies are reused untouched (see `tests/test_serializer_seams.py`).
 
-### 9. Signals
+### 10. Signals
 
 This module defines no custom Django signals. The only signal usage is
 `stapel_core.conf.AppSettings` reloading its cache on `setting_changed`

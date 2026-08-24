@@ -118,13 +118,26 @@ def build() -> dict:
         keys_for_type,
     )
 
-    services = scan_call_site(REPO / "services.py", context_var="all_vars")
+    # The context is BUILT in services.py and RENDERED in channels/email.py:
+    # since the channel registry, email's dispatch half lives with its
+    # provider rather than in a dispatch chain. Two scans, therefore — the
+    # variable half where the writes are, the render half where the
+    # render_to_string calls are — and both assertions kept, because a
+    # context nobody renders and a render nobody builds a context for are
+    # each their own way for this emitter to describe nothing.
+    services = scan_call_site(
+        REPO / "services.py", context_var="all_vars", require_render=False
+    )
     if not services.dynamic_keys:
         raise AssertionError(
             "services.py no longer writes all_vars under a computed key — the "
             "translation-derived half of the context has moved and this "
             "emitter's `translation` provenance is describing nothing."
         )
+    email_channel = scan_call_site(
+        REPO / "channels" / "email.py", context_var="msg.all_vars"
+    )
+    services.renders = email_channel.renders
 
     branding = sorted(k for k, v in services.variables.items() if v["presence"] == "always")
     conditional = sorted(

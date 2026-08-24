@@ -244,31 +244,37 @@ def check_security_shaped_types_are_classified(app_configs, **kwargs):
     return warnings
 
 
-# ── The preference field a channel+group pair must have ───────────────
+# ── The channel a type is routed to must exist ────────────────────────
 
 @checks.register(checks.Tags.compatibility)
 def check_notification_channels_have_a_preference(app_configs, **kwargs):
-    """E: a routed channel with no preference field for the type's group.
+    """E004: a type routed to a channel nothing can deliver on.
 
-    E001 checks the GROUP half of ``services._VALID_PREF_FIELDS``; this is
-    the CHANNEL half, and it was the half nobody was told about. A type
-    registered as::
+    E001 checks the GROUP half of a routing entry; this is the CHANNEL
+    half, and it was the half nobody was told about. A type registered as::
 
         "TYPES": {"invoice_ready": {"channels": ["webhook"], "group": "system"}}
 
-    names a real group, so E001 is silent — but there is no
-    ``webhook_system`` field on ``UserNotificationSettings``, so the
-    recipient has no switch for it anywhere in the API. ``_should_send``
-    now refuses that pair instead of sending it (an unrecognised preference
-    used to mean "send"), which turns the defect from unstoppable mail into
-    mail that never leaves; either way the registration is wrong and the
-    host should learn it at boot.
+    names a real group, so E001 is silent — and until the channel registry
+    existed there was no ``webhook`` anything: no dispatcher, and no
+    ``webhook_system`` switch for the recipient. ``_should_send`` refuses a
+    preference it cannot read, so the type was silently undeliverable.
+
+    Since the registry, the fix is available to the host rather than only
+    upstream: register the channel in ``STAPEL_NOTIFICATIONS["CHANNELS"]``
+    and it gains both a dispatcher and a switch (in
+    ``UserNotificationSettings.channel_preferences``). What this check now
+    refuses is routing to a channel that is registered NOWHERE — including
+    a built-in the host explicitly switched off with ``None``, which is the
+    same undeliverable state arrived at deliberately.
 
     ``auth`` is exempt on purpose: that group is mandatory by design and
     deliberately has no preference field.
     """
-    from .services import _VALID_PREF_FIELDS
+    from .channels.registry import registered_channels
+    from .services import valid_pref_fields
 
+    valid = valid_pref_fields()
     errors = []
     for notification_type, routing in sorted(_effective_types().items()):
         routing = routing or {}
@@ -278,22 +284,53 @@ def check_notification_channels_have_a_preference(app_configs, **kwargs):
         if group not in UNSUBSCRIBABLE_GROUPS:
             continue
         for channel in routing.get("channels") or []:
-            if f"{channel}_{group}" in _VALID_PREF_FIELDS:
+            if f"{channel}_{group}" in valid:
                 continue
             errors.append(checks.Error(
                 f"STAPEL_NOTIFICATIONS['TYPES'][{notification_type!r}] routes to "
-                f"channel {channel!r} in group {group!r}, but "
-                f"UserNotificationSettings has no {channel}_{group} field. The "
-                "recipient has no switch for this mail anywhere in the API, and "
-                "_should_send refuses a preference it cannot read — so this "
-                "type is silently undeliverable on that channel.",
+                f"channel {channel!r} in group {group!r}, but no channel "
+                f"{channel!r} is registered — so nothing can deliver it and "
+                "the recipient has no switch for it. _should_send refuses a "
+                "preference it cannot read, which makes this type silently "
+                "undeliverable on that channel.",
                 hint=(
-                    "Route the type to a channel this library carries a "
-                    "preference for (email, sms, push, telegram), or drop the channel "
-                    "from the entry. The pairs are fixed by the model: "
-                    f"{sorted(_VALID_PREF_FIELDS)}."
+                    f"Register {channel!r} in STAPEL_NOTIFICATIONS['CHANNELS'] "
+                    "(channels/registry.py), or drop it from the entry. "
+                    "Registered channels: "
+                    f"{registered_channels()}."
                 ),
                 id="stapel_notifications.E004",
+            ))
+    return errors
+
+
+@checks.register(checks.Tags.compatibility)
+def check_channel_registry_resolves(app_configs, **kwargs):
+    """E005: a CHANNELS entry that names nothing this process can load.
+
+    Same reasoning as E004 one step earlier: a channel whose dotted path
+    does not import is every notification routed to it silently undelivered,
+    and the honest moment to find that is boot, not the first passcode.
+    """
+    from django.core.exceptions import ImproperlyConfigured
+
+    from .channels.registry import _resolve
+    from .conf import notifications_settings
+
+    errors = []
+    for name, value in (notifications_settings.CHANNELS or {}).items():
+        try:
+            channel = _resolve(str(name), value)
+        except ImproperlyConfigured as exc:
+            errors.append(checks.Error(
+                str(exc), id="stapel_notifications.E005",
+            ))
+            continue
+        if channel is not None and not callable(channel.deliver):
+            errors.append(checks.Error(
+                f"STAPEL_NOTIFICATIONS['CHANNELS'][{name!r}] resolves to a "
+                f"channel whose deliver is {channel.deliver!r}, not callable.",
+                id="stapel_notifications.E005",
             ))
     return errors
 

@@ -188,3 +188,99 @@ def _mask(email: str) -> str:
         return '***'
     local, domain = email.split('@', 1)
     return f"{local[0]}***@{domain}" if local else f"***@{domain}"
+
+
+from .registry import Channel  # noqa: E402  (kept beside its use)
+
+
+# ─── The channel object (registry seam) ─────────────────────
+#
+# The delivery half of this channel — what used to be the ``email`` branch of
+# ``services._dispatch``, plus the two chains beside it that answered "who is
+# the recipient" and "which rendering is being claimed". They live here, with
+# the provider they use, so the registry can carry them as one thing.
+
+
+def _deliver_email(msg) -> bool:
+    """Render this recipient's letter and hand it to the email provider."""
+    from django.template.loader import render_to_string
+    from django.utils import translation
+
+    from ..routing import get_email_template, unsubscribe_allowed
+
+    if not msg.email:
+        return False
+
+    # The RENDER runs inside the recipient's language, not the process's.
+    #
+    # Every string this library owns is already resolved per-recipient into
+    # all_vars before we get here, so the packaged templates — which contain
+    # no prose of their own, enforced by
+    # tests/test_no_hardcoded_copy_in_templates.py — were correct without
+    # this. A HOST template is where it mattered: `{% trans %}`,
+    # `{% blocktrans %}`, `|date` and every other locale-sensitive tag asks
+    # Django's ACTIVE language, which in a consumer process is whatever the
+    # last request left behind and in a web process is the SENDER's. Wrapping
+    # the render is what makes a host's own gettext catalogue reach the
+    # person being written to.
+    #
+    # What this cannot do: prose typed literally into a template stays in the
+    # language it was typed in. get_email_template() takes no language —
+    # there is one template per type — so a host whose letter is hardcoded
+    # Russian markup sends Russian to everyone no matter what is active here.
+    with translation.override(msg.lang):
+        if msg.content_html or msg.content_text:
+            # Raw-content escape hatch: wrap the caller-provided body in the
+            # base brand layout instead of a per-type template.
+            html = render_to_string(
+                "notifications/email/_raw_content.html",
+                {
+                    **msg.all_vars,
+                    "content_html": msg.content_html,
+                    "content_text": msg.content_text,
+                },
+            )
+        else:
+            template = get_email_template(msg.notification_type)
+            if not template:
+                raise ValueError(
+                    f"No email template for notification type: {msg.notification_type}"
+                )
+            html = render_to_string(template, msg.all_vars)
+
+    subject = msg.all_vars.get(
+        "subject", f"{msg.all_vars.get('company_name', '')} Notification".strip()
+    )
+    headers = {}
+    # Asked again, from the same routing entry that granted the
+    # unsubscribe_url — not from the presence of that variable. A caller may
+    # pass unsubscribe_url as a plain template variable, and a passcode must
+    # not grow a machine-actionable one-click opt-out from all security mail
+    # because somebody put a URL in a dict.
+    if unsubscribe_allowed(msg.routing) and "unsubscribe_url" in msg.all_vars:
+        headers["List-Unsubscribe"] = f"<{msg.all_vars['unsubscribe_url']}>"
+        headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+    send_email(msg.email, subject, html, headers)
+    return True
+
+
+def _email_template_version(msg) -> str:
+    """Email is the one channel that renders a TEMPLATE, so it versions by it."""
+    from ..routing import get_email_template
+
+    if msg.content_html or msg.content_text:
+        return "raw"
+    return get_email_template(msg.notification_type) or msg.notification_type
+
+
+def _email_address(msg) -> str:
+    return msg.email or "unknown"
+
+
+#: The registry entry for this channel.
+email_channel = Channel(
+    name="email",
+    deliver=_deliver_email,
+    address=_email_address,
+    template_version=_email_template_version,
+)

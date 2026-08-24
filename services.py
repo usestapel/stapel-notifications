@@ -8,9 +8,6 @@ import logging
 import re
 import string
 
-from django.template.loader import render_to_string
-from django.utils import translation
-
 from stapel_core.notifications.tokens import generate_unsubscribe_token
 
 from .models import (
@@ -25,13 +22,10 @@ from .delivery import confirm as confirm_delivery
 from .delivery import release as release_delivery
 from .language import resolve as resolve_language
 from .raw_content import apply_policy as apply_raw_content_policy
-from .routing import get_email_template, get_routing, unsubscribe_allowed
+from .routing import get_routing, unsubscribe_allowed
 from .telemetry import telemetry
 from .translation_keys import NOTIFICATION_KEYS, keys_for_type
-from .channels.email import send_email
-from .channels.push import send_push
-from .channels.sms import send_sms
-from .channels.telegram import send_telegram
+from .channels.registry import ChannelMessage, get_channel, registered_channels
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +188,12 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
 #: paper over the difference by defaulting to send.
 _NO_PREFERENCE = object()
 
-_VALID_PREF_FIELDS = {
+#: The concrete boolean columns ``UserNotificationSettings`` carries. A
+#: CLOSED set, and it has to be: they are database columns, so a host cannot
+#: add one for a channel of its own. That is what
+#: ``channel_preferences`` (the JSON half of the same model) is for — see
+#: ``_should_send``.
+_MODEL_PREF_FIELDS = frozenset({
     "email_messages",
     "email_system",
     "push_messages",
@@ -203,7 +202,26 @@ _VALID_PREF_FIELDS = {
     "sms_system",
     "telegram_messages",
     "telegram_system",
-}
+})
+
+
+def valid_pref_fields() -> set[str]:
+    """Every ``<channel>_<group>`` pair a recipient can be asked about.
+
+    Derived from the channel REGISTRY, not from a literal: opening the
+    channel set and leaving the preference vocabulary hardcoded would have
+    made every host channel undeliverable by construction (``_should_send``
+    refuses a pair it cannot read, deliberately). Built-in channels answer
+    from their column; a registered host channel answers from
+    ``channel_preferences``.
+    """
+    from .routing import UNSUBSCRIBABLE_GROUPS
+
+    return {
+        f"{channel}_{group}"
+        for channel in registered_channels()
+        for group in UNSUBSCRIBABLE_GROUPS
+    }
 
 
 def _should_send(group: str, channel: str, settings_obj: UserNotificationSettings | None) -> bool:
@@ -225,20 +243,29 @@ def _should_send(group: str, channel: str, settings_obj: UserNotificationSetting
     # is the half of this decision that cannot be taken back once it is
     # wrong, so the unknown case has to be the quiet one.
     pref_field = f"{channel}_{group}"
-    if pref_field not in _VALID_PREF_FIELDS:
+    if pref_field not in valid_pref_fields():
         logger.error(
             "No preference field '%s' for channel=%s group=%s — refusing to "
             "send, because a recipient has no way to switch off mail whose "
-            "preference does not exist. Register the type on a channel this "
-            "library carries a preference for (see notifications.E004).",
+            "preference does not exist. Route the type to a REGISTERED "
+            "channel (see notifications.E004).",
             pref_field, channel, group,
         )
         return False
+
+    if pref_field not in _MODEL_PREF_FIELDS:
+        # A registered host channel. Its switch lives in the model's JSON
+        # map rather than a column, because a host cannot add a column to a
+        # library model — but it is a real switch, written and read the same
+        # way, and absent means the built-ins' own default: opted in.
+        preferences = getattr(settings_obj, "channel_preferences", None) or {}
+        return bool(preferences.get(pref_field, True))
+
     allowed = getattr(settings_obj, pref_field, _NO_PREFERENCE)
     if allowed is _NO_PREFERENCE:
-        # The field is in the vocabulary but not on this object: a settings
-        # row from a model that has drifted from _VALID_PREF_FIELDS. Same
-        # rule — an unreadable preference is not consent.
+        # The field is a column name but not on this object: a settings row
+        # from a model that has drifted from _MODEL_PREF_FIELDS. Same rule —
+        # an unreadable preference is not consent.
         logger.error(
             "%s has no attribute '%s' — refusing to send; the preference "
             "vocabulary and UserNotificationSettings have drifted apart.",
@@ -447,6 +474,19 @@ def process_notification(
     any_delivered = False
     any_reachability_gap = False
     for channel in routing["channels"]:
+        msg = ChannelMessage(
+            channel=channel,
+            notification_type=notification_type,
+            routing=routing,
+            all_vars=all_vars,
+            lang=lang,
+            user_id=user_id,
+            email=recipient_email,
+            phone=recipient_phone,
+            telegram_chat_id=recipient_telegram,
+            content_html=content_html,
+            content_text=content_text,
+        )
         if not _should_send(group, channel, settings_obj):
             NotificationLog.objects.create(
                 user_id=user_id,
@@ -454,19 +494,12 @@ def process_notification(
                 channel=channel,
                 status="skipped",
                 language=lang,
-                recipient=_get_recipient(
-                    channel, recipient_email, recipient_phone,
-                    recipient_telegram, user_id,
-                ),
+                recipient=_get_recipient(msg),
             )
             continue
 
-        recipient = _get_recipient(
-            channel, recipient_email, recipient_phone, recipient_telegram, user_id
-        )
-        template_version = _template_version(
-            channel, notification_type, content_html, content_text
-        )
+        recipient = _get_recipient(msg)
+        template_version = _template_version(msg)
         if not claim_delivery(event_id, channel, recipient, template_version):
             logger.info(
                 "Skipping duplicate delivery: event_id=%s channel=%s recipient=%s",
@@ -475,13 +508,7 @@ def process_notification(
             continue
 
         try:
-            delivered = _dispatch(
-                channel, notification_type, routing,
-                recipient_email, recipient_phone, recipient_telegram, user_id,
-                all_vars, lang,
-                content_html=content_html,
-                content_text=content_text,
-            )
+            delivered = _dispatch(msg)
             if not delivered:
                 release_delivery(event_id, channel, recipient, template_version)
                 # Nothing was handed to a provider — there was no address on
@@ -576,152 +603,59 @@ def process_notification(
         )
 
 
-def _dispatch(
-    channel: str,
-    notification_type: str,
-    routing: dict,
-    recipient_email: str | None,
-    recipient_phone: str | None,
-    recipient_telegram: str | None,
-    user_id: str | None,
-    all_vars: dict,
-    lang: str,
-    content_html: str | None = None,
-    content_text: str | None = None,
-) -> bool:
-    """Dispatch to a specific channel.
+def _dispatch(msg: ChannelMessage) -> bool:
+    """Hand one message to the channel that owns it.
+
+    Routing used to be an if/elif chain over four hardcoded names right
+    here, so a new channel — an in-app feed, a webhook, a chat gateway —
+    was an upstream patch and nothing else. It is now a lookup in the
+    channel registry (``STAPEL_NOTIFICATIONS["CHANNELS"]`` merged over the
+    built-ins), and everything around this call stays where it was: the
+    preference gate, the delivery claim, the journal row and the telemetry
+    allowlist wrap a host's channel exactly as they wrap email.
 
     Returns True when the message was handed to the channel's provider, and
     False when there was nothing to deliver it TO — no email address, no
     phone number, no telegram chat id for this recipient. That distinction
-    is the caller's to
-    log: "no address" is not a delivery and must not be recorded as one
-    (see ``process_notification``). A provider that is reached and then
-    fails raises, as before.
+    is the caller's to log: "no address" is not a delivery and must not be
+    recorded as one (see ``process_notification``). A provider that is
+    reached and then fails raises, as before.
     """
-    if channel == "email":
-        if not recipient_email:
-            return False
-        # The RENDER runs inside the recipient's language, not the process's.
-        #
-        # Every string this library owns is already resolved per-recipient
-        # into all_vars before we get here, so the packaged templates —
-        # which contain no prose of their own, enforced by
-        # tests/test_no_hardcoded_copy_in_templates.py — were correct
-        # without this. A HOST template is where it mattered: `{% trans %}`,
-        # `{% blocktrans %}`, `|date` and every other locale-sensitive tag
-        # asks Django's ACTIVE language, which in a consumer process is
-        # whatever the last request left behind and in a web process is the
-        # SENDER's. Wrapping the render is what makes a host's own gettext
-        # catalogue reach the person being written to.
-        #
-        # What this cannot do: prose typed literally into a template stays
-        # in the language it was typed in. get_email_template() takes no
-        # language — there is one template per type — so a host whose letter
-        # is hardcoded Russian markup sends Russian to everyone no matter
-        # what is active here.
-        with translation.override(lang):
-            if content_html or content_text:
-                # Raw-content escape hatch: wrap the caller-provided body in
-                # the base brand layout instead of a per-type template.
-                html = render_to_string(
-                    "notifications/email/_raw_content.html",
-                    {**all_vars, "content_html": content_html, "content_text": content_text},
-                )
-            else:
-                template = get_email_template(notification_type)
-                if not template:
-                    raise ValueError(f"No email template for notification type: {notification_type}")
-                html = render_to_string(template, all_vars)
-        subject = all_vars.get("subject", f"{all_vars.get('company_name', '')} Notification".strip())
-        headers = {}
-        # Asked again, from the same routing entry that granted the
-        # unsubscribe_url — not from the presence of that variable. A caller
-        # may pass unsubscribe_url as a plain template variable, and a
-        # passcode must not grow a machine-actionable one-click opt-out from
-        # all security mail because somebody put a URL in a dict.
-        if unsubscribe_allowed(routing) and "unsubscribe_url" in all_vars:
-            headers["List-Unsubscribe"] = f"<{all_vars['unsubscribe_url']}>"
-            headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
-        send_email(recipient_email, subject, html, headers)
-        return True
-
-    elif channel == "push":
-        if not user_id:
-            raise ValueError("No user_id for push notification")
-        title = all_vars.get("push_title", all_vars.get("heading", all_vars.get("company_name", "")))
-        body = all_vars.get("push_body", all_vars.get("body", content_text or ""))
-        data = {"notification_type": notification_type}
-        # Add deep link data from variables
-        for key in ("chat_url", "listing_url", "notifications_chat_url"):
-            if key in all_vars:
-                data[key] = all_vars[key]
-        sent_count = send_push(user_id, title, body, data)
-        if sent_count == 0:
-            logger.warning("No active push tokens for user %s, notification_type=%s", user_id, notification_type)
-        return True
-
-    elif channel == "sms":
-        if not recipient_phone:
-            return False
-        sms_text = all_vars.get("sms", all_vars.get("body", content_text or ""))
-        send_sms(recipient_phone, sms_text)
-        return True
-
-    elif channel == "telegram":
-        if not recipient_telegram:
-            return False
-        # Same two-step as SMS: a per-type ``telegram`` string when the type
-        # declares one, the letter's body otherwise. Deliberately NOT falling
-        # through the ``sms`` key — a host that shortened its copy to fit 160
-        # GSM characters did that for the carrier, not for a chat window.
-        text = all_vars.get("telegram", all_vars.get("body", content_text or ""))
-        send_telegram(recipient_telegram, text)
-        return True
-
-    else:
-        raise ValueError(f"Unknown channel: {channel}")
+    channel = get_channel(msg.channel)
+    if channel is None:
+        raise ValueError(f"Unknown channel: {msg.channel}")
+    return bool(channel.deliver(msg))
 
 
-def _template_version(
-    channel: str,
-    notification_type: str,
-    content_html: str | None,
-    content_text: str | None,
-) -> str:
+def _template_version(msg: ChannelMessage) -> str:
     """Which rendering of this notification a delivery claim is claiming.
 
-    This library's version of a letter is the template it renders from, so
-    re-pointing a type at a new template (``EMAIL_TEMPLATES``, a host's own
-    entry) makes a redelivery a NEW delivery rather than a duplicate of the
-    one the old template produced. Only email renders a template; the other
-    channels compose their text from the type's translations, so the type
-    itself is the version.
+    Only email renders a template, so only email declares a
+    ``template_version``; every other channel composes its text from the
+    type's translations and the type itself is the version. A host channel
+    that renders something of its own says so the same way, by giving its
+    ``Channel`` a ``template_version``.
     """
-    if content_html or content_text:
+    if msg.content_html or msg.content_text:
         return "raw"
-    if channel != "email":
-        return notification_type
-    return get_email_template(notification_type) or notification_type
+    channel = get_channel(msg.channel)
+    if channel is not None and channel.template_version is not None:
+        return channel.template_version(msg)
+    return msg.notification_type
 
 
-def _get_recipient(
-    channel: str,
-    email: str | None,
-    phone: str | None,
-    telegram_chat_id: str | None,
-    user_id: str | None,
-) -> str:
-    """Get recipient identifier for logging."""
-    if channel == "email":
-        return email or "unknown"
-    elif channel == "sms":
-        return phone or "unknown"
-    elif channel == "telegram":
-        return telegram_chat_id or "unknown"
-    elif channel == "push":
-        return str(user_id) if user_id else "unknown"
-    return "unknown"
+def _get_recipient(msg: ChannelMessage) -> str:
+    """Recipient identifier for the delivery claim and the journal.
+
+    Half the idempotency key, so it has to be stable for one recipient on
+    one channel. The channel owns it: a channel addressed by account rather
+    than by contact detail (push, and most host channels) falls back to the
+    user id.
+    """
+    channel = get_channel(msg.channel)
+    if channel is None:
+        return "unknown"
+    return channel.address(msg) or "unknown"
 
 
 class _SafeFormatDict(dict):

@@ -2,6 +2,66 @@
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-08-24
+
+Minor: a schema change (one additive column) and a new extension point.
+
+### Added
+
+**The channel set is a registry — `STAPEL_NOTIFICATIONS["CHANNELS"]`.**
+`routing.py` was always open: a host registers a notification TYPE and no fork
+is needed. The channel that type was delivered ON was the opposite — an
+`if/elif` over four hardcoded names in `services._dispatch`, mirrored by two
+more chains for "who is the recipient" (`_get_recipient`) and "which rendering
+is being claimed" (`_template_version`). An in-app feed, a webhook, a chat
+gateway: upstream patch, or a reimplementation of `process_notification` that
+loses the preference gate, the delivery claim and the journal with it.
+
+`CHANNELS` merges **over** the four built-ins, last-wins per name — the same
+canon as `TYPES`. A value is a `Channel`, a dotted path to one, a bare
+`deliver(msg) -> bool` callable, or `None` to switch a built-in off. Readers:
+`get_channel()`, `channels()`, `registered_channels()` in
+`stapel_notifications.channels.registry`. Each built-in's dispatch half now
+lives with its provider (`channels/email.py` renders the letter,
+`channels/sms.py` picks the SMS copy, …) instead of in a chain that had to
+know all four.
+
+**A registered channel opts out of nothing** — the point of doing it this way
+rather than handing hosts a `send()` hook. The recipient's preference, the
+per-`(event, channel, recipient, template_version)` delivery claim, the
+`NotificationLog` row and the telemetry allowlist wrap a host channel exactly
+as they wrap email; the tests pin each one.
+
+**And the recipient gets a real switch for it.** The `<channel>_<group>`
+preference pairs are now derived from the registry
+(`services.valid_pref_fields()`) rather than a literal, and
+`UserNotificationSettings` grows a `channel_preferences` JSON map for channels
+with no concrete column — a host cannot add a column to a library model, and
+`_should_send` deliberately refuses to send on a preference it cannot read, so
+without this every host channel would have been undeliverable by construction.
+`consume_profiles` syncs those switches alongside the built-in ones.
+
+New boot check **`notifications.E005`**: a `CHANNELS` entry that does not
+resolve is every notification routed to it silently undelivered.
+
+### Changed
+
+- **`notifications.E004` now means "routed to a channel registered nowhere"**
+  (it meant "no `<channel>_<group>` field on the model"). Same defect, stated
+  in terms of the thing a host can now fix: register the channel and it gains
+  both a dispatcher and a switch. A built-in the host explicitly disabled with
+  `None` is reported too — deliberately undeliverable is still undeliverable.
+- CI runs the Django floor (5.1, 5.2) the dependency graph declares, instead
+  of latest only.
+- `llms.txt` budget 5800 → 6000 for the new extension point and its reader.
+
+### Migration
+
+`0008_usernotificationsettings_channel_preferences` — one additive JSON
+column, defaulted, expand-only. A deployment that registers no channel of its
+own sees no behaviour change at all: the built-ins are the same four, with the
+same preferences, the same providers and the same journal.
+
 ## [0.15.0] — 2026-08-23
 
 Minor, not patch: two new consumed actions, two new emitted ones (this module
