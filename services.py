@@ -22,6 +22,7 @@ from .delivery import confirm as confirm_delivery
 from .delivery import release as release_delivery
 from .language import resolve as resolve_language
 from .raw_content import apply_policy as apply_raw_content_policy
+from .realtime import broadcast_feed_item
 from .routing import get_routing, unsubscribe_allowed
 from .telemetry import telemetry
 from .translation_keys import NOTIFICATION_KEYS, keys_for_type
@@ -534,7 +535,7 @@ def process_notification(
                 continue
             any_delivered = True
             confirm_delivery(event_id, channel, recipient, template_version)
-            NotificationLog.objects.create(
+            entry = NotificationLog.objects.create(
                 user_id=user_id,
                 notification_type=notification_type,
                 channel=channel,
@@ -562,6 +563,14 @@ def process_notification(
                     **({"event_id": event_id} if event_id else {}),
                 },
             )
+            # The feed is the push journal (NotificationFeedView reads
+            # status="sent", channel="push"), so this row IS the new feed
+            # item — tell the recipient's open screens, after the row is
+            # durable. A no-op on a host with no signal transport, and
+            # best-effort by contract: the row is the truth, the frame is
+            # the courtesy.
+            if channel == "push":
+                broadcast_feed_item(entry)
         except Exception as e:
             release_delivery(event_id, channel, recipient, template_version)
             logger.error(

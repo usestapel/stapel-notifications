@@ -20,6 +20,10 @@ Part of the [Stapel framework](https://github.com/usestapel) — composable Djan
 pip install stapel-notifications
 ```
 
+Optional extras: `[firebase]` (push via FCM), `[kafka]` (bus consumers),
+`[realtime]` (the live feed socket — the REST feed works without it; see
+MODULE.md § "Live feed").
+
 ## Quick start
 
 ```python

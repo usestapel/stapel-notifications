@@ -3,10 +3,17 @@ from stapel_core.django.api.errors import register_service_errors
 
 ERR_400_INVALID_PLATFORM = 'error.400.invalid_platform'
 ERR_404_TOKEN_NOT_FOUND = 'error.404.token_not_found'
+# Distinct from the token key on purpose: the caller who reaches this one
+# passed a device id read out of GET /devices/, not a token it holds. Telling
+# it "device token not found" would send a client looking for a token it never
+# sent, and the two conditions have different recoveries — re-list the devices
+# vs re-register this device.
+ERR_404_DEVICE_NOT_FOUND = 'error.404.device_not_found'
 
 SERVICE_ERRORS = {
     ERR_400_INVALID_PLATFORM: 'Platform must be one of: ios, android, web.',
     ERR_404_TOKEN_NOT_FOUND: 'Device token not found.',
+    ERR_404_DEVICE_NOT_FOUND: 'Device not found, or it is not registered to you.',
 }
 
 # Machine-readable recovery hints (remediation) — the canonical "what to do"
@@ -21,6 +28,10 @@ SERVICE_ERRORS = {
 SERVICE_REMEDIATION = {
     ERR_400_INVALID_PLATFORM: 'fix_input',
     ERR_404_TOKEN_NOT_FOUND: 'fix_input',
+    # A device id that answers nothing means the caller's list is stale (the
+    # row was already removed here, or by an account switch on that device).
+    # Re-reading GET /devices/ is the recovery, not resending the same id.
+    ERR_404_DEVICE_NOT_FOUND: 'verify',
 }
 
 register_service_errors(SERVICE_ERRORS, remediation=SERVICE_REMEDIATION)

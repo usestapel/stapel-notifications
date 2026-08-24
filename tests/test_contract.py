@@ -82,10 +82,12 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # stapel-moderation upstream letters plus listing_blocked's appeal path, and
 # 5800 -> 6000 for the CHANNELS registry (an extension point that opens the
 # channel set is exactly the kind of thing an agent must not have to
-# rediscover) and the valid_pref_fields reader it makes necessary. The
+# rediscover) and the valid_pref_fields reader it makes necessary, and
+# 6000 -> 6400 for the two device-registry operations of 0.17.0 (list the
+# caller's push devices; unregister one by id). The
 # budget stays enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 6000
+LLMS_TXT_BUDGET = 6400
 
 
 def _emit(out_dir: Path) -> None:

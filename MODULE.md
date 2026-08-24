@@ -10,7 +10,7 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 
 - pip package: `stapel-notifications` (import `stapel_notifications`), depends only on `stapel-core`
 - Django app label: `notifications` (`stapel_notifications.apps.NotificationsConfig`)
-- Optional extras: `[firebase]` (push via FCM), `[kafka]` (bus consumers)
+- Optional extras: `[firebase]` (push via FCM), `[kafka]` (bus consumers), `[realtime]` (the live feed socket — see § Live feed)
 
 ## What this module provides
 
@@ -20,7 +20,8 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 | Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (28 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*`, `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `moderation.report_received`, `moderation.sanction_issued`, `moderation.appeal_resolved` (stapel-moderation upstream, registry-only — no producer in this package), `workspace.invitation` + `.new_user`/`.reminder`/`.decline_confirmed`/`.declined`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
 | User preferences | `UserNotificationSettings` (per channel×group booleans — `{email,push,sms,telegram}_{messages,system}`; **no language** — see §5), enforced in `services._should_send`; `auth` group always sends |
 | Contact projection | `UserContact` (email/phone/telegram_chat_id synced from auth via bus; `is_active` soft-off during account-closure grace period) |
-| Push tokens + feed | `DevicePushToken` model; REST API: `POST/DELETE devices/`, `GET feed/` (push log as feed), `GET notification-keys/` (translation-key export for the translate collector) |
+| Push tokens + feed | `DevicePushToken` model; REST API: `GET/POST devices/`, `DELETE devices/{token}/`, `DELETE devices/by-id/{id}/`, `GET feed/` (push log as feed), `GET notification-keys/` (translation-key export for the translate collector) |
+| Live feed (optional) | `notifications:user:<id>` Signal stream carrying `notification.new` on the v1 envelope; socket `ws/notifications/inbox` behind the `[realtime]` extra — see § Live feed |
 | Branded email layer | `templates/notifications/email/_base.html` shared shell + 25 per-type templates + `_raw_content.html` escape hatch; branding driven entirely by settings |
 | i18n | `TranslationCache` model, lazy pull through the `translate.resolve` comm Function, English defaults in `translation_keys.NOTIFICATION_KEYS` |
 | GDPR | `NotificationsGDPRProvider` (section `notifications`) registered in `apps.ready()` on `stapel_core.gdpr.gdpr_registry` — export + erase |
@@ -581,6 +582,104 @@ temp dir and diffs. Regenerate after any serializer/view/url/error change:
     make contract        # or: python -m stapel_notifications._codegen --out docs
 
 then commit `docs/{schema,flows,errors}.json`.
+
+## The device registry — a toggle that can know its own state
+
+Until 0.17.0 the registry was write-only: a client could `POST devices/` and
+`DELETE devices/{token}/`, and nothing could ask **what is registered**. Every
+push toggle in the fleet therefore lied. It rendered OFF on mount whether or
+not this device was receiving push, because there was nothing to ask; and
+after a reload it had no token in memory, so switching it OFF sent no request
+at all while telling the person push was disabled. That is not a polish item —
+the server keeps sending to a device its owner believes they switched off.
+
+`GET devices/` closes it. Four rules, and each one is load-bearing:
+
+- **The raw token is never returned.** It is a bearer credential: whoever
+  holds it can address that device's push channel. The register/unregister
+  responses echo it only because the caller just sent it.
+- **`token_fingerprint` (SHA-256 hex) is how a client finds itself.** The
+  browser holds a token, not a row id. It hashes what it has and matches. The
+  digest grants nothing and is visible only to the account the device belongs
+  to.
+- **`is_active` is on every row, and inactive rows are listed.** `push.py`
+  deactivates a token the provider rejected. Hiding those rows would make the
+  toggle render ON for a device that receives nothing — the same lie in the
+  other direction.
+- **`last_seen` is the last *registration*, not the last delivery.** Clients
+  re-register on launch (FCM rotates tokens), so it reads as "when this device
+  last announced itself". This table does not record pushes.
+
+`DELETE devices/by-id/{id}/` is the other half: a row read from the list can be
+unregistered by the identifier the list handed out, without the caller ever
+holding that device's token — which it cannot for any device but the one it is
+running on. Both are scoped to the caller; somebody else's id answers 404,
+exactly like an id that never existed (`error.404.device_not_found`, distinct
+from the token key so a client is not sent looking for a token it never sent).
+The token-keyed `DELETE devices/{token}/` stays for the client that has just
+minted a token and wants it gone without a round trip.
+
+A truthful toggle is then three lines of client logic: list, hash your token,
+match. Nothing is persisted in the browser, and a reload cannot desynchronize
+it, because the server is the one being asked.
+
+## Live feed — the stream, and what to do without it
+
+**A notification feed is the one surface where a stale read is the whole
+failure.** The feed is served by `GET feed/`, and until 0.17.0 nothing told a
+page that something had arrived: the notification went out over FCM, the row
+was journalled, and the open tab learned about it on the next manual reload.
+
+Since 0.17.0 this module emits on the fleet's realtime substrate:
+
+| | |
+|---|---|
+| Stream | `notifications:user:<user_id>` — the recipient's own, ephemeral |
+| Signal | `notification.new`, on the v1 envelope (`{v, type, stream, payload}`; no `seq` — this is not a journal) |
+| Payload | field-for-field `FeedItemResponse`: `id`, `notification_type`, `title`, `body`, `data`, `created_at` — so a client parses one type whether the item came off the socket or off a page of `GET feed/` |
+| Socket | `ws/notifications/inbox`, no user segment (the stream key is derived from the authenticated scope), read-only |
+| Emitted when | a `push` channel delivery is journalled `sent` — i.e. exactly when a new row would appear at the top of `GET feed/` — from `transaction.on_commit`, so the row is durable before anybody is told |
+
+The deep link a client needs lives in `data`, under the declared telemetry keys
+(`listing_url`, `chat_url`, `notifications_chat_url`); everything else is
+stripped by `telemetry.scrub_data` before the row is stored, so what arrives on
+the socket is what the feed shows.
+
+**Realtime is an extra here, and that is a decision, not an omission.**
+`stapel-chat` makes `stapel-realtime` a base dependency because a chat that
+polls is not a chat. This module's product is a delivered notification plus a
+REST feed, and both are complete with no socket at all — so:
+
+- **Emitting is free and unconditional.** `stapel_core.comm.signal()` is
+  stdlib, already a dependency, and a silent no-op with no
+  `STAPEL_COMM["SIGNAL_TRANSPORT"]`. A host that has never heard of WebSockets
+  pays nothing and behaves exactly as before.
+- **Serving costs the extra.** `pip install 'stapel-notifications[realtime]'`
+  plus `stapel_realtime` in `INSTALLED_APPS`; the route is then discovered by
+  `stapel_realtime.build_websocket_application()` from
+  `stapel_notifications.routing.websocket_urlpatterns` (resolved lazily, so a
+  host without the extra never loads an ASGI stack).
+- **The half-configured middle is a boot warning.** App installed, no signal
+  transport → the socket is up and permanently silent. `checks.W006`.
+
+**Without the extra, poll — deliberately, and say so.** A client that has no
+socket should refetch the newest page of `GET feed/` on an interval and on
+window focus. **Recommended interval: 60s while the tab is visible, and not at
+all while it is hidden** (`document.visibilityState`), with a refetch on focus
+so the wait after a return is zero. The feed is anchor-paginated, so polling
+costs one page, not a scan. 60s is chosen against the delivery this feed
+mirrors: the push notification has already reached the device by another road,
+so the socket-less feed is a catch-up view rather than the alerting path, and a
+tighter loop buys latency nobody is waiting on while multiplying an
+authenticated read by every open tab. Do not poll faster than 30s, and do not
+poll a hidden tab — that is how a notification bell becomes the largest
+consumer of a service's request budget.
+
+There is no `notification.read` signal, and the reason is worth stating: this
+library has no read state at all. `NotificationLog` records what was *sent*;
+there is no mark-as-read endpoint and therefore no unread count, so a read
+event would be a frame nothing can emit and nothing can act on. When read state
+lands it belongs on this same stream as a second signal type.
 
 ## Admin categories (`stapel_core.access`, admin-suite AS-5)
 

@@ -233,6 +233,27 @@ class DevicePushToken(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def token_fingerprint(self) -> str:
+        """SHA-256 of the token, hex — the device's identity without the key.
+
+        A caller listing its devices has one question the row's id cannot
+        answer: *is this device — the one I am running on right now —
+        registered?* The only value both sides hold is the token itself, and
+        the token is a bearer credential: whoever has it can address this
+        device's push channel, so it is never echoed back out of this service
+        (the register/unregister responses carry it only because the caller
+        just sent it).
+
+        A digest answers the question and grants nothing: the client hashes
+        the token it already has and matches. It is stable, it is not
+        reversible, and it is only ever visible to the account the device is
+        registered to.
+        """
+        import hashlib
+
+        return hashlib.sha256(self.token.encode("utf-8")).hexdigest()
+
     class Meta:
         verbose_name = "Device Push Token"
         verbose_name_plural = "Device Push Tokens"

@@ -241,3 +241,72 @@ def test_real_providers_are_silent():
         }
     ):
         assert check_channel_providers_deliver(None) == []
+
+
+# ── W006: the feed socket that never says anything ──────────────────────
+
+
+def _feed_stream_check():
+    from stapel_notifications.checks import check_feed_stream_is_deliverable
+
+    return check_feed_stream_is_deliverable
+
+
+def test_no_realtime_installed_is_not_a_defect():
+    """The REST feed is complete on its own — an HTTP-only host is a
+    supported deployment, not a degraded one."""
+    from django.apps import apps
+
+    if apps.is_installed("stapel_realtime"):
+        pytest.skip("stapel_realtime is installed in this environment")
+    assert _feed_stream_check()(None) == []
+
+
+def test_warns_when_the_socket_is_served_but_signals_are_dropped():
+    from django.apps import apps
+
+    if not apps.is_installed("stapel_realtime"):
+        pytest.skip("stapel-notifications[realtime] not installed")
+
+    with override_settings(
+        STAPEL_COMM={"OUTBOX_ENABLED": False, "ACTION_TRANSPORT": "inprocess"}
+    ):
+        (warning,) = _feed_stream_check()(None)
+    assert warning.id == "stapel_notifications.W006"
+    assert "SIGNAL_TRANSPORT" in warning.msg
+
+
+def test_silent_when_a_transport_is_configured():
+    from django.apps import apps
+
+    if not apps.is_installed("stapel_realtime"):
+        pytest.skip("stapel-notifications[realtime] not installed")
+
+    with override_settings(
+        STAPEL_COMM={
+            "OUTBOX_ENABLED": False,
+            "ACTION_TRANSPORT": "inprocess",
+            "SIGNAL_TRANSPORT": "channels",
+        }
+    ):
+        assert _feed_stream_check()(None) == []
+
+
+def test_an_explicit_none_transport_still_warns():
+    """'none' is the core's own word for "signals are dropped here" — reading
+    the setting for truthiness instead of resolving it would call that
+    configured."""
+    from django.apps import apps
+
+    if not apps.is_installed("stapel_realtime"):
+        pytest.skip("stapel-notifications[realtime] not installed")
+
+    with override_settings(
+        STAPEL_COMM={
+            "OUTBOX_ENABLED": False,
+            "ACTION_TRANSPORT": "inprocess",
+            "SIGNAL_TRANSPORT": "none",
+        }
+    ):
+        (warning,) = _feed_stream_check()(None)
+    assert warning.id == "stapel_notifications.W006"

@@ -1,4 +1,5 @@
 {
   "error.400.invalid_platform": "La plataforma debe ser una de las siguientes: ios, android, web.",
+  "error.404.device_not_found": "Dispositivo no encontrado o no está registrado a tu nombre.",
   "error.404.token_not_found": "Token de dispositivo no encontrado."
 }

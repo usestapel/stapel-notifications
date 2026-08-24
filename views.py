@@ -4,7 +4,7 @@ Guest (anonymous session) stance
 --------------------------------
 With ``AUTH_ANONYMOUS`` on, a guest session is ``is_authenticated``, so a bare
 ``IsAuthenticated`` says nothing about whether guests belong on a view
-(``stapel_core.adoption`` E001/W002). All three views here answer, along this
+(``stapel_core.adoption`` E001/W002). Every view here answers, along this
 line:
 
     **a guest may read its own notification feed — which is empty — and may
@@ -47,10 +47,15 @@ from stapel_core.django.api.permissions import (
     IsStaffUser,
 )
 
-from .dto import DeviceTokenResponse, FeedItemResponse
-from .errors import ERR_400_INVALID_PLATFORM, ERR_404_TOKEN_NOT_FOUND
+from .dto import DeviceListItemResponse, DeviceTokenResponse, FeedItemResponse
+from .errors import (
+    ERR_400_INVALID_PLATFORM,
+    ERR_404_DEVICE_NOT_FOUND,
+    ERR_404_TOKEN_NOT_FOUND,
+)
 from .models import DevicePushToken, NotificationLog
 from .serializers import (
+    DeviceListItemResponseSerializer,
     DeviceTokenRequestSerializer,
     DeviceTokenResponseSerializer,
     FeedItemResponseSerializer,
@@ -81,9 +86,27 @@ class SerializerSeamMixin:
         return self.response_serializer_class
 
 
+def _device_dto(device: DevicePushToken) -> DeviceListItemResponse:
+    """One row of the device list. The raw token never leaves this service.
+
+    ``last_seen`` is the row's ``updated_at``: the last time this token was
+    registered. Clients re-register on launch (FCM rotates tokens), so it
+    reads as "when this device last announced itself" — not "when we last
+    pushed to it", which this table does not record.
+    """
+    return DeviceListItemResponse(
+        id=device.pk,
+        token_fingerprint=device.token_fingerprint,
+        platform=device.platform,
+        is_active=device.is_active,
+        created_at=device.created_at.isoformat(),
+        last_seen=device.updated_at.isoformat(),
+    )
+
+
 @extend_schema(tags=["Devices"])
 class DeviceTokenView(SerializerSeamMixin, APIView):
-    """Register a push notification token."""
+    """List the caller's push devices, or register one."""
 
     # A token is a physical device, and the rebinding branch below DELETES a
     # previous account's binding for it. A guest session must not be able to
@@ -92,6 +115,40 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
     permission_classes = [IsNotAnonymousUser]
     request_serializer_class = DeviceTokenRequestSerializer
     response_serializer_class = DeviceTokenResponseSerializer
+    #: Own seam for GET: the list item is a different DTO from the register
+    #: response, so one ``response_serializer_class`` cannot serve both.
+    list_serializer_class = DeviceListItemResponseSerializer
+
+    def get_list_serializer_class(self):
+        return self.list_serializer_class
+
+    @extend_schema(
+        operation_id="list_device_tokens",
+        summary="List registered push devices",
+        description=(
+            "The caller's own push devices, most recently registered first. "
+            "The raw token is never returned: a client identifies its own "
+            "device by hashing the token it holds (SHA-256, hex) and matching "
+            "`token_fingerprint`. Rows with `is_active: false` are still "
+            "registered but the push provider has rejected the token, so "
+            "nothing is delivered to them."
+        ),
+        responses={200: DeviceListItemResponseSerializer(many=True)},
+    )
+    def get(self, request):  # noqa: R007
+        # Inactive rows are included on purpose. A toggle that reads this
+        # endpoint must be able to say "registered, but the provider dropped
+        # the token" — hiding those rows would make the switch render ON for
+        # a device that receives nothing, which is the same lie as rendering
+        # OFF for one that does.
+        devices = DevicePushToken.objects.filter(
+            user_id=request.user.id,
+        ).order_by("-updated_at", "-id")
+
+        response_cls = self.get_list_serializer_class()
+        return StapelResponse(
+            response_cls([_device_dto(d) for d in devices], many=True)
+        )
 
     @extend_schema(
         operation_id="register_device_token",
@@ -172,6 +229,45 @@ class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
 
         if not deleted:
             return StapelErrorResponse(404, ERR_404_TOKEN_NOT_FOUND)
+
+        return StapelResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Devices"])
+class DeviceUnregisterView(SerializerSeamMixin, APIView):
+    """Unregister a push device by the id ``GET /devices/`` handed out.
+
+    The token-keyed sibling above stays: a client that has just minted a token
+    and wants it gone does not need a round trip through the list. This one is
+    for the other direction — a device row read from the list, unregistered by
+    the identifier the list gave, without the caller ever holding the token
+    (a second device in the list is not one this client can produce a token
+    for at all).
+    """
+
+    # Same stance as the register/unregister pair: the device registry is not
+    # a guest surface.
+    permission_classes = [IsNotAnonymousUser]
+
+    @extend_schema(
+        operation_id="unregister_device",
+        summary="Unregister a push device by id",
+        responses={
+            204: None,
+            404: StapelErrorSerializer,
+        },
+    )
+    def delete(self, request, device_id):  # noqa: R007
+        # Scoped by the caller: an id belonging to somebody else answers 404,
+        # the same as an id that never existed. There is nothing to learn here
+        # by counting up.
+        deleted, _ = DevicePushToken.objects.filter(
+            pk=device_id,
+            user_id=request.user.id,
+        ).delete()
+
+        if not deleted:
+            return StapelErrorResponse(404, ERR_404_DEVICE_NOT_FOUND)
 
         return StapelResponse(status=status.HTTP_204_NO_CONTENT)
 

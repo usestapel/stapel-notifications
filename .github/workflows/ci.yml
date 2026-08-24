@@ -58,7 +58,13 @@ jobs:
         run: python -c "import stapel_notifications; print('import OK')"
 
       - name: Install test dependencies
-        run: pip install pytest pytest-django pytest-cov "stapel-tools>=0.35.0,<1"
+        # stapel-realtime (+ channels, + pytest-asyncio) is the OPTIONAL feed
+        # socket. tests/test_realtime.py skips without it, so CI installs it
+        # from git — a suite that silently skips the socket is how an optional
+        # extra rots. It is not in `.[all]` because it is not on PyPI yet.
+        run: |
+          pip install pytest pytest-django pytest-asyncio pytest-cov "stapel-tools>=0.35.0,<1"
+          pip install "stapel-realtime[channels] @ git+https://github.com/usestapel/stapel-realtime.git"
 
       - name: Tests with coverage
         run: |

@@ -1,6 +1,6 @@
 # Errors — Русский
 
-`44` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.ru.json`.
+`51` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.ru.json`.
 
 | Код | Статус | Параметры | Действие | Текст |
 |---|---|---|---|---|
@@ -21,6 +21,11 @@
 | `error.400.field.unique` | 400 | `field` | `fix_input` | Значение поля «{field}» должно быть уникальным |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | Недопустимый идентификатор объявления |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | Платформа должна быть одной из: ios, android, web. |
+| `error.400.translate.batch_too_large` | 400 | `max_items` | `fix_input` | В одном запросе допускается не более {max_items} текстов |
+| `error.400.translate.batch_too_long` | 400 | `max_chars` | `fix_input` | Суммарная длина текстов превышает {max_chars} символов |
+| `error.400.translate.text_required` | 400 | — | `fix_input` | Укажите либо текст, либо непустой список текстов |
+| `error.400.translate.text_too_long` | 400 | `max_chars` | `fix_input` | Текст длиннее {max_chars} символов |
+| `error.400.translate.unsupported_language` | 400 | `language` | `fix_input` | Язык {language} здесь не настроен |
 | `error.400.validation_error` | 400 | — | `fix_input` | Ошибка валидации |
 | `error.400.verification_failed` | 400 | — | `verify` | Проверка не пройдена |
 | `error.400.verification_invalid_factor` | 400 | — | `verify` | Этот способ подтверждения недоступен |
@@ -31,6 +36,7 @@
 | `error.403.verification_enrollment_required` | 403 | — | `verify` | Требуется регистрация фактора подтверждения. |
 | `error.403.verification_required` | 403 | — | `verify` | Требуется дополнительная проверка |
 | `error.404.ad_not_found` | 404 | — | `retry` | Объявление не найдено |
+| `error.404.device_not_found` | 404 | — | `verify` | Устройство не найдено или зарегистрировано не на вас. |
 | `error.404.not_found` | 404 | — | `retry` | Запрошенный ресурс не найден |
 | `error.404.token_not_found` | 404 | — | `fix_input` | Токен устройства не найден. |
 | `error.404.verification_challenge_not_found` | 404 | — | `verify` | Запрос на подтверждение не найден или истёк |
@@ -47,4 +53,5 @@
 | `error.429.rate_limit` | 429 | `retry_after_minutes` | `wait_and_retry` | Слишком много попыток. Повторите попытку через {retry_after_minutes} мин. |
 | `error.429.too_many_requests` | 429 | — | `wait_and_retry` | Слишком много запросов. Пожалуйста, повторите попытку позже. |
 | `error.500.internal` | 500 | — | `contact_support` | Что-то пошло не так |
+| `error.502.translate.provider_unavailable` | 502 | — | `retry` | Сервис перевода недоступен |
 | `error.503.mandate_unavailable` | 503 | — | `retry` | Не удалось проверить доступ к рабочему пространству |

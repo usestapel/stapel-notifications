@@ -1,6 +1,11 @@
 """Serializers for notifications API."""
 from stapel_core.django.api.serializers import StapelDataclassSerializer
-from .dto import DeviceTokenRequest, DeviceTokenResponse, FeedItemResponse
+from .dto import (
+    DeviceListItemResponse,
+    DeviceTokenRequest,
+    DeviceTokenResponse,
+    FeedItemResponse,
+)
 
 
 class DeviceTokenRequestSerializer(StapelDataclassSerializer):
@@ -11,6 +16,11 @@ class DeviceTokenRequestSerializer(StapelDataclassSerializer):
 class DeviceTokenResponseSerializer(StapelDataclassSerializer):
     class Meta:
         dataclass = DeviceTokenResponse
+
+
+class DeviceListItemResponseSerializer(StapelDataclassSerializer):
+    class Meta:
+        dataclass = DeviceListItemResponse
 
 
 class FeedItemResponseSerializer(StapelDataclassSerializer):

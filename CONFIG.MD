@@ -133,3 +133,21 @@ The pair a channel×group needs must exist, or the type is undeliverable on that
 channel: `checks.E004` refuses at boot a non-`auth` type routed to a channel
 with no matching field. The channels that have one are `email`, `sms`, `push`,
 `telegram`.
+
+## Not configuration — the live feed's two host-level switches
+
+The feed socket (`ws/notifications/inbox`) is not switched on from
+`STAPEL_NOTIFICATIONS`. It has no key here because it is not this module's
+setting to own: what turns it on is the host installing the optional extra and
+configuring the core's delivery seam.
+
+| What | Where | Effect when absent |
+|-----|-------|--------------------|
+| `pip install 'stapel-notifications[realtime]'` + `stapel_realtime` in `INSTALLED_APPS` | the host's dependencies | no socket route is contributed at all; the REST feed is unchanged |
+| `STAPEL_COMM["SIGNAL_TRANSPORT"] = "channels"` (+ `CHANNEL_LAYERS`) | `stapel_core`'s namespace | `signal()` is a silent no-op — frames are built and dropped |
+
+Half of that is the trap, so it is a boot verdict: with the app installed and
+no transport configured, clients connect to a socket that is up and never
+speaks, and `checks.W006` says so. Neither half installed is a supported
+deployment, not a degraded one — see MODULE.md § "Live feed" for the polling
+guidance that applies there.

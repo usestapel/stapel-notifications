@@ -67,6 +67,22 @@ class TestGuestCannotTouchTheDeviceRegistry:
         assert resp.status_code == 403, resp.content
         assert DevicePushToken.objects.filter(token="tok-real").exists()
 
+    def test_listing_is_refused(self, guest_client, user):
+        """A guest has no devices to list, and asking is not a guest question:
+        the whole registry is closed to anonymous sessions, read included."""
+        DevicePushToken.objects.create(
+            token="tok-listed", user_id=user.id, platform="ios", is_active=True
+        )
+        assert guest_client.get("/devices/").status_code == 403
+
+    def test_unregister_by_id_is_refused(self, guest_client, user):
+        device = DevicePushToken.objects.create(
+            token="tok-by-id", user_id=user.id, platform="ios", is_active=True
+        )
+        resp = guest_client.delete(f"/devices/by-id/{device.pk}/")
+        assert resp.status_code == 403, resp.content
+        assert DevicePushToken.objects.filter(pk=device.pk).exists()
+
     def test_guest_cannot_steal_a_real_users_device_binding(self, guest_client, user):
         """The shared-device scenario, written out.
 

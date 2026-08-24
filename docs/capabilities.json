@@ -1,7 +1,7 @@
 {
   "module": "stapel-notifications",
-  "version": "0.16.0",
-  "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
+  "version": "0.17.0",
+  "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.",
   "axes": [
     {
       "key": "EMAIL_PROVIDER",
@@ -371,7 +371,7 @@
       "intent": "\"Your account is ready\" for a member an organization provisioned directly — notification_type `workspace.provisioned_account`, auth group: credentials mail is mandatory and carries no unsubscribe, like every other account-credential letter here."
     }
   ],
-  "operations_total": 4,
+  "operations_total": 6,
   "requires": [
     {
       "module": "stapel-core",
@@ -392,6 +392,11 @@
       "module": "stapel-translate",
       "optional": true,
       "reason": "notification texts are localized through the translate.resolve comm Function with lazy caching; without it the built-in English defaults are used"
+    },
+    {
+      "module": "stapel-realtime",
+      "optional": true,
+      "reason": "serves the live feed socket (ws/notifications/inbox) delivering the notification.new signal on the notifications:user:<id> stream; emitting the signal needs only stapel-core, so without this extra the feed is simply polled"
     }
   ]
 }

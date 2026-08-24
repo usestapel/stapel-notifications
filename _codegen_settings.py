@@ -76,6 +76,33 @@ def settings_kwargs(
     except ImportError:
         translate_apps = []
 
+    # The realtime substrate is an OPTIONAL extra of this library (MODULE.md
+    # § "Live feed"), so the harness must boot both with and without it —
+    # exactly like the translate block above. Installed: the app registers the
+    # "channels" signal transport from its own ready(), which is what lets the
+    # feed-socket tests exercise real fan-out. Absent: those tests skip and
+    # everything else is unchanged, which is the shape of a bare
+    # `pip install stapel-notifications` in CI.
+    try:
+        import stapel_realtime  # noqa: F401
+
+        realtime_apps = ["stapel_realtime"]
+        realtime_comm = {"SIGNAL_TRANSPORT": "channels"}
+        realtime_settings_kwargs = {
+            # In-memory layer so consumer tests exercise group fan-out
+            # without a broker.
+            "CHANNEL_LAYERS": {
+                "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
+            },
+            # Exact origins, with their ports — an entry without the port is
+            # an allowlist that silently never matches (realtime.E003).
+            "STAPEL_REALTIME": {"ALLOWED_ORIGINS": ["http://testserver"]},
+        }
+    except ImportError:
+        realtime_apps = []
+        realtime_comm = {}
+        realtime_settings_kwargs = {}
+
     if contract:
         # Mirror stapel_core.django.settings.REST_FRAMEWORK exactly (the config
         # the monolith emits under). Inlined, not imported, to dodge the
@@ -117,6 +144,7 @@ def settings_kwargs(
             "drf_spectacular",
             "stapel_notifications",
             *translate_apps,
+            *realtime_apps,
         ],
         AUTH_USER_MODEL="users.User",
         DATABASES={
@@ -152,7 +180,12 @@ def settings_kwargs(
         # In-memory bus — no Kafka/Redis broker needed
         STAPEL_BUS_BACKEND="stapel_core.bus.backends.memory.MemoryBus",
         # Deliver comm actions synchronously in-process (no outbox tables)
-        STAPEL_COMM={"OUTBOX_ENABLED": False, "ACTION_TRANSPORT": "inprocess"},
+        STAPEL_COMM={
+            "OUTBOX_ENABLED": False,
+            "ACTION_TRANSPORT": "inprocess",
+            **realtime_comm,
+        },
+        **realtime_settings_kwargs,
         # Skip migrations — create tables directly from models
         MIGRATION_MODULES={
             "users": None,

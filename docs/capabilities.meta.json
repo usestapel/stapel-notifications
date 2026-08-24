@@ -1,6 +1,6 @@
 {
   "_comment": "Hand-curated layer of docs/capabilities.json (capability-config.md §2 p.3). The emitter (stapel_notifications/_capabilities.py) merges this over the derived axes; an axis present in conf.py DEFAULTS but missing here (or vice versa) is a loud emission error. Keep business_label/summary in business language — they surface in CTO conversations, not in code. Since the usage-surface wave the file also carries surface_roots + one intent line per selected symbol (stapel_tools.surface): the routing readers, the dispatch entry point and every packaged email template, so \"is there already a letter/mechanism for X\" has a machine-readable answer. A symbol a root selects and this map does not explain is a loud emission error too.",
-  "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management and an in-app notification feed; delivery is logged per channel with idempotency.",
+  "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.",
   "requires": [
     {
       "module": "stapel-core",
@@ -21,6 +21,11 @@
       "module": "stapel-translate",
       "optional": true,
       "reason": "notification texts are localized through the translate.resolve comm Function with lazy caching; without it the built-in English defaults are used"
+    },
+    {
+      "module": "stapel-realtime",
+      "optional": true,
+      "reason": "serves the live feed socket (ws/notifications/inbox) delivering the notification.new signal on the notifications:user:<id> stream; emitting the signal needs only stapel-core, so without this extra the feed is simply polled"
     }
   ],
   "extension_points": [

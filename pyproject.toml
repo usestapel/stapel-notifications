@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.16.0"
+version = "0.17.0"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -42,6 +42,18 @@ Issues = "https://github.com/usestapel/stapel-notifications/issues"
 [project.optional-dependencies]
 firebase = ["firebase-admin>=6.4"]
 kafka = ["confluent-kafka>=2.3"]
+# The feed socket. An extra, not a base dependency — the deliberate
+# difference from stapel-chat, whose product IS the socket. This library's
+# product is a delivered notification plus a REST feed, both complete without
+# realtime; the stream only saves the reload. Emitting the frame costs
+# nothing either way (stapel_core.comm.signal is a no-op with no transport),
+# so the extra buys the serving half: the consumer, the authorize gate, the
+# Channels stack. See MODULE.md § "Live feed" and checks W006.
+realtime = ["stapel-realtime[channels]>=0.1.2,<1.0"]
+# `all` deliberately does NOT include `realtime`: stapel-realtime is not on
+# PyPI yet, so folding it in here would make `pip install -e .[all]` fail to
+# resolve and take firebase + kafka down with it. Install the socket half
+# explicitly (`.[realtime]`, from git) until the substrate is published.
 all = ["stapel-notifications[firebase,kafka]"]
 
 [tool.setuptools]

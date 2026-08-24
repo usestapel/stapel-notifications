@@ -6,12 +6,18 @@ from django.urls import path
 from .views import (
     DeviceTokenView,
     DeviceTokenDeleteView,
+    DeviceUnregisterView,
     NotificationKeysView,
     NotificationFeedView,
 )
 
 urlpatterns = [
+    # Name unchanged though the view now also lists: a host's reverse() is a
+    # seam, and renaming it would break callers for a nicer word.
     path('devices/', DeviceTokenView.as_view(), name='device-token-register'),
+    # Two segments, so it can never be shadowed by (or shadow) the one-segment
+    # token route below whatever a token happens to look like.
+    path('devices/by-id/<int:device_id>/', DeviceUnregisterView.as_view(), name='device-unregister'),
     path('devices/<str:token>/', DeviceTokenDeleteView.as_view(), name='device-token-delete'),
     path('notification-keys/', NotificationKeysView.as_view(), name='notification-keys'),
     path('feed/', NotificationFeedView.as_view(), name='notification-feed'),

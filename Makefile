@@ -27,7 +27,9 @@ PYTHON ?= python3
 # upstream letters + listing_blocked's appeal path). The owner's
 # call, the same exception stapel-auth
 # and stapel-workspaces already take: raise the ceiling for this module rather
-# than shorten intents to fit — a trimmed-to-fit context file is
+# than shorten intents to fit (6000 -> 6400 with the two device-registry
+# operations of 0.17.0: listing the caller's push devices and unregistering
+# one by id) — a trimmed-to-fit context file is
 # indistinguishable from a complete one at the point of use, which is the
 # failure mode the hard-budget gate exists to prevent. contract-check below
 # enforces the same ceiling; it does not disable the check.
@@ -42,7 +44,7 @@ contract:
 	$(PYTHON) -m stapel_notifications._codegen --out docs
 	$(PYTHON) -m stapel_notifications._capabilities --out docs
 	$(PYTHON) -m stapel_notifications._template_contract --out docs
-	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 6000
+	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 6400
 
 # Drift gate: regenerate into a temp dir and diff against the committed docs/*.json
 # (mirrors the monolith's `make codegen-check` and the frontend's `gen:*:check`).
@@ -54,7 +56,7 @@ contract-check:
 	$(PYTHON) -m stapel_notifications._codegen --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._capabilities --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._template_contract --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
-	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 6000 || { rm -rf "$$tmp"; exit 1; }; \
+	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 6400 || { rm -rf "$$tmp"; exit 1; }; \
 	rc=0; \
 	for f in schema.json flows.json errors.json capabilities.json templates.json llms.txt; do \
 		if ! diff -q "docs/$$f" "$$tmp/docs/$$f" >/dev/null 2>&1; then \

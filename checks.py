@@ -447,3 +447,49 @@ def check_channel_providers_deliver(app_configs, **kwargs):
             id="stapel_notifications.W005",
         ))
     return warnings
+
+
+@checks.register(checks.Tags.compatibility)
+def check_feed_stream_is_deliverable(app_configs, **kwargs):
+    """W006 — a feed socket that accepts clients and never says anything.
+
+    The failure this exists for is the quiet one. ``stapel_realtime`` in
+    INSTALLED_APPS means the host meant to serve the feed stream, so its
+    consumer connects, authorizes and sits there; but the frames are emitted
+    through ``stapel_core.comm.signal()``, which is a **silent no-op** until
+    ``STAPEL_COMM["SIGNAL_TRANSPORT"]`` names a transport. Nothing errors and
+    nothing logs: the socket is up, the bell never rings, and the only
+    symptom is a product that looks like it has realtime and behaves like it
+    does not.
+
+    Not having the substrate at all is not a defect and is not reported here
+    — this library's feed is complete over REST (see MODULE.md § "Live
+    feed"). The warning is for the half-configured middle.
+    """
+    from django.apps import apps
+
+    if not apps.is_installed("stapel_realtime"):
+        return []
+
+    # The core's own resolution, not a re-reading of the setting: "none", an
+    # empty value and an unresolvable dotted path all mean "signals are
+    # dropped on this host", and only signal_transport() knows all three.
+    from stapel_core.comm import signal_transport
+
+    if signal_transport() is not None:
+        return []
+
+    return [checks.Warning(
+        "stapel_realtime is installed, so the notifications feed socket "
+        "(ws/notifications/inbox) will accept clients — but "
+        "STAPEL_COMM['SIGNAL_TRANSPORT'] is unset, so signal() is a no-op "
+        "and no feed frame is ever delivered. Every connected client sits on "
+        "a silent socket and only learns about a notification when it "
+        "re-reads GET /feed/.",
+        hint=(
+            "Set STAPEL_COMM['SIGNAL_TRANSPORT'] = 'channels' (with "
+            "CHANNEL_LAYERS configured), or drop stapel_realtime from "
+            "INSTALLED_APPS and let clients poll the feed deliberately."
+        ),
+        id="stapel_notifications.W006",
+    )]

@@ -67,14 +67,17 @@ _FIXTURES = Path(
 )
 
 #: Machine translations (origin: llm) of the error keys the builtin fixtures do
-#: not cover — empty, and that is the point: the two entries that used to live
-#: here (verification/network) are core-owned, so this module neither
-#: translates nor ships them. Add a key here only when this module OWNS it and
-#: the curated corpus misses it. All param-free; edit here + regen when the en
-#: changes.
-_MACHINE_RU: dict[str, str] = {}
+#: not cover. Add a key here only when this module OWNS it and the curated
+#: corpus misses it — the two entries that used to live here
+#: (verification/network) are core-owned, so this module neither translates nor
+#: ships them. All param-free; edit here + regen when the en changes.
+_MACHINE_RU: dict[str, str] = {
+    "error.404.device_not_found": "Устройство не найдено или зарегистрировано не на вас.",
+}
 
-_MACHINE_ES: dict[str, str] = {}
+_MACHINE_ES: dict[str, str] = {
+    "error.404.device_not_found": "Dispositivo no encontrado o no está registrado a tu nombre.",
+}
 
 #: language -> machine-translation table, consulted for the keys the
 #: curated corpus does not carry. Values land as ``origin: llm``.

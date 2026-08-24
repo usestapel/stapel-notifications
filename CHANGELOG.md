@@ -2,6 +2,77 @@
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-08-24
+
+Minor: two new endpoints and one new stream. No schema change, no migration.
+
+### Added
+
+**`GET devices/` — the read that lets a push toggle tell the truth.** The
+device registry was write-only, so no client could answer "is push on for this
+device?". Every toggle in the fleet therefore rendered OFF on mount whether or
+not the device was registered, and — having no token in memory after a reload —
+switching it OFF sent no request at all while telling the person push was
+disabled. The server kept sending. That is a trust defect, not a polish item,
+and half of its fix had to be here.
+
+The list returns the caller's own devices, most recently registered first:
+`id`, `platform`, `is_active`, `created_at`, `last_seen`, and
+`token_fingerprint`. **The raw token is never echoed** — it is a bearer
+credential for that device's push channel. A client identifies its own device
+by hashing the token it already holds (SHA-256, hex) and matching the
+fingerprint: the digest is stable, not reversible, and visible only to the
+account the device belongs to. Inactive rows (a token the provider rejected)
+are listed and flagged rather than hidden — hiding them renders the toggle ON
+for a device that receives nothing. `last_seen` is the last *registration*, not
+the last delivery; clients re-register on launch, so it reads as "when this
+device last announced itself".
+
+**`DELETE devices/by-id/{id}/`** — unregister a row read from the list, by the
+identifier the list handed out, without ever holding that device's token
+(which a client cannot, for any device but the one it is running on). Scoped to
+the caller: somebody else's id answers 404, like an id that never existed. New
+error key **`error.404.device_not_found`** (remediation `verify` — re-read the
+list; the id is stale), deliberately distinct from
+`error.404.token_not_found` so a client is not sent looking for a token it
+never sent. The token-keyed `DELETE devices/{token}/` stays as it was.
+
+**The feed is live — `notifications:user:<user_id>`.** A `sent` push delivery
+now emits the `notification.new` Signal on the recipient's own ephemeral
+stream, from `transaction.on_commit`, carrying the feed row field-for-field as
+`GET feed/` returns it (`id`, `notification_type`, `title`, `body`, `data`,
+`created_at`) — so a client parses one type whichever way the item arrived.
+Socket: `ws/notifications/inbox`, read-only, no user segment in the route (the
+stream key comes from the authenticated scope). Consumer built on
+`stapel_realtime.EphemeralStreamConsumer`; nothing here implements a socket.
+
+**Realtime is an optional extra (`[realtime]`), and that is the decision.**
+Unlike stapel-chat — whose product *is* the socket, and which depends on the
+substrate outright — this module's product is a delivered notification plus a
+REST feed, both complete without one. So emitting stays free and unconditional
+(`stapel_core.comm.signal()` is stdlib and a silent no-op with no transport
+configured: an HTTP-only host pays nothing and behaves exactly as before),
+while *serving* the socket costs the extra. The route is resolved lazily from
+`routing.websocket_urlpatterns`, so a host without it never loads an ASGI
+stack. Hosts that do not install it should poll `GET feed/` — MODULE.md
+§ "Live feed" gives the interval and the reasoning rather than leaving it to
+each client to guess.
+
+New boot check **`notifications.W006`**: `stapel_realtime` installed with no
+`STAPEL_COMM["SIGNAL_TRANSPORT"]` — the socket accepts clients and is
+permanently silent. The half-configured middle is the only state worth
+warning about; no substrate at all is a supported deployment.
+
+### Changed
+
+- `llms.txt` budget 6000 → 6400 for the two device operations and the
+  substrate's entry in `requires`.
+- The test harness resolves `channels` to the installed Django Channels rather
+  than to this repo's own `channels/` package, which shadows it whenever the
+  repo root is on `sys.path` (`conftest._unshadow_channels`). Without that,
+  `import channels.db` fails here in a way that reads exactly like a missing
+  dependency and is not one.
+
 ## [0.16.0] — 2026-08-24
 
 Minor: a schema change (one additive column) and a new extension point.

@@ -1,4 +1,39 @@
+def _unshadow_channels():
+    """Resolve ``channels`` to the installed Django Channels, not to ours.
+
+    This repo has its own top-level-importable ``channels/`` package — the
+    notification delivery channels (email/push/sms/telegram) — and pytest puts
+    the repo root at the front of ``sys.path``. So inside this suite (and in a
+    bare ``python`` started here) ``import channels`` finds our package and
+    ``import channels.db`` fails, which reads exactly like a missing
+    dependency and is not one.
+
+    Every host imports the ASGI library under that name, so the test process
+    must resolve it the way a host does — otherwise the optional realtime
+    substrate is untestable here. Importing it once with the repo root off the
+    path is enough: the module object caches the right ``__path__`` for the
+    rest of the session. Our own package is unaffected — nothing imports it as
+    top-level ``channels``; it is always ``stapel_notifications.channels``.
+    """
+    import sys
+    from pathlib import Path
+
+    repo = str(Path(__file__).resolve().parent)
+    saved = list(sys.path)
+    sys.path[:] = [p for p in sys.path if p not in ("", ".", repo)]
+    try:
+        import channels  # noqa: F401
+    except ImportError:
+        pass  # Channels is an optional extra here; the realtime tests skip.
+    finally:
+        sys.path[:] = saved
+
+
 def pytest_configure(config):
+    # Before settings.configure(): stapel_realtime, when installed, is an
+    # INSTALLED_APP whose ready() reaches for Channels.
+    _unshadow_channels()
+
     from django.conf import settings
     if not settings.configured:
         # Single source of truth for this block lives in _codegen_settings.py

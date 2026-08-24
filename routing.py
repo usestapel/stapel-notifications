@@ -304,3 +304,43 @@ def get_email_template(notification_type: str) -> str | None:
         or overrides.get(notification_type)
         or DEFAULT_EMAIL_TEMPLATES.get(notification_type)
     )
+
+
+# ── WebSocket routes ────────────────────────────────────────────────────
+#
+# Two unrelated meanings of "routing" share this module, and only because
+# ``stapel_realtime.build_websocket_application()`` discovers a module's
+# sockets at ``<app>.routing.websocket_urlpatterns`` — the manifest lives in
+# the library, the host assembly reads it, and nobody hand-wires a
+# ProtocolTypeRouter. Everything above routes a notification TYPE to its
+# channels; this section routes a BROWSER to the feed stream.
+#
+# Resolved through the module ``__getattr__`` rather than a plain assignment
+# on purpose. This module is imported at boot (checks.py reads the catalog
+# above), while the consumer needs stapel-realtime and Channels — an optional
+# extra here. A top-level import would drag an ASGI stack into every
+# deployment that only ever sends email; a top-level ``try/except ImportError``
+# would do it to every deployment that merely has Channels installed for some
+# other library. So the routes are built the first time somebody asks for
+# them, which is exactly when the host is assembling its ASGI application.
+#
+# A host without the extra gets an empty route list, not a crash: the socket
+# is absent, the REST feed is not. checks.py W006 makes that state visible
+# rather than silent.
+
+#: One mount, under the fleet's canonical ``ws/<module>/…`` prefix
+#: (``realtime.W004`` warns about anything else). No user segment: the
+#: consumer derives its stream key from the authenticated scope.
+WEBSOCKET_ROUTE = "ws/notifications/inbox"
+
+
+def __getattr__(name):
+    if name != "websocket_urlpatterns":
+        raise AttributeError(name)
+    try:
+        from .consumers import NotificationInboxConsumer
+    except ImportError:
+        return []
+    from django.urls import path
+
+    return [path(WEBSOCKET_ROUTE, NotificationInboxConsumer.as_asgi())]
