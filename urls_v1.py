@@ -9,6 +9,7 @@ from .views import (
     DeviceUnregisterView,
     NotificationKeysView,
     NotificationFeedView,
+    NotificationFeedReadView,
 )
 
 urlpatterns = [
@@ -21,6 +22,7 @@ urlpatterns = [
     path('devices/<str:token>/', DeviceTokenDeleteView.as_view(), name='device-token-delete'),
     path('notification-keys/', NotificationKeysView.as_view(), name='notification-keys'),
     path('feed/', NotificationFeedView.as_view(), name='notification-feed'),
+    path('feed/read/', NotificationFeedReadView.as_view(), name='notification-feed-read'),
 ]
 
 

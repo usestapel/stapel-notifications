@@ -1,6 +1,6 @@
 # Errors — Русский
 
-`45` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.ru.json`.
+`47` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.ru.json`.
 
 | Код | Статус | Параметры | Действие | Текст |
 |---|---|---|---|---|
@@ -21,6 +21,8 @@
 | `error.400.field.unique` | 400 | `field` | `fix_input` | Значение поля «{field}» должно быть уникальным |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | Недопустимый идентификатор объявления |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | Платформа должна быть одной из: ios, android, web. |
+| `error.400.read_target_required` | 400 | — | `fix_input` | Укажите ровно одно: непустой список «ids» или «all»: true. |
+| `error.400.too_many_ids` | 400 | — | `fix_input` | Слишком много идентификаторов в одном запросе. Отправьте меньше или «all»: true. |
 | `error.400.validation_error` | 400 | — | `fix_input` | Ошибка валидации |
 | `error.400.verification_failed` | 400 | — | `verify` | Проверка не пройдена |
 | `error.400.verification_invalid_factor` | 400 | — | `verify` | Этот способ подтверждения недоступен |

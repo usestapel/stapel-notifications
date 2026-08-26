@@ -1,8 +1,8 @@
-# stapel-notifications 0.17.3
+# stapel-notifications 0.18.0
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.
 
-Contract: axes 4 · surface 40 · extension points 6 · operations 6 · error codes 45.
+Contract: axes 4 · surface 40 · extension points 6 · operations 7 · error codes 47.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -135,7 +135,7 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
 - stapel-realtime (optional) — serves the live feed socket (ws/notifications/inbox) delivering the notification.new signal on the notifications:user:<id> stream; emitting the signal needs only stapel-core, so without this extra the feed is simply polled
 - stapel-translate (optional) — notification texts are localized through the translate.resolve comm Function with lazy caching; without it the built-in English defaults are used
 
-## HTTP operations (6) — call by operationId, never by a typed path
+## HTTP operations (7) — call by operationId, never by a typed path
 Paths are relative to `/notifications/api/v1/`.
 ### Devices
 - GET /devices/ — list_device_tokens
@@ -144,10 +144,11 @@ Paths are relative to `/notifications/api/v1/`.
 - DELETE /devices/{token}/ — unregister_device_token
 ### Feed
 - GET /feed/ — get_notification_feed
+- POST /feed/read/ — mark_notification_feed_read
 ### Translation Keys
 - GET /notification-keys/ — get_notification_keys
 
-## Error codes (45) — the StapelError envelope
+## Error codes (47) — the StapelError envelope
 Render `t(code, params)`; branch UX on the remediation. Localized text lives in docs/errors.<lang>.md, not here.
 - error.400.bad_request [400] fix_input
 - error.400.captcha_invalid [400] retry
@@ -166,6 +167,8 @@ Render `t(code, params)`; branch UX on the remediation. Localized text lives in 
 - error.400.field.unique [400] fix_input {field}
 - error.400.invalid_ad_id [400] fix_input
 - error.400.invalid_platform [400] fix_input
+- error.400.read_target_required [400] fix_input
+- error.400.too_many_ids [400] fix_input
 - error.400.validation_error [400] fix_input
 - error.400.verification_failed [400] verify
 - error.400.verification_invalid_factor [400] verify

@@ -30,6 +30,7 @@ a 403 it would have to special-case.
 import logging
 
 from django.db import transaction
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -47,18 +48,28 @@ from stapel_core.django.api.permissions import (
     IsStaffUser,
 )
 
-from .dto import DeviceListItemResponse, DeviceTokenResponse, FeedItemResponse
+from .dto import (
+    DeviceListItemResponse,
+    DeviceTokenResponse,
+    FeedItemResponse,
+    FeedReadResponse,
+)
 from .errors import (
     ERR_400_INVALID_PLATFORM,
+    ERR_400_READ_TARGET_REQUIRED,
+    ERR_400_TOO_MANY_IDS,
     ERR_404_DEVICE_NOT_FOUND,
     ERR_404_TOKEN_NOT_FOUND,
 )
 from .models import DevicePushToken, NotificationLog
+from .realtime import broadcast_feed_read
 from .serializers import (
     DeviceListItemResponseSerializer,
     DeviceTokenRequestSerializer,
     DeviceTokenResponseSerializer,
     FeedItemResponseSerializer,
+    FeedReadRequestSerializer,
+    FeedReadResponseSerializer,
 )
 from .translation_keys import NOTIFICATION_KEYS
 
@@ -288,9 +299,63 @@ class NotificationKeysView(SerializerSeamMixin, APIView):
         return StapelResponse(NOTIFICATION_KEYS)
 
 
+#: Upper bound on ``ids`` in one mark-as-read call. Ten pages' worth at the
+#: feed's own maximum page size — generous for "clear what I just scrolled",
+#: and a ceiling on the ``IN (...)`` this endpoint can be made to build.
+#: A client with more than this to clear means ``all: true``.
+MAX_READ_IDS = 500
+
+
+def feed_queryset(user_id):
+    """The rows the feed IS: this recipient's delivered push notifications.
+
+    One definition, three readers — the page, the unread count and the
+    mark-as-read write. When these drifted apart is exactly when a badge
+    would count rows the list does not show.
+    """
+    return NotificationLog.objects.filter(
+        user_id=user_id,
+        status="sent",
+        channel="push",
+    )
+
+
+def unread_count(user_id) -> int:
+    """Unread rows in this recipient's whole feed — not just a page."""
+    return feed_queryset(user_id).filter(read_at__isnull=True).count()
+
+
 class FeedPagination(CreatedAtAnchorPagination):
+    """The feed page, plus the one number a bell needs off every page.
+
+    ``unread_count`` rides on the envelope rather than on a second endpoint
+    because a client that renders the feed ALWAYS wants it, and a badge fed
+    by a separate request is a badge that disagrees with the list under it
+    for one round trip — including the round trip right after marking
+    something read.
+    """
+
     page_size = 20
     max_page_size = 50
+    #: Set by the view before the envelope is built; the class default keeps
+    #: a paginator used outside that view honest rather than exploding.
+    unread_count = 0
+
+    def get_paginated_response(self, data):
+        response = super().get_paginated_response(data)
+        response.data["unread_count"] = self.unread_count
+        return response
+
+    def get_paginated_response_schema(self, schema):
+        envelope = super().get_paginated_response_schema(schema)
+        envelope["properties"]["unread_count"] = {
+            "type": "integer",
+            "description": (
+                "Unread rows in the caller's whole feed — not just this page."
+            ),
+        }
+        envelope["required"] = [*envelope["required"], "unread_count"]
+        return envelope
 
 
 @extend_schema(tags=["Feed"])
@@ -308,18 +373,21 @@ class NotificationFeedView(SerializerSeamMixin, APIView):
     @extend_schema(
         operation_id="get_notification_feed",
         summary="Get notification feed",
-        description="Returns push notification log entries for the authenticated user, ordered by created_at desc.",
+        description=(
+            "Returns push notification log entries for the authenticated user, "
+            "ordered by created_at desc. Each row carries `read_at` — null while "
+            "unread — and the page envelope carries `unread_count`, the number of "
+            "unread rows in the WHOLE feed, so a bell badge is answered by the "
+            "same request that fills the list."
+        ),
         responses={200: FeedItemResponseSerializer(many=True)},
     )
     def get(self, request):  # noqa: R007
-        queryset = NotificationLog.objects.filter(
-            user_id=request.user.id,
-            status="sent",
-            channel="push",
-        )
+        queryset = feed_queryset(request.user.id)
 
         paginator = FeedPagination()
         page = paginator.paginate_queryset(queryset, request)
+        paginator.unread_count = unread_count(request.user.id)
 
         response_cls = self.get_response_serializer_class()
         items = [
@@ -331,9 +399,98 @@ class NotificationFeedView(SerializerSeamMixin, APIView):
                     body=entry.body,
                     data=entry.data,
                     created_at=entry.created_at.isoformat(),
+                    read_at=entry.read_at.isoformat() if entry.read_at else None,
                 )
             ).data
             for entry in page
         ]
 
         return paginator.get_paginated_response(items)
+
+
+@extend_schema(tags=["Feed"])
+class NotificationFeedReadView(SerializerSeamMixin, APIView):
+    """Mark feed rows read — some of them, or all of them.
+
+    Idempotent by construction: the write is
+    ``filter(read_at__isnull=True).update(read_at=now)``, so re-sending the
+    same ids marks nothing a second time and reports ``marked: 0``. That
+    number is the honest one for a client to trust — it is what CHANGED, not
+    what was asked for — and the ``unread_count`` beside it is the badge
+    value after the write, so the caller never has to re-read the feed to
+    find out what its bell should say.
+
+    Scoped to the caller's own rows, and an id that belongs to somebody else
+    is indistinguishable from an id that never existed: both are simply not
+    matched. There is no 404 here on purpose — a per-id answer would turn
+    this endpoint into an oracle for "does this notification id exist", and
+    the recovery for a stale id is the same either way (re-read the feed).
+    """
+
+    permission_classes = [IsAuthenticated]
+    # Same stance as the feed itself: a guest's feed is empty, so this is a
+    # write that matches nothing and answers `{"marked": 0, "unread_count": 0}`.
+    # A bell rendered for every session marks read without a special case.
+    stapel_anonymous_access = ANONYMOUS_ALLOWED
+    request_serializer_class = FeedReadRequestSerializer
+    response_serializer_class = FeedReadResponseSerializer
+
+    @extend_schema(
+        operation_id="mark_notification_feed_read",
+        summary="Mark feed items read",
+        description=(
+            "Send exactly one of `ids` (feed item ids from `GET feed/`, at most "
+            f"{MAX_READ_IDS}) or `all: true`. Idempotent: `marked` counts the rows "
+            "this call moved from unread to read, so a repeat returns 0. "
+            "`unread_count` is the caller's remaining unread total after the "
+            "write. Only the caller's own rows are touched; unknown or foreign "
+            "ids are ignored rather than reported, and when anything changed a "
+            "`notification.read` signal goes out on `notifications:user:<id>` so "
+            "the caller's other open screens correct their badge."
+        ),
+        request=FeedReadRequestSerializer,
+        responses={
+            200: FeedReadResponseSerializer,
+            400: StapelErrorSerializer,
+        },
+    )
+    def post(self, request):  # noqa: R007
+        serializer = self.get_request_serializer_class()(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ids = list(serializer.validated_data.ids or [])
+        mark_all = bool(serializer.validated_data.all)
+
+        # "Mark everything" and "mark these" are different intents with
+        # different blast radius. A request carrying both has not decided
+        # which it meant, and a request carrying neither has not said
+        # anything at all — answering 200/0 to either would let a broken
+        # "mark all read" button look like an already-empty feed.
+        if mark_all == bool(ids):
+            return StapelErrorResponse(400, ERR_400_READ_TARGET_REQUIRED)
+
+        if len(ids) > MAX_READ_IDS:
+            return StapelErrorResponse(400, ERR_400_TOO_MANY_IDS)
+
+        unread = feed_queryset(request.user.id).filter(read_at__isnull=True)
+        if not mark_all:
+            unread = unread.filter(id__in=ids)
+
+        with transaction.atomic():
+            # Read the ids BEFORE the update: after it they no longer match
+            # the filter, and the signal has to name what it moved. Skipped
+            # when marking everything — the frame carries `all` instead of a
+            # list the size of the recipient's history.
+            marked_ids = [] if mark_all else list(unread.values_list("id", flat=True))
+            marked = unread.update(read_at=timezone.now())
+
+        remaining = unread_count(request.user.id)
+
+        # Nothing changed → nothing to announce. A frame for a no-op read is
+        # how two tabs end up talking to each other in a loop.
+        if marked:
+            broadcast_feed_read(request.user.id, marked_ids, mark_all, remaining)
+
+        dto = FeedReadResponse(marked=marked, unread_count=remaining)
+        response_cls = self.get_response_serializer_class()
+        return StapelResponse(response_cls(dto))

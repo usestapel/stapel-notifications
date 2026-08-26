@@ -127,6 +127,17 @@ class NotificationLog(models.Model):
     )
     error_message = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "When the recipient marked this feed row read (POST feed/read/). "
+            "NULL means unread, and unread is the only state a feed row is "
+            "born in — the column is about the RECIPIENT's attention, not "
+            "about delivery, which `status` already records. Only push rows "
+            "are ever read: those are the ones GET feed/ returns."
+        ),
+    )
 
     def save(self, *args, **kwargs):
         """The journal filters itself, at the table's own boundary.
@@ -154,6 +165,15 @@ class NotificationLog(models.Model):
             models.Index(
                 fields=["user_id", "-created_at"],
                 name="notif_user_created_idx",
+            ),
+            # The unread count is read on EVERY feed page (it is part of the
+            # envelope), so it must not be a scan of the recipient's whole
+            # journal. Partial on the unread rows: the set that shrinks as a
+            # person reads, which is the set the count walks.
+            models.Index(
+                fields=["user_id"],
+                condition=models.Q(read_at__isnull=True),
+                name="notif_user_unread_idx",
             ),
         ]
 

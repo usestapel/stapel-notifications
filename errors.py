@@ -9,11 +9,23 @@ ERR_404_TOKEN_NOT_FOUND = 'error.404.token_not_found'
 # sent, and the two conditions have different recoveries — re-list the devices
 # vs re-register this device.
 ERR_404_DEVICE_NOT_FOUND = 'error.404.device_not_found'
+# Mark-as-read takes a target: a list of ids, or the whole feed. Sending
+# neither (an empty body, an empty `ids`) and sending both are the same class
+# of mistake — the request does not say what to mark — and answering 200 with
+# `marked: 0` would let a "mark all read" button that forgot its flag look
+# like a feed that was already read.
+ERR_400_READ_TARGET_REQUIRED = 'error.400.read_target_required'
+# The id list is bounded so one request cannot ask the database for an
+# unbounded IN (...). A client with more than a page of ids to clear wants
+# `all: true`, which is one UPDATE regardless of size.
+ERR_400_TOO_MANY_IDS = 'error.400.too_many_ids'
 
 SERVICE_ERRORS = {
     ERR_400_INVALID_PLATFORM: 'Platform must be one of: ios, android, web.',
     ERR_404_TOKEN_NOT_FOUND: 'Device token not found.',
     ERR_404_DEVICE_NOT_FOUND: 'Device not found, or it is not registered to you.',
+    ERR_400_READ_TARGET_REQUIRED: 'Send exactly one of: a non-empty "ids" list, or "all": true.',
+    ERR_400_TOO_MANY_IDS: 'Too many ids in one request. Send fewer, or "all": true.',
 }
 
 # Machine-readable recovery hints (remediation) — the canonical "what to do"
@@ -32,6 +44,11 @@ SERVICE_REMEDIATION = {
     # row was already removed here, or by an account switch on that device).
     # Re-reading GET /devices/ is the recovery, not resending the same id.
     ERR_404_DEVICE_NOT_FOUND: 'verify',
+    # Both read-target keys are the request saying the wrong thing, and the
+    # client can say the right thing without asking anybody: name the ids, or
+    # set the flag.
+    ERR_400_READ_TARGET_REQUIRED: 'fix_input',
+    ERR_400_TOO_MANY_IDS: 'fix_input',
 }
 
 register_service_errors(SERVICE_ERRORS, remediation=SERVICE_REMEDIATION)

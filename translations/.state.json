@@ -4,6 +4,14 @@
       "hash": "4e73b81787614773",
       "origin": "seed:stapel-builtin"
     },
+    "error.400.read_target_required": {
+      "hash": "e183c3b271c11744",
+      "origin": "llm"
+    },
+    "error.400.too_many_ids": {
+      "hash": "f3a476ff416b3375",
+      "origin": "llm"
+    },
     "error.404.device_not_found": {
       "hash": "2a78eabc08e0bb70",
       "origin": "llm"
@@ -17,6 +25,14 @@
     "error.400.invalid_platform": {
       "hash": "4e73b81787614773",
       "origin": "seed:stapel-builtin"
+    },
+    "error.400.read_target_required": {
+      "hash": "e183c3b271c11744",
+      "origin": "llm"
+    },
+    "error.400.too_many_ids": {
+      "hash": "f3a476ff416b3375",
+      "origin": "llm"
     },
     "error.404.device_not_found": {
       "hash": "2a78eabc08e0bb70",

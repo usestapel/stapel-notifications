@@ -33,11 +33,13 @@ down: the frame is dropped and nothing raises, because the truth is the
 scheduled by ``signal()`` through ``transaction.on_commit`` — the row is
 durable before anyone is told about it.
 
-There is no ``notification.read`` signal. This library has no read state at
-all: ``NotificationLog`` records what was *sent*, there is no mark-as-read
-endpoint and therefore no unread count, so a read event would be a frame
-nothing can emit and nothing can act on. When read state lands, it belongs on
-this same stream as a second signal type.
+Two signal types travel here, and the second is the reason the first is not
+enough. ``notification.new`` says a row arrived; ``notification.read`` says
+the recipient has read some of them — and without it, a bell open in two tabs
+is wrong in one of them the moment somebody clicks. Read state is a
+per-recipient fact
+that a *sibling screen* changes, which is exactly the case a socket exists
+for; polling it would put the badge back on a 60s lie.
 """
 from __future__ import annotations
 
@@ -52,6 +54,12 @@ STREAM_MODULE = "notifications"
 #: next ``GET /feed/`` would return at the top. Never a protocol frame type;
 #: the core refuses a signal type that claims one.
 SIGNAL_NEW = "notification.new"
+
+#: The recipient marked feed rows read, from somewhere. Carries the ids it
+#: moved (empty when the whole feed was cleared, which is bounded reporting
+#: rather than a list of everything) and the unread count that is now true, so
+#: a second screen corrects its badge without a refetch.
+SIGNAL_READ = "notification.read"
 
 
 def user_stream(user_id) -> str:
@@ -77,6 +85,26 @@ def feed_item_payload(entry) -> dict:
         "body": entry.body,
         "data": dict(entry.data or {}),
         "created_at": entry.created_at.isoformat(),
+        "read_at": entry.read_at.isoformat() if entry.read_at else None,
+    }
+
+
+def feed_read_payload(ids, all_read: bool, unread_count: int) -> dict:
+    """The mark-as-read write as the wire carries it.
+
+    Not a feed row: a row is not what changed. What a second screen needs is
+    *which* rows to dim and *what the badge now says* — the two things it
+    cannot derive from an item it may never have been shown.
+
+    ``all`` is carried instead of the ids when the whole feed was cleared:
+    the alternative is a frame whose size is the recipient's entire history,
+    and a client that reads ``all`` knows more than a long list would tell it
+    (rows it has not loaded are read too).
+    """
+    return {
+        "ids": [str(i) for i in ids],
+        "all": bool(all_read),
+        "unread_count": int(unread_count),
     }
 
 
@@ -102,10 +130,39 @@ def broadcast_feed_item(entry) -> None:
         )
 
 
+def broadcast_feed_read(user_id, ids, all_read: bool, unread_count: int) -> None:
+    """Tell the recipient's OTHER open screens that the badge moved.
+
+    Same stream, same envelope, same best-effort contract as
+    :func:`broadcast_feed_item`: the ``read_at`` columns are the truth and
+    ``GET /feed/`` still reports them, so a dropped frame costs a stale badge
+    until the next page read, never a wrong write.
+    """
+    if not user_id:
+        return
+    try:
+        from stapel_core.comm import signal
+
+        signal(
+            user_stream(user_id),
+            SIGNAL_READ,
+            feed_read_payload(ids, all_read, unread_count),
+        )
+    except Exception:  # pragma: no cover - a courtesy never breaks a caller
+        logger.debug(
+            "notifications: read signal skipped for user %s",
+            user_id,
+            exc_info=True,
+        )
+
+
 __all__ = [
     "SIGNAL_NEW",
+    "SIGNAL_READ",
     "STREAM_MODULE",
     "broadcast_feed_item",
+    "broadcast_feed_read",
     "feed_item_payload",
+    "feed_read_payload",
     "user_stream",
 ]

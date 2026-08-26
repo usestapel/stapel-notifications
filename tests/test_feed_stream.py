@@ -167,3 +167,34 @@ async def test_a_recipient_with_nothing_open_is_the_normal_case(user):
     behaviour, not an incident."""
     row = await database_sync_to_async(_log_row)(uuid.uuid4())
     await database_sync_to_async(realtime.broadcast_feed_item)(row)
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_a_read_arrives_on_the_same_stream_as_a_v1_signal_frame(user):
+    """One socket, two signal types. A second screen learns the badge moved
+    without asking — which is the only way two open tabs stay in agreement."""
+    sock = await _open(user)
+    row = await database_sync_to_async(_log_row)(user.id)
+    await database_sync_to_async(realtime.broadcast_feed_read)(
+        user.id, [row.id], False, 0
+    )
+
+    frame = await sock.receive(timeout=3)
+    assert frame.stream == realtime.user_stream(user.id)
+    assert frame.type == realtime.SIGNAL_READ
+    assert frame.is_signal
+    assert frame.seq is None
+    assert frame.payload == {"ids": [str(row.id)], "all": False, "unread_count": 0}
+    await sock.communicator.disconnect()
+
+
+@pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
+async def test_nobody_hears_another_recipients_read(user, other_user):
+    sock = await _open(user)
+    await database_sync_to_async(realtime.broadcast_feed_read)(
+        other_user.id, [], True, 0
+    )
+    assert await sock.communicator.receive_nothing(timeout=0.5)
+    await sock.communicator.disconnect()

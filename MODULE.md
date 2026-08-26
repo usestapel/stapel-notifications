@@ -20,8 +20,8 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 | Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (28 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*`, `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `moderation.report_received`, `moderation.sanction_issued`, `moderation.appeal_resolved` (stapel-moderation upstream, registry-only — no producer in this package), `workspace.invitation` + `.new_user`/`.reminder`/`.decline_confirmed`/`.declined`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
 | User preferences | `UserNotificationSettings` (per channel×group booleans — `{email,push,sms,telegram}_{messages,system}`; **no language** — see §5), enforced in `services._should_send`; `auth` group always sends |
 | Contact projection | `UserContact` (email/phone/telegram_chat_id synced from auth via bus; `is_active` soft-off during account-closure grace period) |
-| Push tokens + feed | `DevicePushToken` model; REST API: `GET/POST devices/`, `DELETE devices/{token}/`, `DELETE devices/by-id/{id}/`, `GET feed/` (push log as feed), `GET notification-keys/` (translation-key export for the translate collector) |
-| Live feed (optional) | `notifications:user:<id>` Signal stream carrying `notification.new` on the v1 envelope; socket `ws/notifications/inbox` behind the `[realtime]` extra — see § Live feed |
+| Push tokens + feed | `DevicePushToken` model; REST API: `GET/POST devices/`, `DELETE devices/{token}/`, `DELETE devices/by-id/{id}/`, `GET feed/` (push log as feed — rows carry `read_at`, the envelope carries `unread_count`), `POST feed/read/` (mark rows or the whole feed read), `GET notification-keys/` (translation-key export for the translate collector) |
+| Live feed (optional) | `notifications:user:<id>` Signal stream carrying `notification.new` and `notification.read` on the v1 envelope; socket `ws/notifications/inbox` behind the `[realtime]` extra — see § Live feed |
 | Branded email layer | `templates/notifications/email/_base.html` shared shell + 25 per-type templates + `_raw_content.html` escape hatch; branding driven entirely by settings |
 | i18n | `TranslationCache` model, lazy pull through the `translate.resolve` comm Function, English defaults in `translation_keys.NOTIFICATION_KEYS` |
 | GDPR | `NotificationsGDPRProvider` (section `notifications`) registered in `apps.ready()` on `stapel_core.gdpr.gdpr_registry` — export + erase |
@@ -635,10 +635,12 @@ Since 0.17.0 this module emits on the fleet's realtime substrate:
 | | |
 |---|---|
 | Stream | `notifications:user:<user_id>` — the recipient's own, ephemeral |
-| Signal | `notification.new`, on the v1 envelope (`{v, type, stream, payload}`; no `seq` — this is not a journal) |
-| Payload | field-for-field `FeedItemResponse`: `id`, `notification_type`, `title`, `body`, `data`, `created_at` — so a client parses one type whether the item came off the socket or off a page of `GET feed/` |
+| Signals | `notification.new` and `notification.read`, both on the v1 envelope (`{v, type, stream, payload}`; no `seq` — this is not a journal) |
+| `notification.new` payload | field-for-field `FeedItemResponse`: `id`, `notification_type`, `title`, `body`, `data`, `created_at`, `read_at` — so a client parses one type whether the item came off the socket or off a page of `GET feed/` |
 | Socket | `ws/notifications/inbox`, no user segment (the stream key is derived from the authenticated scope), read-only |
-| Emitted when | a `push` channel delivery is journalled `sent` — i.e. exactly when a new row would appear at the top of `GET feed/` — from `transaction.on_commit`, so the row is durable before anybody is told |
+| `notification.new` emitted when | a `push` channel delivery is journalled `sent` — i.e. exactly when a new row would appear at the top of `GET feed/` — from `transaction.on_commit`, so the row is durable before anybody is told |
+| `notification.read` payload | `{ids: [...], all: bool, unread_count: int}` — the rows that just moved to read (empty when `all` is true: a frame is not the place for somebody's whole history) and the badge value that is now true |
+| `notification.read` emitted when | `POST feed/read/` actually changed something. A repeat that marks nothing emits nothing — a no-op frame is how two open tabs start correcting each other in a loop |
 
 The deep link a client needs lives in `data`, under the declared telemetry keys
 (`listing_url`, `chat_url`, `notifications_chat_url`); everything else is
@@ -675,11 +677,48 @@ authenticated read by every open tab. Do not poll faster than 30s, and do not
 poll a hidden tab — that is how a notification bell becomes the largest
 consumer of a service's request budget.
 
-There is no `notification.read` signal, and the reason is worth stating: this
-library has no read state at all. `NotificationLog` records what was *sent*;
-there is no mark-as-read endpoint and therefore no unread count, so a read
-event would be a frame nothing can emit and nothing can act on. When read state
-lands it belongs on this same stream as a second signal type.
+## Read state — `read_at`, `unread_count`, `POST feed/read/`
+
+Until 0.18.0 the feed could not be rendered honestly. `NotificationLog`
+recorded what was *sent*, and nothing else: no client could tell an arrived
+notification from one the person had already looked at, so every bell either
+invented a local "seen" set (wrong the moment the account is open on a second
+device) or showed a badge that never cleared.
+
+Three pieces, and a client needs all three:
+
+| | |
+|---|---|
+| `read_at` on the row | `datetime \| null`, null while unread — the state every row is born in. Only feed rows (`status="sent"`, `channel="push"`) are ever read; a failed delivery was never shown to anybody |
+| `unread_count` on the page envelope | Unread rows in the WHOLE feed, not just the page — the badge value, answered by the same request that fills the list, so the number and the rows under it can never disagree |
+| `POST feed/read/` | `{"ids": [...]}` (at most 500) **or** `{"all": true}` — exactly one. Answers `{"marked": n, "unread_count": n}` |
+
+**`marked` is what changed, not what was asked for.** The write is
+`filter(read_at__isnull=True).update(read_at=now)`, so re-sending the same ids
+marks nothing and reports `marked: 0`, and an already-read row keeps its
+original timestamp. That makes the endpoint safe to retry on a flaky
+connection, which is the state a phone is usually in when somebody opens a
+notification.
+
+**Scoped to the caller, and not an oracle.** Only the caller's own rows are
+matched; an id belonging to somebody else is indistinguishable from an id that
+never existed — both are simply not matched, and the answer is `200` with
+`marked: 0` rather than a `404` that would let a caller count up which
+notification ids exist. The recovery for a stale id is the same either way:
+re-read the feed.
+
+**A request has to say which it means.** Neither target (`{}`, `{"ids": []}`,
+`{"all": false}`) and both targets are the same 400,
+`error.400.read_target_required`: a "mark all read" button that lost its flag
+must not look like a feed that was already read. More than 500 ids is
+`error.400.too_many_ids` — a bound on the `IN (...)` this endpoint can be made
+to build; a client with more than that to clear means `all: true`, which is one
+`UPDATE` whatever the size.
+
+**Guests may call it.** Same stance as the feed itself: an anonymous session's
+feed is empty, so the write matches nothing and answers
+`{"marked": 0, "unread_count": 0}` — a bell rendered for every session marks
+read without a special case.
 
 ## Admin categories (`stapel_core.access`, admin-suite AS-5)
 

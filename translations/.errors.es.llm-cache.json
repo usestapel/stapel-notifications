@@ -1,4 +1,12 @@
 {
+  "error.400.read_target_required": {
+    "hash": "e183c3b271c11744",
+    "text": "Envía exactamente uno: una lista «ids» no vacía, o «all»: true."
+  },
+  "error.400.too_many_ids": {
+    "hash": "f3a476ff416b3375",
+    "text": "Demasiados identificadores en una sola petición. Envía menos, o «all»: true."
+  },
   "error.403.network_blocked": {
     "hash": "73418e2ec86c7544",
     "text": "No se permiten solicitudes desde esta red."

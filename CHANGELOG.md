@@ -1,5 +1,52 @@
 # Changelog
 
+## 0.18.0 — 2026-08-26
+
+Minor: read state for the feed. One nullable column, one endpoint, one number on the page envelope, one more signal
+type on the stream that already existed. Migration `0009_notificationlog_read_at` (expand-only: a nullable column plus
+a partial index over the unread rows).
+
+### Added
+
+**`read_at` on the feed row (`datetime | null`).** The feed could not be rendered honestly: `NotificationLog` recorded
+what was *sent* and nothing else, so no client could tell an arrived notification from one the person had already
+looked at. Every bell in the fleet therefore either invented a local "seen" set — wrong the moment the account is open
+on a second device — or showed a badge that never cleared. Null is unread, and unread is the state every row is born
+in. Only feed rows (`status="sent"`, `channel="push"`) are ever read; a failed delivery was never shown to anybody.
+
+**`unread_count` on the feed page envelope.** The badge value, counted over the WHOLE feed rather than the page, and
+answered by the same request that fills the list — a badge fed by a second endpoint disagrees with the rows under it
+for one round trip, including the round trip right after marking something read. A partial index on the unread rows
+keeps it off a scan of the recipient's whole journal.
+
+**`POST notifications/api/v1/feed/read/`** — `{"ids": [...]}` (at most 500) **or** `{"all": true}`, exactly one, and
+answers `{"marked": n, "unread_count": n}`.
+
+- **Idempotent by construction.** The write is `filter(read_at__isnull=True).update(read_at=now)`, so a repeat marks
+  nothing, reports `marked: 0`, and leaves the original timestamp alone. `marked` is what CHANGED, not what was asked
+  for — which is the number a client on a flaky connection can retry against.
+- **The caller's own rows, and no oracle.** An id belonging to somebody else is indistinguishable from an id that
+  never existed: not matched, `200`, `marked: 0`. A per-id `404` would let a caller count up which notification ids
+  exist, and the recovery is the same either way — re-read the feed.
+- **A request has to say which it means.** Neither target and both targets are the same 400,
+  **`error.400.read_target_required`** (remediation `fix_input`): a "mark all read" button that lost its flag must not
+  look like a feed that was already read. More than 500 ids is **`error.400.too_many_ids`** — a bound on the `IN (...)`
+  this endpoint can be made to build; a client with more than that to clear means `all: true`, one `UPDATE` whatever
+  the size. Both keys ship en/ru/es.
+- **Guests may call it**, same stance as the feed itself: an empty feed, a write that matches nothing,
+  `{"marked": 0, "unread_count": 0}` — no special case in a bell that renders for every session.
+
+**`notification.read` on `notifications:user:<id>`**, v1 envelope, beside the `notification.new` this stream already
+carried. Payload `{ids: [...], all: bool, unread_count: int}`: the rows that just moved, and the badge value that is
+now true. `all: true` travels instead of the ids when the whole feed was cleared — a frame is not the place for
+somebody's entire history, and a client reading `all` knows more than a long list would tell it (rows it never loaded
+are read too). Emitted only when something actually changed; a no-op frame is how two open tabs start correcting each
+other in a loop. Best-effort like its sibling: the columns are the truth and `GET feed/` still reports them, so a
+dropped frame costs a stale badge until the next page read, never a wrong write.
+
+**Read state is in the GDPR export.** `read_at` is a record of what the person DID — opened their feed and cleared
+these rows — not of what we sent them; the journal slice would be incomplete without it.
+
 ## 0.17.3 — 2026-08-26
 
 - The contract no longer describes the machine that emitted it. `_codegen_settings` joins `stapel_translate` to

@@ -1,5 +1,7 @@
 {
   "error.400.invalid_platform": "La plataforma debe ser una de las siguientes: ios, android, web.",
+  "error.400.read_target_required": "Envía exactamente uno: una lista «ids» no vacía, o «all»: true.",
+  "error.400.too_many_ids": "Demasiados identificadores en una sola petición. Envía menos, o «all»: true.",
   "error.404.device_not_found": "Dispositivo no encontrado o no está registrado a tu nombre.",
   "error.404.token_not_found": "Token de dispositivo no encontrado."
 }

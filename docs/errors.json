@@ -162,6 +162,22 @@
     "owner": "stapel_notifications"
   },
   {
+    "code": "error.400.read_target_required",
+    "status": 400,
+    "params": [],
+    "remediation": "fix_input",
+    "en": "Send exactly one of: a non-empty \"ids\" list, or \"all\": true.",
+    "owner": "stapel_notifications"
+  },
+  {
+    "code": "error.400.too_many_ids",
+    "status": 400,
+    "params": [],
+    "remediation": "fix_input",
+    "en": "Too many ids in one request. Send fewer, or \"all\": true.",
+    "owner": "stapel_notifications"
+  },
+  {
     "code": "error.400.validation_error",
     "status": 400,
     "params": [],

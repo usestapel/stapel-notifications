@@ -1,5 +1,7 @@
 {
   "error.400.invalid_platform": "Платформа должна быть одной из: ios, android, web.",
+  "error.400.read_target_required": "Укажите ровно одно: непустой список «ids» или «all»: true.",
+  "error.400.too_many_ids": "Слишком много идентификаторов в одном запросе. Отправьте меньше или «all»: true.",
   "error.404.device_not_found": "Устройство не найдено или зарегистрировано не на вас.",
   "error.404.token_not_found": "Токен устройства не найден."
 }

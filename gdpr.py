@@ -43,9 +43,13 @@ class NotificationsGDPRProvider(GDPRProvider):
             'platform', 'is_active', 'created_at',
         ))
 
-        # Export log metadata without recipient PII
+        # Export log metadata without recipient PII. `read_at` is in here
+        # because it is a record of what this person DID (opened their feed
+        # and cleared these rows), not of what we sent them — the half of the
+        # journal an export would be incomplete without.
         logs = list(NotificationLog.objects.filter(user_id=user_id).values(
             'notification_type', 'channel', 'status', 'language', 'created_at',
+            'read_at',
         ))
 
         return {

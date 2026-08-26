@@ -1,5 +1,6 @@
 """Data Transfer Objects for notifications API."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional
 from uuid import UUID
 
 
@@ -60,6 +61,7 @@ class FeedItemResponse:
         body: Notification body. Example: Your listing was blocked for guideline violations.
         data: Extra data (deep links etc).
         created_at: ISO 8601 timestamp. Example: 2026-03-17T10:30:00Z
+        read_at: ISO 8601 timestamp the recipient marked this read, or null while it is unread. Example: 2026-03-17T11:04:52Z
     """
     id: UUID
     notification_type: str
@@ -67,3 +69,28 @@ class FeedItemResponse:
     body: str
     data: dict
     created_at: str
+    read_at: Optional[str] = None
+
+
+@dataclass
+class FeedReadRequest:
+    """Mark feed rows read. Send exactly one of ``ids`` or ``all``.
+
+    Attributes:
+        ids: Feed item ids to mark read — the ids from GET feed/. Ignored when `all` is true.
+        all: Mark every unread row of the caller's feed read. Example: false
+    """
+    ids: list[UUID] = field(default_factory=list)
+    all: bool = False
+
+
+@dataclass
+class FeedReadResponse:
+    """What the mark-as-read write actually changed.
+
+    Attributes:
+        marked: Rows this call moved from unread to read — 0 on a repeat of the same call. Example: 3
+        unread_count: The caller's unread rows remaining after the write. Example: 0
+    """
+    marked: int
+    unread_count: int

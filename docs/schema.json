@@ -195,7 +195,7 @@
     "/notifications/api/v1/feed/": {
       "get": {
         "operationId": "get_notification_feed",
-        "description": "Returns push notification log entries for the authenticated user, ordered by created_at desc.\n\n**Permissions:** `IsAuthenticated`",
+        "description": "Returns push notification log entries for the authenticated user, ordered by created_at desc. Each row carries `read_at` — null while unread — and the page envelope carries `unread_count`, the number of unread rows in the WHOLE feed, so a bell badge is answered by the same request that fills the list.\n\n**Permissions:** `IsAuthenticated`",
         "summary": "Get notification feed",
         "parameters": [
           {
@@ -254,9 +254,73 @@
                       "notification_type": "listing_blocked",
                       "title": "Your listing has been blocked",
                       "body": "Your listing was blocked for guideline violations.",
-                      "created_at": "2026-03-17T10:30:00Z"
+                      "created_at": "2026-03-17T10:30:00Z",
+                      "read_at": "2026-03-17T11:04:52Z"
                     }
                   }
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    },
+    "/notifications/api/v1/feed/read/": {
+      "post": {
+        "operationId": "mark_notification_feed_read",
+        "description": "Send exactly one of `ids` (feed item ids from `GET feed/`, at most 500) or `all: true`. Idempotent: `marked` counts the rows this call moved from unread to read, so a repeat returns 0. `unread_count` is the caller's remaining unread total after the write. Only the caller's own rows are touched; unknown or foreign ids are ignored rather than reported, and when anything changed a `notification.read` signal goes out on `notifications:user:<id>` so the caller's other open screens correct their badge.\n\n**Permissions:** `IsAuthenticated`",
+        "summary": "Mark feed items read",
+        "tags": [
+          "Feed"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedReadRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedReadRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedReadRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTCookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedReadResponse"
+                },
+                "examples": {
+                  "FeedReadResponse": {
+                    "value": {
+                      "marked": 3
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
                 }
               }
             },
@@ -414,6 +478,12 @@
             "type": "string",
             "description": "ISO 8601 timestamp",
             "example": "2026-03-17T10:30:00Z"
+          },
+          "read_at": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 timestamp the recipient marked this read, or null while it is unread",
+            "example": "2026-03-17T11:04:52Z"
           }
         },
         "required": [
@@ -423,6 +493,43 @@
           "id",
           "notification_type",
           "title"
+        ]
+      },
+      "FeedReadRequest": {
+        "type": "object",
+        "description": "Mark feed rows read. Send exactly one of ``ids`` or ``all``.",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Feed item ids to mark read — the ids from GET feed/. Ignored when `all` is true"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Mark every unread row of the caller's feed read"
+          }
+        }
+      },
+      "FeedReadResponse": {
+        "type": "object",
+        "description": "What the mark-as-read write actually changed.",
+        "properties": {
+          "marked": {
+            "type": "integer",
+            "description": "Rows this call moved from unread to read — 0 on a repeat of the same call",
+            "example": 3
+          },
+          "unread_count": {
+            "type": "integer",
+            "description": "The caller's unread rows remaining after the write"
+          }
+        },
+        "required": [
+          "marked",
+          "unread_count"
         ]
       },
       "PaginatedFeedItemResponseList": {
@@ -455,13 +562,18 @@
           "count": {
             "type": "integer",
             "description": "Number of items in current page"
+          },
+          "unread_count": {
+            "type": "integer",
+            "description": "Unread rows in the caller's whole feed — not just this page."
           }
         },
         "required": [
           "items",
           "has_next",
           "has_prev",
-          "count"
+          "count",
+          "unread_count"
         ]
       },
       "StapelError": {

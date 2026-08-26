@@ -1,6 +1,6 @@
 # Errors — Español
 
-`45` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.es.json`.
+`47` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.es.json`.
 
 | Código | Estado | Parámetros | Acción | Texto |
 |---|---|---|---|---|
@@ -21,6 +21,8 @@
 | `error.400.field.unique` | 400 | `field` | `fix_input` | {field} debe ser único |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | ID de anuncio no válido |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | La plataforma debe ser una de las siguientes: ios, android, web. |
+| `error.400.read_target_required` | 400 | — | `fix_input` | Envía exactamente uno: una lista «ids» no vacía, o «all»: true. |
+| `error.400.too_many_ids` | 400 | — | `fix_input` | Demasiados identificadores en una sola petición. Envía menos, o «all»: true. |
 | `error.400.validation_error` | 400 | — | `fix_input` | Error de validación |
 | `error.400.verification_failed` | 400 | — | `verify` | La verificación ha fallado |
 | `error.400.verification_invalid_factor` | 400 | — | `verify` | Este factor de verificación no está disponible |
