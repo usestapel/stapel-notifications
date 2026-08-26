@@ -1,4 +1,4 @@
-# stapel-notifications 0.17.0
+# stapel-notifications 0.17.2
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.
 

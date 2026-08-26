@@ -3,3 +3,27 @@ set -e
 echo "Running ruff lint check..."
 ruff check . --select E,F,W --ignore E501
 echo "Lint check passed."
+
+# A version bump without `make contract` must not become a commit. The drift
+# gate is what CI runs on the tag, and a stale docs/ there costs a whole
+# release cycle (v0.17.1 / v0.3.1, 2026-08-24: the bump landed, docs/ did not,
+# the publish job failed on the tag). Only pyproject.toml being staged pays the
+# cost of an emission, so the everyday commit is untouched.
+if git diff --cached --name-only | grep -qx 'pyproject.toml'; then
+    PY="${PYTHON:-}"
+    if [ -z "$PY" ]; then
+        for cand in python3 "$(git rev-parse --show-toplevel)/../.venv/bin/python"; do
+            if command -v "$cand" >/dev/null 2>&1 && "$cand" -c 'import stapel_notifications' >/dev/null 2>&1; then
+                PY="$cand"; break
+            fi
+        done
+    fi
+    if [ -z "$PY" ]; then
+        echo "pre-commit: pyproject.toml is staged but no interpreter can import stapel_notifications," >&2
+        echo "so the contract drift gate cannot run. Set PYTHON=/path/to/python and retry," >&2
+        echo "or commit with --no-verify only if you have run 'make contract' yourself." >&2
+        exit 1
+    fi
+    echo "pyproject.toml staged — running the contract drift gate (make contract-check)..."
+    make contract-check PYTHON="$PY"
+fi

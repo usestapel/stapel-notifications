@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.2 — 2026-08-26
+
+- Contract docs regenerated for the 0.17.1 release: `docs/{capabilities,templates,llms.txt}` still carried 0.17.0's
+  version and surface, so the publish job's drift gate rejected the tag. `make contract-check` is now part of `make check`
+  and of the pre-commit hook whenever `pyproject.toml` is staged, so a version bump without `make contract` cannot land.
+
 ## 0.17.1 — 2026-08-24
 
 - The test suite declares what it needs: a `test` extra (`.[realtime]` + `channels[daphne]` + pytest stack); CI and
