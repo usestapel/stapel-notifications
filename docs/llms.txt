@@ -1,8 +1,8 @@
-# stapel-notifications 0.17.2
+# stapel-notifications 0.17.3
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.
 
-Contract: axes 4 · surface 40 · extension points 6 · operations 6 · error codes 51.
+Contract: axes 4 · surface 40 · extension points 6 · operations 6 · error codes 45.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -147,7 +147,7 @@ Paths are relative to `/notifications/api/v1/`.
 ### Translation Keys
 - GET /notification-keys/ — get_notification_keys
 
-## Error codes (51) — the StapelError envelope
+## Error codes (45) — the StapelError envelope
 Render `t(code, params)`; branch UX on the remediation. Localized text lives in docs/errors.<lang>.md, not here.
 - error.400.bad_request [400] fix_input
 - error.400.captcha_invalid [400] retry
@@ -166,11 +166,6 @@ Render `t(code, params)`; branch UX on the remediation. Localized text lives in 
 - error.400.field.unique [400] fix_input {field}
 - error.400.invalid_ad_id [400] fix_input
 - error.400.invalid_platform [400] fix_input
-- error.400.translate.batch_too_large [400] fix_input {max_items}
-- error.400.translate.batch_too_long [400] fix_input {max_chars}
-- error.400.translate.text_required [400] fix_input
-- error.400.translate.text_too_long [400] fix_input {max_chars}
-- error.400.translate.unsupported_language [400] fix_input {language}
 - error.400.validation_error [400] fix_input
 - error.400.verification_failed [400] verify
 - error.400.verification_invalid_factor [400] verify
@@ -198,5 +193,4 @@ Render `t(code, params)`; branch UX on the remediation. Localized text lives in 
 - error.429.rate_limit [429] wait_and_retry {retry_after_minutes}
 - error.429.too_many_requests [429] wait_and_retry
 - error.500.internal [500] contact_support
-- error.502.translate.provider_unavailable [502] retry
 - error.503.mandate_unavailable [503] retry

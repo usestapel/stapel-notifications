@@ -1,6 +1,6 @@
 # Errors — English
 
-`51` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.en.json`.
+`45` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.en.json`.
 
 | Code | Status | Params | Remediation | Text |
 |---|---|---|---|---|
@@ -21,11 +21,6 @@
 | `error.400.field.unique` | 400 | `field` | `fix_input` | {field} must be unique |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | Invalid advertisement ID |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | Platform must be one of: ios, android, web. |
-| `error.400.translate.batch_too_large` | 400 | `max_items` | `fix_input` | A batch may hold at most {max_items} texts |
-| `error.400.translate.batch_too_long` | 400 | `max_chars` | `fix_input` | The batch holds more than {max_chars} characters in total |
-| `error.400.translate.text_required` | 400 | — | `fix_input` | Provide either a text or a non-empty list of texts |
-| `error.400.translate.text_too_long` | 400 | `max_chars` | `fix_input` | Text is longer than {max_chars} characters |
-| `error.400.translate.unsupported_language` | 400 | `language` | `fix_input` | Language {language} is not configured here |
 | `error.400.validation_error` | 400 | — | `fix_input` | Validation error |
 | `error.400.verification_failed` | 400 | — | `verify` | Verification failed |
 | `error.400.verification_invalid_factor` | 400 | — | `verify` | This verification factor is not available |
@@ -53,5 +48,4 @@
 | `error.429.rate_limit` | 429 | `retry_after_minutes` | `wait_and_retry` | Too many attempts. Try again in {retry_after_minutes} minutes. |
 | `error.429.too_many_requests` | 429 | — | `wait_and_retry` | Too many requests. Please try again later. |
 | `error.500.internal` | 500 | — | `contact_support` | Something went wrong |
-| `error.502.translate.provider_unavailable` | 502 | — | `retry` | The translation provider is unavailable |
 | `error.503.mandate_unavailable` | 503 | — | `retry` | Cannot verify workspace mandate right now |

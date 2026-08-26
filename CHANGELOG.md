@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.17.3 — 2026-08-26
+
+- The contract no longer describes the machine that emitted it. `_codegen_settings` joins `stapel_translate` to
+  INSTALLED_APPS whenever it is importable (so the cross-library i18n loop stays testable), and the error registry is
+  process-global — so `docs/errors.json` and `docs/errors.<lang>.md` carried six `stapel_translate` keys emitted from
+  the workspace venv and absent from a `pip install stapel-notifications` CI run. That is what actually failed the
+  0.17.0, 0.17.1 and 0.17.2 publish jobs. Emission and both drift gates now run inside `scoped_error_registry()`
+  (owners: this module and stapel-core), a new gate rejects a foreign owner in the committed artifact, and the emitted
+  triad is byte-identical with and without the sibling installed. Those keys are documented in stapel-translate's own
+  errors.json.
+
 ## 0.17.2 — 2026-08-26
 
 - Contract docs regenerated for the 0.17.1 release: `docs/{capabilities,templates,llms.txt}` still carried 0.17.0's

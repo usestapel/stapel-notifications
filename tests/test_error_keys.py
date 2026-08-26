@@ -26,11 +26,18 @@ from pathlib import Path
 from django.core.management import call_command
 from stapel_core.django.api.errors import REMEDIATION_VOCAB
 
+from stapel_notifications._codegen import OWNED_ERROR_PACKAGES, scoped_error_registry
+
 ERRORS_JSON = Path(__file__).resolve().parent.parent / "docs" / "errors.json"
 
 
 def _generate(out: Path) -> None:
-    call_command("generate_error_keys", "--out", str(out), stdout=io.StringIO())
+    # Same scoping the emission harness uses: the registry is process-global,
+    # so without it this artifact would list whatever siblings happen to be
+    # installed (stapel_translate joins INSTALLED_APPS when importable) and
+    # the committed file would only match on machines that have them.
+    with scoped_error_registry():
+        call_command("generate_error_keys", "--out", str(out), stdout=io.StringIO())
 
 
 def test_error_keys_have_no_drift(tmp_path):
@@ -76,3 +83,22 @@ def test_service_keys_present_with_declared_remediation():
     assert entries["error.404.token_not_found"]["remediation"] == "fix_input"
     # Cross-cutting core keys (COMMON_ERRORS) are folded into the artifact.
     assert entries["error.404.not_found"]["remediation"] in REMEDIATION_VOCAB
+
+
+def test_committed_keys_are_owned_by_this_module_or_core():
+    """The artifact describes this library, not the machine that emitted it.
+
+    The error registry is process-global, and `_codegen_settings` joins
+    stapel_translate to INSTALLED_APPS whenever it is importable, so an
+    unscoped emission picks up whatever siblings the emitting environment has.
+    v0.17.0 shipped six stapel_translate keys that way and every publish run
+    since failed the drift gate, because CI installs no such sibling. This is
+    the gate that says so on the machine that would introduce it, not four
+    releases later.
+    """
+    owners = {e["owner"] for e in json.loads(ERRORS_JSON.read_text())}
+    foreign = {o for o in owners if o is not None and o not in OWNED_ERROR_PACKAGES}
+    assert not foreign, (
+        f"docs/errors.json carries keys owned by {sorted(foreign)} — they belong "
+        f"in that package's own errors.json. Re-run `make contract`."
+    )

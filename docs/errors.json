@@ -162,54 +162,6 @@
     "owner": "stapel_notifications"
   },
   {
-    "code": "error.400.translate.batch_too_large",
-    "status": 400,
-    "params": [
-      "max_items"
-    ],
-    "remediation": "fix_input",
-    "en": "A batch may hold at most {max_items} texts",
-    "owner": "stapel_translate"
-  },
-  {
-    "code": "error.400.translate.batch_too_long",
-    "status": 400,
-    "params": [
-      "max_chars"
-    ],
-    "remediation": "fix_input",
-    "en": "The batch holds more than {max_chars} characters in total",
-    "owner": "stapel_translate"
-  },
-  {
-    "code": "error.400.translate.text_required",
-    "status": 400,
-    "params": [],
-    "remediation": "fix_input",
-    "en": "Provide either a text or a non-empty list of texts",
-    "owner": "stapel_translate"
-  },
-  {
-    "code": "error.400.translate.text_too_long",
-    "status": 400,
-    "params": [
-      "max_chars"
-    ],
-    "remediation": "fix_input",
-    "en": "Text is longer than {max_chars} characters",
-    "owner": "stapel_translate"
-  },
-  {
-    "code": "error.400.translate.unsupported_language",
-    "status": 400,
-    "params": [
-      "language"
-    ],
-    "remediation": "fix_input",
-    "en": "Language {language} is not configured here",
-    "owner": "stapel_translate"
-  },
-  {
     "code": "error.400.validation_error",
     "status": 400,
     "params": [],
@@ -426,14 +378,6 @@
     "remediation": "contact_support",
     "en": "Something went wrong",
     "owner": "stapel_core"
-  },
-  {
-    "code": "error.502.translate.provider_unavailable",
-    "status": 502,
-    "params": [],
-    "remediation": "retry",
-    "en": "The translation provider is unavailable",
-    "owner": "stapel_translate"
   },
   {
     "code": "error.503.mandate_unavailable",

@@ -48,6 +48,8 @@ from stapel_core.i18n import (
 )
 from stapel_core.i18n.catalogs import load_catalog_file
 
+from stapel_notifications._codegen import scoped_error_registry
+
 REPO = Path(__file__).resolve().parent.parent
 TRANSLATIONS = REPO / "translations"
 DOCS = REPO / "docs"
@@ -127,10 +129,13 @@ def test_regen():
         for lang in TARGET_LANGUAGES:
             result = _regen(lang)
             assert not result.missing, f"{lang}: still missing: {result.missing}"
-        for lang in LANGUAGES:
-            call_command("generate_error_docs", "--lang", lang,
-                         "--out", str(DOCS), "--translations", str(TRANSLATIONS),
-                         stdout=io.StringIO())
+        # Scoped like errors.json: the reference documents THIS library's
+        # keys, not whichever siblings the emitting machine has installed.
+        with scoped_error_registry():
+            for lang in LANGUAGES:
+                call_command("generate_error_docs", "--lang", lang,
+                             "--out", str(DOCS), "--translations", str(TRANSLATIONS),
+                             stdout=io.StringIO())
         return
 
     # Drift gate: regenerating in place (kept, since committed hashes match) must
@@ -205,8 +210,9 @@ def test_error_reference_matches_a_fresh_regeneration(tmp_path):
     owner's catalog; this compares the bytes instead of trusting the file.
     """
     for lang in LANGUAGES:
-        call_command("generate_error_docs", "--lang", lang, "--out", str(tmp_path),
-                     "--translations", str(TRANSLATIONS), stdout=io.StringIO())
+        with scoped_error_registry():
+            call_command("generate_error_docs", "--lang", lang, "--out", str(tmp_path),
+                         "--translations", str(TRANSLATIONS), stdout=io.StringIO())
         assert (tmp_path / f"errors.{lang}.md").read_bytes() == \
             (DOCS / f"errors.{lang}.md").read_bytes(), (
                 f"docs/errors.{lang}.md is stale — run "

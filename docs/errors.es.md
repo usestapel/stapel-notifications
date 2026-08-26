@@ -1,6 +1,6 @@
 # Errors — Español
 
-`51` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.es.json`.
+`45` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.es.json`.
 
 | Código | Estado | Parámetros | Acción | Texto |
 |---|---|---|---|---|
@@ -21,11 +21,6 @@
 | `error.400.field.unique` | 400 | `field` | `fix_input` | {field} debe ser único |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | ID de anuncio no válido |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | La plataforma debe ser una de las siguientes: ios, android, web. |
-| `error.400.translate.batch_too_large` | 400 | `max_items` | `fix_input` | Un lote admite como máximo {max_items} textos |
-| `error.400.translate.batch_too_long` | 400 | `max_chars` | `fix_input` | El lote supera los {max_chars} caracteres en total |
-| `error.400.translate.text_required` | 400 | — | `fix_input` | Indica un texto o una lista de textos no vacía |
-| `error.400.translate.text_too_long` | 400 | `max_chars` | `fix_input` | El texto supera los {max_chars} caracteres |
-| `error.400.translate.unsupported_language` | 400 | `language` | `fix_input` | El idioma {language} no está configurado aquí |
 | `error.400.validation_error` | 400 | — | `fix_input` | Error de validación |
 | `error.400.verification_failed` | 400 | — | `verify` | La verificación ha fallado |
 | `error.400.verification_invalid_factor` | 400 | — | `verify` | Este factor de verificación no está disponible |
@@ -53,5 +48,4 @@
 | `error.429.rate_limit` | 429 | `retry_after_minutes` | `wait_and_retry` | Demasiados intentos. Inténtalo de nuevo en {retry_after_minutes} minutos. |
 | `error.429.too_many_requests` | 429 | — | `wait_and_retry` | Demasiadas solicitudes. Inténtalo de nuevo más tarde. |
 | `error.500.internal` | 500 | — | `contact_support` | Algo salió mal |
-| `error.502.translate.provider_unavailable` | 502 | — | `retry` | El servicio de traducción no está disponible |
 | `error.503.mandate_unavailable` | 503 | — | `retry` | No se puede verificar el mandato del espacio de trabajo |
