@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "user.merged",
+  "description": "Consumed from stapel-auth. An anonymous guest account was absorbed into an existing account; the guest row ceases to exist. Notifications carries the guest's feed history (NotificationLog) and registered devices (DevicePushToken) onto the survivor. UserNotificationSettings is one row per person: the survivor's preferences win and the guest's row is dropped, unless the survivor has none, in which case the guest's choices are carried over. UserContact is dropped rather than carried — it is a projection of auth, and the survivor's own contact sync is authoritative. Contract owned by the emitter.",
+  "type": "object",
+  "required": ["from_user_id", "into_user_id"],
+  "properties": {
+    "from_user_id": { "type": "string" },
+    "into_user_id": { "type": "string" },
+    "reason": { "type": "string" }
+  },
+  "additionalProperties": true
+}

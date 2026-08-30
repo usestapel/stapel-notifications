@@ -437,8 +437,35 @@ in-process in a monolith, bus consumer in microservices — transport chosen by
 | `gdpr.erasure.requested` | Erase the named subject and receipt with counts — see **6a. Erasure** below |
 | `gdpr.owner.probe` | Answer `gdpr.owner.alive` from the same module as the eraser — see **6a. Erasure** below |
 | `user.deleted` | Deprecated upstream (stapel-gdpr removes it in 0.6.0). Same `erasure.erase_account` as the erasure path, and it receipts too when the payload carries a `correlation_id` |
+| `user.merged` | Carry the guest's feed rows and push tokens to the survivor; the survivor's `UserNotificationSettings` win on collision; the guest's `UserContact` is dropped, never carried — see **7a. Merge policy** below |
 | `user.deletion_initiated` | Soft-deactivate `UserContact` + `DevicePushToken` rows (reversible; reactivated by normal sync paths) |
 | `translations.changed` | Re-resolve changed `notification.*` keys through `translate.resolve` |
+
+#### 7a. Merge policy (`user.merged`)
+
+`user.deleted` and `user.merged` are the two halves of an account's life
+cycle, and core 0.52.x makes answering only one of them a system-check ERROR
+(`stapel_core.lifecycle.E001`): a deletion erases a person's rows, a merge
+**re-parents** them onto the account a guest was folded into on sign-in.
+Nothing here is an FK — every user column is a bare `UUIDField` — so a merge
+does not cascade anything away; it strands it, addressed to an account that
+can no longer sign in.
+
+| Model | Answer | Why |
+|---|---|---|
+| `NotificationLog` | re-parented | The person's own feed history and unread count; `user_id` carries no uniqueness, so a plain bulk update |
+| `DevicePushToken` | re-parented | The same physical device is now the survivor's; `token` is unique table-wide, not per user, so nothing can collide |
+| `UserNotificationSettings` | **survivor wins** | `user_id` is the PRIMARY KEY — one row per person, and a merge is the case where both have one. An account's settled choices are not overwritten by a guest session's. Carried over only when the survivor has no row at all |
+| `UserContact` | **dropped** | Also PK'd by `user_id`, but a *projection of auth*: the survivor's address arrives on their own contact sync. Filing a guest's address under the survivor's id would then write to it — a person's notifications sent somewhere they do not own |
+| `NotificationDelivery` | untouched | Keyed by `(event_id, channel, recipient, template_version)` — the address, which a merge does not change. Nothing to move, and no second send to cause |
+
+Idempotent (a redelivery finds nothing under the guest and reports zeroes) and
+with no retry raise: a `UUIDField` needs no user row to exist before it can be
+written, so there is no "survivor not projected yet" case here. A malformed id
+is logged and dropped — `UUIDField` answers `"not-a-uuid"` with
+`ValidationError`, which is **not** a `ValueError`, and an escaping exception
+would be a poison pill the bus redelivers forever. Schema:
+`schemas/consumes/user.merged.json`.
 
 Bus consumers (Kafka topics, `management/commands/consume_*.py`):
 

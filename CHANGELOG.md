@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.19.0 — 2026-08-30
+
+Minor: `user.merged` is answered. No migration, no API change — one new subscriber in `actions.py` and one new consumes
+contract.
+
+### Added
+
+**`user.merged` — the bell, the device and the preferences follow the person.** stapel-auth folds an anonymous guest
+into an existing account on sign-in and then DELETES the guest row. Nothing in this module is an FK — every user column
+is a bare `UUIDField` — so those rows were never cascaded away. They were *stranded*: addressed to an account that can
+no longer sign in, invisible to the person who owns them, and never erased, because no erasure was ever requested for
+them. The person signed in and their bell was empty, their handset stopped receiving pushes, and the preferences they
+had set moments earlier were gone. Nothing raised, nothing retried, nothing was logged.
+
+stapel-core 0.52.1 turns that silence into a system-check ERROR (`stapel_core.lifecycle.E001`): `user.deleted` and
+`user.merged` are the two halves of an account's life cycle, they reach the same tables through the same registry, and
+an app that subscribes to one and not the other is not neutral about the other — it has a wrong answer for it.
+
+Four models carry a user here, and they deliberately do **not** all move the same way:
+
+- **`NotificationLog` — re-parented.** The feed is the person's own history and their unread count. `user_id` carries
+  no uniqueness, so this is a plain bulk update; a read marker is not touched, because a merge is not a read.
+- **`DevicePushToken` — re-parented.** The same physical handset is now the survivor's. `token` is unique across the
+  whole table rather than per user, so two rows for one device cannot exist and nothing can collide. A token
+  soft-deactivated by a closure grace period moves in that state — `is_active` is not about who owns it.
+- **`UserNotificationSettings` — the survivor wins.** `user_id` is the PRIMARY KEY: one row per person, and a merge is
+  exactly the case where both accounts have one. An account's settled choices are not overwritten by a guest session's,
+  so the guest's row is dropped. It is carried over only when the survivor has no row at all — there it is the person's
+  most recent explicit choice, and the alternative is silently reverting them to defaults.
+- **`UserContact` — dropped, never carried.** Also PK'd by `user_id`, and the tempting symmetry is wrong: this table is
+  a *projection of auth*, not this module's data. The survivor's address arrives on their own contact sync and is
+  authoritative. Re-parenting a guest's row onto an account with no synced contact yet would file a stale address under
+  the survivor's id and then WRITE to it — a person's notifications sent somewhere they do not own. A projection is
+  repaired by its source, not by a consumer's guess.
+
+`NotificationDelivery` and `TranslationCache` name no user. Claims are keyed by `(event_id, channel, recipient,
+template_version)` — the address, which a merge does not change — so there is nothing there to move and no double-send
+to cause. `tests/test_user_merged.py` pins that too, because "untouched" is a decision, not an omission.
+
+- **Idempotent.** A redelivery finds nothing left under the guest and reports zeroes.
+- **No retry raise**, unlike the modules holding a real FK to the user table: a `UUIDField` needs no user row to exist
+  before it can be written, so there is no "survivor not projected here yet" case to redeliver for.
+- **A malformed id never raises.** `UUIDField` answers `"not-a-uuid"` with `ValidationError`, which is **not** a
+  `ValueError` — the live defect class this fleet keeps rediscovering. The whole transfer is one `transaction.atomic`,
+  so a payload that only fails on the second table leaves the first one untouched rather than half-moved.
+
+Schema: `schemas/consumes/user.merged.json`. Merge policy table: MODULE.md §7a.
+
 ## 0.18.0 — 2026-08-26
 
 Minor: read state for the feed. One nullable column, one endpoint, one number on the page envelope, one more signal
