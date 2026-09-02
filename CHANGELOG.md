@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.19.1 — 2026-09-02
+
+Patch: one state-only migration, no schema change, no API change.
+
+### Fixed
+
+**Migration 0010 catches the model state up to 0009's field.** 0.18.0 added
+`NotificationLog.read_at` with a `help_text` on the model but not in migration
+0009, so the migration state and the model disagreed about a DB-inert
+attribute. Harmless at runtime — `help_text` never reaches the database — but
+every HOST that gates its tree with `makemigrations --check` failed with a
+phantom `AlterField` it could not write anywhere sane (the missing migration
+belongs to this package's tree, not to the host's). Found by the meettoday
+fleet-current bump wave; the fix is the migration this release carries and
+nothing else.
+
 ## 0.19.0 — 2026-08-30
 
 Minor: `user.merged` is answered. No migration, no API change — one new subscriber in `actions.py` and one new consumes
