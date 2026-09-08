@@ -189,7 +189,7 @@ DEFAULTS = {
     # LOGO_URL set   → templates embed <img src="LOGO_URL">. Point it at an
     #                  image you own, served over https. A data: URI does
     #                  NOT work: Gmail and others block data: as an image
-    #                  source in mail (measured, meettoday 2026-07-28).
+    #                  source in mail (measured on a client stand, 2026-07-28).
     # LOGO_URL empty → no image at all; the header renders COMPANY_NAME as
     #                  a text wordmark. This package ships no logo of its
     #                  own — see channels/email.py for why.

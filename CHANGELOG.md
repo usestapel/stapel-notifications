@@ -12,8 +12,8 @@ Patch: one state-only migration, no schema change, no API change.
 attribute. Harmless at runtime — `help_text` never reaches the database — but
 every HOST that gates its tree with `makemigrations --check` failed with a
 phantom `AlterField` it could not write anywhere sane (the missing migration
-belongs to this package's tree, not to the host's). Found by the meettoday
-fleet-current bump wave; the fix is the migration this release carries and
+belongs to this package's tree, not to the host's). Found by a client fleet's
+current-version bump wave; the fix is the migration this release carries and
 nothing else.
 
 ## 0.19.0 — 2026-08-30
@@ -279,7 +279,7 @@ This module has erased on `user.deleted` since the beginning and has never
 said so. stapel-gdpr's orchestrator does not self-certify: an `ErasurePart`
 with no receipt keeps the request in `erasing` until it times out thirty days
 later, which is exactly what an owner whose consumer was never deployed looks
-like. That is the "silent owner" the ironmemo inventory found.
+like. That is the "silent owner" a client inventory found.
 
 `actions.handle_erasure_requested` consumes stapel-gdpr 0.5.0's
 `gdpr.erasure.requested` and answers `gdpr.section.erased` with the
@@ -924,7 +924,7 @@ three hundred lines above the render that lacked one.
 ### Changed — the recipient's language is asked, not mirrored (BREAKING: two columns dropped)
 
 There was no path by which a recipient's language reached their mail. Measured
-on the meettoday sandbox, 2026-08:
+on a client sandbox, 2026-08:
 
     stapel_notifications.UserNotificationSettings   0 rows,  0 with a language
     stapel_profiles.Profile.app_language            None for all 66 profiles
@@ -1142,7 +1142,7 @@ to, and logged it at WARNING. Nobody ever read that row or that log line:
 `request_notification` is a fire-and-forget bus publish, so the calling
 service has no synchronous signal at all — a workspace invitation got its
 201, the row was created, and the letter simply never left the building
-(found live: meettoday sandbox, 2026-08).
+(found live: a client sandbox, 2026-08).
 
 `process_notification` now tracks, across the whole channel loop, whether
 ANY routed channel actually delivered and whether ANY of them failed for a
@@ -1302,12 +1302,12 @@ regression test.
   invisible: the mail sends, so it looks like success — it is just in the wrong
   language. A request for a non-English language that ends up on the built-in
   defaults now logs a **warning** naming the language, the count and the first
-  few keys. Found live by meettoday (2026-07-29): OTP arrived in English after
+  few keys. Found live by a client (2026-07-29): OTP arrived in English after
   the language-resolution fix, and nothing in the logs said why.
 
 ### Changed
 - **The footer link shows the host, not the brand name a third time.** One
-  brand can run many instances (`3571.meettoday.app`, `meettoday.app`, a
+  brand can run many instances (`3571.brand.example`, `brand.example`, a
   customer's own deployment); a footer reading the same word again tells the
   reader nothing about which one wrote to them. `company_host` is derived from
   `COMPANY_URL` and used as the link text.
@@ -1364,7 +1364,7 @@ regression test.
   has no default, so the footer rendered `<a href="">` — underlined, coloured,
   and inert. With no URL it is now plain text.
 
-All three email defects were found on a live mail server by meettoday
+All three email defects were found on a live mail server by a client
 (2026-07-28); none of them reproduced with an invalid password, because the
 server rejected the login before any of this ran.
 

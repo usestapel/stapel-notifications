@@ -39,7 +39,7 @@ What each recipient gets, plainly:
 **Why a call and not a mirror.** This module used to keep its own copy of
 ``app_language`` in ``UserNotificationSettings``, fed by a bus consumer.
 The copy was empty for 100% of users for the mirror's entire lifetime
-(meettoday sandbox, 2026-08: 0 rows against 66 profiles), for two
+(a client sandbox, 2026-08: 0 rows against 66 profiles), for two
 independent reasons — a monolith on the in-process bus cannot run the
 standalone consumer at all, and the consumer subscribed to a topic the
 comm plane does not publish to. The failure was invisible because a mirror

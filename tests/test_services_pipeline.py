@@ -697,7 +697,7 @@ class TestUndeliverableIsLoud:
     hand a failure back to. Before this, "nobody could be reached" sat at
     WARNING on a per-channel NotificationLog row that nothing ever read:
     a workspace invitation got its 201, the invite was created, and the
-    letter never left the building — found live on the meettoday sandbox.
+    letter never left the building — found live on a client sandbox.
     process_notification now escalates to ERROR, with a distinct greppable
     prefix, whenever NONE of a notification's routed channels reached the
     recipient for a reachability reason (as opposed to the recipient

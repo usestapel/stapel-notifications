@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 #      carrying somebody else's logo.
 #   2. A quarter-megabyte base64 attachment on EVERY message — the single
 #      biggest thing in a one-line OTP email, and slow enough over SMTP to
-#      look like a hang (meettoday, 2026-07-28).
+#      look like a hang (a client, 2026-07-28).
 #   3. It made "no logo configured" a state that still rendered an <img>,
 #      so a client that could not fetch it showed a broken-image icon.
 #
@@ -106,7 +106,7 @@ class _SMTPEmailProvider:
         # EMAIL_TIMEOUT, and the sibling providers here already pass
         # timeout=15 to their HTTP calls — SMTP was the one path where a
         # slow server hung the request until nginx killed it with a 504
-        # (meettoday, 2026-07-28). A host that set EMAIL_TIMEOUT keeps it:
+        # (a client, 2026-07-28). A host that set EMAIL_TIMEOUT keeps it:
         # we only supply a default where there was none.
         timeout = getattr(settings, "EMAIL_TIMEOUT", None)
         if timeout is None:

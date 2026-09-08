@@ -87,7 +87,7 @@ migration-lint:
 # obsolete (#~, parked at the end) or fuzzy (left among the live entries, still
 # showing a translation). gettext skips both, and a suite that asserts almost
 # no strings stays green while the product reverts to its source language —
-# meettoday, 2026-08-11: one flag flip from python-format to python-brace-format
+# a client, 2026-08-11: one flag flip from python-format to python-brace-format
 # turned the passcode subject fuzzy and the branded letter went back to the
 # library default.
 #

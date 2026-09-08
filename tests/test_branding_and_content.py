@@ -106,7 +106,7 @@ def test_a_data_uri_logo_is_not_something_we_invent(capture_email):
     """Whatever the host sets is what goes out — we do not substitute a
     data: URI as a fallback. Gmail blocks data: as an image source in
     mail, so a "helpful" default would render as a broken-image icon
-    (measured, meettoday 2026-07-28)."""
+    (measured on a client stand, 2026-07-28)."""
     _process()
     (mail,) = capture_email
     assert "data:image" not in mail["html"]
@@ -261,7 +261,7 @@ class TestSmtpAlwaysHasATimeout:
     """A slow mail server must fail, not hang. Django's SMTP backend blocks
     forever unless EMAIL_TIMEOUT is set, and the sibling providers here
     already pass timeout=15 to their HTTP calls — SMTP was the one path
-    that could hang a request until nginx returned 504 (meettoday,
+    that could hang a request until nginx returned 504 (a client,
     2026-07-28).
 
     Asserted on what we hand to get_connection, not on the resulting
@@ -365,9 +365,9 @@ class TestFooterIdentifiesTheInstance:
     def test_link_text_is_the_host_not_the_brand_again(self, capture_email):
         """One brand can run many instances; a footer repeating the brand
         for the third time says nothing about which one wrote to you."""
-        _process(extra_settings={"COMPANY_URL": "https://3571.meettoday.app"})
+        _process(extra_settings={"COMPANY_URL": "https://3571.brand.example"})
         (mail,) = capture_email
-        assert ">3571.meettoday.app</a>" in mail["html"]
+        assert ">3571.brand.example</a>" in mail["html"]
 
     def test_bare_domain_without_scheme_still_parses(self, capture_email):
         _process(extra_settings={"COMPANY_URL": "example.test"})

@@ -140,7 +140,7 @@ def test_text_registry_overrides_a_subject_without_a_fork():
 
     The subject is the sharp case: it lives in no template, and
     ``process_notification`` refuses caller ``variables`` that collide with a
-    translation key, so it could not be passed either. meettoday shipped a
+    translation key, so it could not be passed either. A client shipped a
     fully Russian invitation body under an English library subject for exactly
     this reason.
     """

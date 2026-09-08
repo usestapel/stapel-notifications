@@ -88,7 +88,7 @@ def _gettext_default(default: str, lang: str) -> str | None:
     the standard Django thing, and until now this package could not see
     it: its strings live in NOTIFICATION_KEYS and its only route to
     another language was a translate service. So a correctly-internationalised
-    project still sent English email and nothing said why (meettoday,
+    project still sent English email and nothing said why (a client,
     2026-07-29).
 
     The English default doubles as the msgid, which is exactly how
@@ -411,8 +411,8 @@ def process_notification(
     all_vars.setdefault("company_url", notifications_settings.COMPANY_URL)
 
     # The footer link shows the HOST, not the brand name again. A brand can
-    # run many instances (3571.meettoday.app, meettoday.app, a customer's
-    # own deployment), and a footer reading "meettoday" for the third time
+    # run many instances (3571.brand.example, brand.example, a customer's
+    # own deployment), and a footer reading the brand for the third time
     # in one email tells the reader nothing about which one wrote to them.
     company_url = all_vars.get("company_url") or ""
     if company_url:
