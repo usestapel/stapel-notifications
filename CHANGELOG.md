@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.19.2 — 2026-09-14
+
+Patch: docs only, no code change.
+
+### Fixed
+
+**`docs/schema.json` regenerated against stapel-core 0.68.1.** The committed contract was
+still emitted against core 0.30.1 (this module's venv was that stale); core changed the
+`StapelError.error_language` field description between those versions (`error_language`
+now reads "The language `error` is written in (e.g. 'en', 'ru')," in place of the older,
+truncated "Active Django locale `error` was rendered in (e.g"). That left
+`tests/test_contract.py::test_matches_monolith_notifications_slice` red against a freshly
+regenerated example-monolith aggregate, which emits from the current fleet core. Refreshed
+the venv to stapel-core 0.68.1 (already inside this package's declared
+`>=0.26.0,<1.0` range — no floor change needed), ran `make contract`; only that one
+description string moved in `docs/schema.json`. No route, error key, capability, template
+or migration changed — `make check` is green.
+
 ## 0.19.1 — 2026-09-02
 
 Patch: one state-only migration, no schema change, no API change.
