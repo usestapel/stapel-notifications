@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.21.0 — 2026-09-16
+
+Minor: the provider env vars this package documents now actually work, and
+only for the names it ships. Requires stapel-core >= 0.70.0 (floor raised
+from 0.26.0). No migration, no schema change, no template change.
+
+### Fixed
+
+**`EMAIL_PROVIDER` and its three siblings stop being documented variables
+that do nothing.** They are `import_strings`, so stapel-core treated them as
+implicitly env-closed. That is right about the threat — anything able to set
+a variable in the pod would otherwise name an arbitrary dotted path and
+choose the class that receives every passcode — and wrong about the need,
+because picking a mail backend per environment is what an environment
+variable is for. Closing the door did not make deployments stop wanting it:
+a fleet was found on 2026-09-16 with `os.getenv('EMAIL_PROVIDER', 'mock')`
+hand-written into its own settings module, so the variable worked there and
+nowhere else while `stapel_core.conf.W001` truthfully reported it ignored —
+and reading that warning as "so mail is going nowhere" was backwards, since
+mail was going out to real customers. A documented surface that lies is
+worse than either honest answer.
+
+`PROVIDER_ENV_ENUM` declares each key's vocabulary as its own channel
+registry, so the environment may name `resend`, `smtp`, `mailgun`, `mock`,
+`unconfigured`, `twilio`, `gatewayapi`, `fcm` — and may NOT name a dotted
+path, which stays in the settings module where only the project can write
+it. The vocabulary is derived from `channels/*.py::_PROVIDERS` rather than
+copied, so a provider added there is selectable the same day and a retired
+one stops being accepted without anyone editing `conf.py`.
+
+Note which way the security property moved: `EMAIL_PROVIDER=
+myattacker.providers.Exfiltrate` used to be silently ignored, and now
+RAISES. The attacker still cannot choose the class; the operator now finds
+out. `stapel_core.conf.E003` reports a rejected value at `manage.py check`,
+and W001 correctly falls silent for these keys, so the two checks never
+contradict each other.
+
+
 ## 0.20.0 — 2026-09-16
 
 Minor: three new notification types, a second mandatory group, and the

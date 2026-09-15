@@ -22,9 +22,10 @@ Everything a host project previously had to fork is an override here::
         "TELEGRAM_PROVIDER": "myproject.telegram.BotProvider",
     }
 
-Resolution per key: STAPEL_NOTIFICATIONS dict → env → default — except for
-the provider keys, which are never read from the environment (see
-``PROVIDER_SETTINGS`` below).
+Resolution per key: STAPEL_NOTIFICATIONS dict → env → default. The provider
+keys are the one special case: the environment may name a SHORT NAME this
+package ships (``"resend"``, ``"mock"``, …) but never a dotted path — see
+``PROVIDER_SETTINGS`` / ``PROVIDER_ENV_ENUM`` below.
 """
 from stapel_core.conf import AppSettings
 
@@ -41,9 +42,10 @@ from stapel_core.conf import AppSettings
 #: is not. ``stapel_core.conf.W001`` names such a variable at
 #: ``manage.py check`` time, because ignoring one is silent by nature.
 #:
-#: A deployment that genuinely must pick a provider per environment says so
-#: once, by name, with ``env_overridable=`` — deliberately not preconfigured
-#: here: forgetting a flag must leave the process closed, never open.
+#: Since 0.21.0 that closure is NARROWED rather than absolute: the
+#: environment may pick among the short names this package ships, because
+#: doing so cannot introduce code. It still may not name a dotted path. See
+#: ``PROVIDER_ENV_ENUM`` below for why the line is drawn exactly there.
 PROVIDER_SETTINGS = (
     "EMAIL_PROVIDER",
     "SMS_PROVIDER",
@@ -52,12 +54,56 @@ PROVIDER_SETTINGS = (
 )
 
 
+def _provider_names(module: str):
+    """The short names one channel module ships, asked lazily.
+
+    A zero-arg callable rather than a literal because the registry lives in
+    the channel module, and importing four channel modules from this file
+    would drag them into every import of the package — ``conf`` is imported
+    by app configs, checks and services alike.
+    """
+    def names():
+        from importlib import import_module
+
+        return tuple(import_module(module)._PROVIDERS)
+
+    return names
+
+
+#: The environment MAY choose among the names this library ships, and only
+#: those (stapel-core 0.70.0 ``env_enum``).
+#:
+#: Until this existed the four keys above were flatly env-closed, and that was
+#: half-right. The threat is real — anything able to set a variable in the pod
+#: would otherwise name an arbitrary dotted path and choose the class that
+#: receives every passcode. But the NEED is equally real, and closing the door
+#: on it did not make deployments stop: a fleet was found on 2026-09-16 with
+#: ``os.getenv('EMAIL_PROVIDER', 'mock')`` hand-written in its own settings
+#: module, so the variable this library documents worked there and nowhere
+#: else, while ``stapel_core.conf.W001`` truthfully reported it ignored. A
+#: documented surface that lies is worse than either honest answer.
+#:
+#: The enumeration draws the line where the threat actually is. Picking among
+#: the providers THIS PACKAGE ships is a deployment choice and belongs in the
+#: environment. A dotted path is new code on the privileged path — a trust
+#: decision — and stays in the settings module, which only the project can
+#: write. ``conf.E003`` reports a rejected value at ``manage.py check``.
+PROVIDER_ENV_ENUM = {
+    "EMAIL_PROVIDER": _provider_names("stapel_notifications.channels.email"),
+    "SMS_PROVIDER": _provider_names("stapel_notifications.channels.sms"),
+    "PUSH_PROVIDER": _provider_names("stapel_notifications.channels.push"),
+    "TELEGRAM_PROVIDER": _provider_names("stapel_notifications.channels.telegram"),
+}
+
+
 class NotificationsAppSettings(AppSettings):
     """``AppSettings`` whose provider keys are imported by the channel layer.
 
     ``PROVIDER_SETTINGS`` are ``import_strings`` for the POLICY half of that
-    declaration (env-closed, and visible to the ``W001`` ignored-env-var
-    check). The IMPORT half stays where it already lives —
+    declaration; ``PROVIDER_ENV_ENUM`` then reopens the environment step for
+    short names only, so ``W001`` correctly stops reporting these variables
+    as ignored and ``E003`` reports a value the registry does not know. The
+    IMPORT half stays where it already lives —
     ``channels.sms._resolve_provider_class`` — because a provider value is
     not only a dotted path: it is *either* a built-in short name
     (``"twilio"``, ``"mock"``, the shipped ``"unconfigured"``/``"fcm"``
@@ -68,8 +114,8 @@ class NotificationsAppSettings(AppSettings):
 
     So this class hands the raw string through and lets the registry-aware
     resolver do the import. It is a superset of ``import_string``, not a way
-    around it: an unknown name and an unimportable path both raise, and
-    neither can be chosen by an env var any more.
+    around it: an unknown name and an unimportable path both raise, and a
+    dotted path still cannot be chosen by an env var.
     """
 
     def __getattr__(self, key):
@@ -210,9 +256,16 @@ DEFAULTS = {
 notifications_settings = NotificationsAppSettings(
     "STAPEL_NOTIFICATIONS",
     defaults=DEFAULTS,
-    # Implementation seam: never selected by the environment. See
-    # PROVIDER_SETTINGS above for why, and for the way back out.
+    # Implementation seam. A dotted path is never selected by the
+    # environment — that is new code on the privileged path. A short name
+    # this package ships may be: see PROVIDER_ENV_ENUM above.
     import_strings=PROVIDER_SETTINGS,
+    env_enum=PROVIDER_ENV_ENUM,
 )
 
-__all__ = ["notifications_settings", "NotificationsAppSettings", "PROVIDER_SETTINGS"]
+__all__ = [
+    "notifications_settings",
+    "NotificationsAppSettings",
+    "PROVIDER_SETTINGS",
+    "PROVIDER_ENV_ENUM",
+]

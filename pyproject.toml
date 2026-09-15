@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.20.0"
+version = "0.21.0"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -29,7 +29,7 @@ dependencies = [
     # committed artifact and its drift gate require. (0.24.0 had already
     # turned comm schema validation on outside DEBUG and made jsonschema a
     # base dep.)
-    "stapel-core>=0.26.0,<1.0",
+    "stapel-core>=0.70.0,<1.0",
 ]
 
 [project.urls]
