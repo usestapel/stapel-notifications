@@ -35,7 +35,12 @@ def capture_email():
 
 
 def _process(ntype="otp_code", extra_settings=None, **kwargs):
-    conf = {"EMAIL_PROVIDER": CAPTURE, **(extra_settings or {})}
+    # COMPANY_NAME is stated, not inherited: since 0.22.0 it has no default
+    # (checks.E007 — a deployment must not send under the framework's name).
+    # These tests are about the logo fallback and the palette, so they name a
+    # company the way a real deployment has to.
+    conf = {"EMAIL_PROVIDER": CAPTURE, "COMPANY_NAME": "Acme",
+            **(extra_settings or {})}
     with override_settings(STAPEL_NOTIFICATIONS=conf):
         process_notification(
             notification_type=ntype,
@@ -98,7 +103,7 @@ def test_no_logo_configured_renders_a_text_wordmark(capture_email):
     (mail,) = capture_email
     assert "cid:logo" not in mail["html"]
     assert "<img" not in mail["html"]
-    assert "Stapel" in mail["html"]  # COMPANY_NAME as text instead
+    assert "Acme" in mail["html"]  # COMPANY_NAME as text instead
 
 
 @pytest.mark.django_db
@@ -119,7 +124,7 @@ def test_logo_url_replaces_cid_reference(capture_email):
     assert 'src="https://cdn.example/logo.png"' in mail["html"]
     assert "cid:logo" not in mail["html"]
     # No width attribute is applied to a fallback that is not an image.
-    assert 'alt="Stapel"' in mail["html"]
+    assert 'alt="Acme"' in mail["html"]
 
 
 @override_settings(
@@ -197,7 +202,7 @@ class TestRawContentEscapeHatch:
         assert '<p id="adhoc-body">Hello there</p>' in mail["html"]
         assert mail["subject"] == "Big news"
         # wrapped in the base brand layout, not sent bare
-        assert "Stapel" in mail["html"]
+        assert "Acme" in mail["html"]
         assert "#00AEEF" in mail["html"]
         log = NotificationLog.objects.get(notification_type="adhoc.announcement")
         assert log.status == "sent"

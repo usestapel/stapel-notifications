@@ -47,6 +47,23 @@ def _get_keys_for_type(notification_type: str) -> list[str]:
     )
 
 
+def _is_absolute_url(value: str) -> bool:
+    """True for a URL a mail client can actually follow.
+
+    Scheme AND host, because a mail client has no page to resolve a relative
+    href against and `List-Unsubscribe` is read by machines. The one place
+    this question is asked, so the runtime behaviour and ``checks.E006``
+    cannot drift into disagreeing about what "configured" means.
+    """
+    from urllib.parse import urlparse
+
+    try:
+        parsed = urlparse((value or "").strip())
+    except ValueError:
+        return False
+    return bool(parsed.scheme and parsed.netloc)
+
+
 def _text_overrides() -> dict:
     """``STAPEL_NOTIFICATIONS["TEXT"]`` — the host's copy registry."""
     return notifications_settings.TEXT or {}
@@ -119,7 +136,26 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
     translations = {}
     cached = {tc.key: tc.values for tc in TranslationCache.objects.filter(key__in=keys)}
 
-    missing = [k for k in keys if k not in cached]
+    # Per (key, LANGUAGE), not per key. A TranslationCache row is a dict of
+    # languages, so a key cached in English is still missing in Russian — and
+    # the old `k not in cached` read that row as a hit and skipped the lazy
+    # pull entirely. The effect was that running this package's OWN documented
+    # post-deploy step, `manage.py sync_translations` (which populates every
+    # key in `LANGUAGES`, defaulting to `["en"]`), is what broke translation:
+    # before it every render missed and resolved correctly; after it every
+    # render hit an English-only row, fell through to the built-in default,
+    # and mailed English to every recipient — while the journal recorded
+    # `language="ru"`, because that column is what was ASKED for, not what was
+    # rendered. A deployment that skipped the recommended command worked.
+    #
+    # Cost: a key the translate service genuinely does not have is re-asked on
+    # each render, because nothing gets cached for that language. That is one
+    # BATCHED comm call per email (the whole missing list goes in one
+    # `translate.resolve`), it stops the moment the translation exists, and it
+    # only happens in the state the warning at the bottom of this function is
+    # already shouting about. Correctness first: the alternative is the silent
+    # wrong-language mail this replaced.
+    missing = [k for k in keys if not (cached.get(k) or {}).get(lang)]
     if missing:
         from .translations import resolve_and_cache
 
@@ -132,7 +168,12 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
             )
         else:
             for key, text in resolved.items():
-                cached[key] = {lang: text}
+                # MERGE, never replace. Now that a key already cached in
+                # English can be missing in this language, assigning
+                # ``{lang: text}`` would drop the English the final fallback
+                # below reads — turning a resolved-in-ru key into one with no
+                # English left to fall back to if ru ever came back empty.
+                cached[key] = {**(cached.get(key) or {}), lang: text}
 
     def _has_nothing_to_translate(s: str) -> bool:
         """True for a string that is the same in every language.
@@ -449,11 +490,33 @@ def process_notification(
     # which is the point: the "you agreed to receive messages from us"
     # consent line is a lie on a personal invitation and an absurdity on a
     # passcode.
-    frontend_url = notifications_settings.FRONTEND_URL
-    if user_id and unsubscribe_allowed(routing):
+    # An ABSOLUTE base or no affordance at all. With FRONTEND_URL empty this
+    # built "/profiles/notifications/unsubscribe/?token=…" — a relative path,
+    # which then became the `List-Unsubscribe` header. That header is not a
+    # valid RFC 2369 URL without a scheme, and the visible footer link is a
+    # dead relative href in every mail client, so the letter ADVERTISED
+    # one-click unsubscribe (including `List-Unsubscribe-Post`) and honoured
+    # nothing. Worse than no affordance, which is the honest state: absent,
+    # the base layout falls back to the minimal footer and the header is not
+    # emitted, because both are guarded on this variable's presence.
+    #
+    # checks.E006 refuses a deployment that routes unsubscribable mail to
+    # email without an absolute FRONTEND_URL, so silence here is the safe
+    # runtime half of a condition the boot already named.
+    frontend_url = (notifications_settings.FRONTEND_URL or "").rstrip("/")
+    if user_id and unsubscribe_allowed(routing) and _is_absolute_url(frontend_url):
         token = generate_unsubscribe_token(user_id, group, "email")
         all_vars["unsubscribe_url"] = f"{frontend_url}/profiles/notifications/unsubscribe/?token={token}"
         all_vars["manage_notifications_url"] = f"{frontend_url}/settings/notifications"
+    elif user_id and unsubscribe_allowed(routing):
+        logger.warning(
+            "notifications: %s may carry an unsubscribe but "
+            "STAPEL_NOTIFICATIONS['FRONTEND_URL']=%r is not an absolute URL — "
+            "the footer link and the List-Unsubscribe header are OMITTED. An "
+            "unsubscribe that cannot be clicked is worse than none. See "
+            "notifications.E006.",
+            notification_type, notifications_settings.FRONTEND_URL,
+        )
 
     # Logo: whatever the host configured, or nothing. There is no packaged
     # fallback image any more — an empty value makes the header render the
@@ -538,13 +601,23 @@ def process_notification(
                 )
                 any_reachability_gap = True
                 continue
-            any_delivered = True
+            # What the channel LEARNED, beyond the boolean. Push records the
+            # number of handsets it actually reached; 0 means the row exists
+            # in the in-app feed and nothing left the building. That is not a
+            # delivery for escalation purposes, even though the row is
+            # legitimately "sent" — see NotificationLog.device_count.
+            device_count = msg.facts.get("device_count")
+            if device_count == 0:
+                any_reachability_gap = True
+            else:
+                any_delivered = True
             confirm_delivery(event_id, channel, recipient, template_version)
             entry = NotificationLog.objects.create(
                 user_id=user_id,
                 notification_type=notification_type,
                 channel=channel,
                 status="sent",
+                device_count=device_count,
                 language=lang,
                 recipient=recipient,
                 title=all_vars.get("push_title", all_vars.get("heading", "")),

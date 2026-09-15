@@ -717,6 +717,7 @@ Three pieces, and a client needs all three:
 | | |
 |---|---|
 | `read_at` on the row | `datetime \| null`, null while unread — the state every row is born in. Only feed rows (`status="sent"`, `channel="push"`) are ever read; a failed delivery was never shown to anybody |
+| `device_count` on the row | `int \| null`. Push only; NULL on every other channel and on rows written before 0.22.0. **`0` means the row is in the in-app feed and no handset was reached.** Push is the one channel whose `deliver` returns True with nothing sent — the feed IS this journal, so returning False would delete a web-only user's feed item to make a number honest. The number is honest here instead: `status` answers "is it in the feed", `device_count` answers "did it leave the building", and `device_count == 0` counts as a reachability gap for the `NOTIFICATION UNDELIVERABLE` escalation. Split delivery dashboards on it |
 | `unread_count` on the page envelope | Unread rows in the WHOLE feed, not just the page — the badge value, answered by the same request that fills the list, so the number and the rows under it can never disagree |
 | `POST feed/read/` | `{"ids": [...]}` (at most 500) **or** `{"all": true}` — exactly one. Answers `{"marked": n, "unread_count": n}` |
 

@@ -499,6 +499,8 @@ def test_sms_channel_sends_formatted_text(user):
         STAPEL_NOTIFICATIONS={
             "EMAIL_PROVIDER": "mock",
             "SMS_PROVIDER": CAPTURE_SMS,
+            # Stated, not inherited — COMPANY_NAME lost its default in 0.22.0.
+            "COMPANY_NAME": "Acme",
         }
     ):
         process_notification(
@@ -508,7 +510,7 @@ def test_sms_channel_sends_formatted_text(user):
             email="dest@example.com",
         )
     assert _CapturingSMSProvider.sent == [
-        ("+4512345678", "Your Stapel code: 4321. Expires in 3 min.")
+        ("+4512345678", "Your Acme code: 4321. Expires in 3 min.")
     ]
     assert NotificationLog.objects.get(channel="sms").status == "sent"
 

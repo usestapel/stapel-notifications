@@ -219,14 +219,35 @@ DEFAULTS = {
     "MAILGUN_API_KEY": "",
     "MAILGUN_DOMAIN": "",
     "GATEWAYAPI_TOKEN": "",
-    "GATEWAYAPI_SENDER": "Stapel",
+    # NO DEFAULT, on purpose (0.22.0). This is the alphanumeric sender id an
+    # SMS arrives from, and on most handsets it becomes the permanent thread
+    # title for every passcode this deployment will ever send. It used to
+    # default to this framework's own name, so a deployment that configured
+    # GatewayAPI correctly — the provider raises for a missing TOKEN, so that
+    # much is forced — still sent every OTP under a vendor name its customers
+    # have never heard of, journalled "sent", with nothing anywhere saying so.
+    # checks.E007 refuses the boot instead.
+    "GATEWAYAPI_SENDER": "",
     "TWILIO_ACCOUNT_SID": "",
     "TWILIO_AUTH_TOKEN": "",
     "TWILIO_PHONE_NUMBER": "",
     "GOOGLE_APPLICATION_CREDENTIALS": "",
     # Template variables
-    "COMPANY_NAME": "Stapel",
+    #
+    # NO DEFAULT, on purpose (0.22.0). COMPANY_NAME is not decoration: it is
+    # the subject line ("Your {company_name} verification code"), the header
+    # wordmark (rendered as text whenever LOGO_URL is empty, which is also the
+    # default), the copyright line, the consent sentence and the SMS body. A
+    # deployment that never set it sent passcodes branded with this
+    # framework's name — which is the classic phishing signature, and trains
+    # recipients to distrust the real mail. Identity is not something to
+    # acquire by not reading the docs, so checks.E007 refuses the boot.
+    "COMPANY_NAME": "",
     "COMPANY_URL": "",
+    # Stays optional, but an empty value now OMITS the footer paragraph
+    # instead of rendering an empty block (0.22.0). Some jurisdictions require
+    # a postal address in commercial mail; none is served by a blank line
+    # where one should be.
     "COMPANY_ADDRESS": "",
     "COMPANY_YEAR": "",
     "FRONTEND_URL": "",

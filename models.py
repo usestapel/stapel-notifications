@@ -126,6 +126,18 @@ class NotificationLog(models.Model):
         ),
     )
     error_message = models.TextField(blank=True, default="")
+    device_count = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            "How many devices a push actually reached. NULL on every other "
+            "channel, and on push rows written before 0.22.0. 0 means the row "
+            "is in the in-app feed and NO handset was reached — a state "
+            "status='sent' cannot express and used to hide. Split delivery "
+            "dashboards on this: status='sent' answers 'is it in the feed', "
+            "device_count > 0 answers 'did it leave the building'."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     read_at = models.DateTimeField(
         null=True,

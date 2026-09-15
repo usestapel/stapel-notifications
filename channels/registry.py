@@ -48,7 +48,7 @@ leave.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Optional
 
 from django.core.exceptions import ImproperlyConfigured
@@ -75,6 +75,14 @@ class ChannelMessage:
     telegram_chat_id: Optional[str] = None
     content_html: Optional[str] = None
     content_text: Optional[str] = None
+    #: What the channel LEARNED while delivering, for the journal row.
+    #: Write-only from the channel's side, read by ``services`` after
+    #: ``deliver`` returns. A channel that knows something the boolean return
+    #: cannot express — push knows how many devices it actually reached —
+    #: records it here instead of the boolean lying by omission. Declared on
+    #: the message rather than returned so the ``deliver`` signature, which
+    #: every host channel in the fleet is written against, does not change.
+    facts: dict = field(default_factory=dict)
 
     @property
     def body(self) -> str:
@@ -87,6 +95,22 @@ class ChannelMessage:
 #: it TO — no address for this recipient on this channel. That distinction
 #: is not cosmetic: "no address" is not a delivery and must not be journalled
 #: as one. A provider that is reached and then fails RAISES.
+#:
+#: **PUSH IS THE ONE EXCEPTION, and it is written here so nobody has to find
+#: it by reading push.py.** A recipient with no registered device gets `True`,
+#: not `False`, because on this channel the delivery journal IS the product:
+#: ``views.NotificationFeedView`` renders the in-app feed from rows where
+#: ``status="sent", channel="push"``, so returning False would delete the feed
+#: item of every user who has not installed the mobile app — losing a real
+#: delivery to make a number honest.
+#:
+#: The number is made honest the other way, since 0.22.0: push records
+#: ``facts["device_count"]``, the journal row carries it, and
+#: ``device_count == 0`` counts as a reachability gap for the
+#: ``NOTIFICATION UNDELIVERABLE`` escalation even though the row stays "sent".
+#: So ``status`` answers "is it in the feed" and ``device_count`` answers "did
+#: it leave the building", and a dashboard can finally tell the two apart.
+#: Email, SMS and Telegram follow the plain rule above and leave it NULL.
 Deliver = Callable[[ChannelMessage], bool]
 
 

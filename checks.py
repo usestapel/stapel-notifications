@@ -493,3 +493,149 @@ def check_feed_stream_is_deliverable(app_configs, **kwargs):
         ),
         id="stapel_notifications.W006",
     )]
+
+
+# ── Identity and affordances a deployment must not inherit ───────────
+
+
+def _delivering_channels() -> set[str]:
+    """Routed channels whose provider actually puts something on the wire.
+
+    A deployment that has not chosen a backend for a channel is not yet
+    sending anything on it, so it is not yet misrepresenting itself on it
+    either — the checks below stay quiet until the channel is real. W005
+    already covers the "routed but non-delivering" state.
+    """
+    from .conf import notifications_settings
+
+    routed = {
+        channel
+        for routing in _effective_types().values()
+        for channel in ((routing or {}).get("channels") or [])
+    }
+    live = set()
+    for setting, channel, _registry in _provider_axes():
+        if channel not in routed:
+            continue
+        name = (getattr(notifications_settings, setting) or "").strip().lower()
+        if name not in _NON_DELIVERING:
+            live.add(channel)
+    return live
+
+
+@checks.register(checks.Tags.security)
+def check_sender_identity_is_declared(app_configs, **kwargs):
+    """E007 — this deployment would send mail under somebody else's name.
+
+    ``COMPANY_NAME`` and ``GATEWAYAPI_SENDER`` used to default to this
+    framework's own name, and nothing reported it. The result was not
+    cosmetic: the subject line of every passcode, the header wordmark (text,
+    whenever ``LOGO_URL`` is empty — also the default), the copyright line,
+    the consent sentence, the SMS body and, on a handset, the permanent
+    thread title all named a vendor the recipient has never heard of. That is
+    the shape of a phishing mail, and it teaches recipients to distrust the
+    real one.
+
+    Error rather than Warning, and unconditional on DEBUG unlike W005: a
+    warning is exactly what a default like this survives. There is no reading
+    under which sending a customer's passcode under a third party's name is
+    the intended configuration, and the fix is one line in a settings file.
+
+    Quiet until a channel that RENDERS the value can actually deliver — a
+    deployment still wiring itself up is not yet claiming to be anybody.
+    """
+    from .conf import notifications_settings
+
+    delivering = _delivering_channels()
+    errors = []
+
+    renders_a_name = delivering & {"email", "sms", "telegram"}
+    if renders_a_name and not (notifications_settings.COMPANY_NAME or "").strip():
+        errors.append(checks.Error(
+            "STAPEL_NOTIFICATIONS['COMPANY_NAME'] is empty while "
+            f"{sorted(renders_a_name)} can deliver. It is not decoration: it "
+            "is the subject line of every passcode, the header wordmark "
+            "(rendered as text whenever LOGO_URL is empty), the copyright and "
+            "consent lines, and the SMS body. Mail that names nobody — or, "
+            "before 0.22.0, named this framework — reads as phishing.",
+            hint=(
+                "Set STAPEL_NOTIFICATIONS['COMPANY_NAME'] to the name your "
+                "recipients know you by. There is deliberately no default: a "
+                "deployment must not acquire an identity by not configuring "
+                "one."
+            ),
+            id="stapel_notifications.E007",
+        ))
+
+    sms_sender_required = (
+        "sms" in delivering
+        and (notifications_settings.SMS_PROVIDER or "").strip().lower() == "gatewayapi"
+    )
+    if sms_sender_required and not (notifications_settings.GATEWAYAPI_SENDER or "").strip():
+        errors.append(checks.Error(
+            "STAPEL_NOTIFICATIONS['GATEWAYAPI_SENDER'] is empty while the "
+            "GatewayAPI SMS provider is configured and routed. That value is "
+            "the alphanumeric sender id the message arrives from, and on most "
+            "handsets it becomes the permanent thread title for every "
+            "passcode this deployment ever sends.",
+            hint=(
+                "Set STAPEL_NOTIFICATIONS['GATEWAYAPI_SENDER'] to your own "
+                "sender id. The provider already refuses a missing "
+                "GATEWAYAPI_TOKEN; this is the other half, and it used to be "
+                "the silent one."
+            ),
+            id="stapel_notifications.E007",
+        ))
+    return errors
+
+
+@checks.register(checks.Tags.compatibility)
+def check_unsubscribe_has_somewhere_to_point(app_configs, **kwargs):
+    """E006 — unsubscribable mail with no absolute base to link to.
+
+    With ``FRONTEND_URL`` empty the unsubscribe URL used to be built as a
+    bare path, which became the ``List-Unsubscribe`` header. That header is
+    machine-read and is not a valid RFC 2369 URL without a scheme, and the
+    visible footer link was a dead relative href in every mail client — so
+    the letter advertised one-click unsubscribe, complete with
+    ``List-Unsubscribe-Post``, and honoured none of it.
+
+    The runtime now OMITS both rather than emitting something invalid
+    (``services._is_absolute_url``), which is the honest behaviour but a
+    silent one: mail a recipient cannot opt out of is a compliance problem
+    whether or not the link is broken. So the condition is named at boot.
+
+    Only for a type that may actually carry an unsubscribe — an auth-only
+    deployment never offers one and needs no base URL for it.
+    """
+    from .conf import notifications_settings
+    from .routing import unsubscribe_allowed
+
+    if "email" not in _delivering_channels():
+        return []
+    unsubscribable = sorted(
+        ntype for ntype, routing in _effective_types().items()
+        if unsubscribe_allowed(routing)
+        and "email" in ((routing or {}).get("channels") or [])
+    )
+    if not unsubscribable:
+        return []
+
+    from .services import _is_absolute_url
+
+    if _is_absolute_url(notifications_settings.FRONTEND_URL or ""):
+        return []
+    return [checks.Error(
+        f"{len(unsubscribable)} notification type(s) may carry an unsubscribe "
+        f"({', '.join(unsubscribable[:5])}) and route to email, but "
+        "STAPEL_NOTIFICATIONS['FRONTEND_URL'] is not an absolute URL. The "
+        "footer link and the List-Unsubscribe header are therefore OMITTED "
+        "— those recipients have no way to opt out.",
+        hint=(
+            "Set STAPEL_NOTIFICATIONS['FRONTEND_URL'] to your site's absolute "
+            "base (https://app.example.com). A relative value is not a fix: "
+            "it produced a List-Unsubscribe header no mail client could "
+            "follow while still promising one-click opt-out."
+        ),
+        id="stapel_notifications.E006",
+    )]

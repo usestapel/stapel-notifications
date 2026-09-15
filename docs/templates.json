@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.21.0",
+  "module_version": "0.22.0",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -43,11 +43,11 @@
         },
         "manage_notifications_url": {
           "presence": "conditional",
-          "when": "user_id and unsubscribe_allowed(routing)"
+          "when": "user_id and unsubscribe_allowed(routing) and _is_absolute_url(frontend_url)"
         },
         "unsubscribe_url": {
           "presence": "conditional",
-          "when": "user_id and unsubscribe_allowed(routing)"
+          "when": "user_id and unsubscribe_allowed(routing) and _is_absolute_url(frontend_url)"
         }
       },
       "renders": [
@@ -2483,6 +2483,7 @@
       "blocks": [],
       "consumed": {
         "brand_primary_dark": "optional",
+        "company_host": "optional",
         "company_name": "required",
         "company_url": "required",
         "footer_address": "required",

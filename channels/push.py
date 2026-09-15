@@ -198,12 +198,22 @@ def _deliver_push(msg) -> bool:
             data[key] = all_vars[key]
 
     sent_count = send_push(msg.user_id, title, body, data)
+    # The count, always — not only when it is zero. `True` means "the provider
+    # was reached", and on this channel that is not the same as "a handset got
+    # it": the in-app feed IS this journal (views.NotificationFeedView reads
+    # `status="sent", channel="push"`), so a web-only user must keep the row.
+    # Returning False would delete their feed item to make a number honest.
+    #
+    # So the row stays `sent` and carries the number instead. `device_count=0`
+    # is "it is in the feed and on no handset" — a state the journal could not
+    # previously express, which made delivery dashboards overcount and hid the
+    # gap from the undeliverable escalation. See services._dispatch and
+    # NotificationLog.device_count.
+    msg.facts["device_count"] = sent_count
     if sent_count == 0:
-        # Not False: the provider WAS reached, the recipient simply has no
-        # device registered. Returning False here would release the delivery
-        # claim and journal a reachability gap for a channel that worked.
         logging.getLogger(__name__).warning(
-            "No active push tokens for user %s, notification_type=%s",
+            "No active push tokens for user %s, notification_type=%s — the "
+            "feed row is written, no handset was reached",
             msg.user_id, msg.notification_type,
         )
     return True

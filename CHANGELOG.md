@@ -1,5 +1,73 @@
 # Changelog
 
+## 0.22.0 — 2026-09-16
+
+Minor: four defaults that worked, looked fine and lied. One migration
+(0011, expand-only, nullable). Two new boot checks. Two settings lose their
+default and are now required when a channel that renders them can deliver.
+
+### Fixed
+
+**A deployment no longer inherits this framework's identity.** `COMPANY_NAME`
+defaulted to `"Stapel"` and nothing reported it — so a deployment that never
+set it sent passcodes whose subject line, header wordmark (text, whenever
+`LOGO_URL` is empty, which is also the default), copyright, consent sentence
+and SMS body all named a vendor the recipient has never heard of. That is the
+shape of a phishing mail and it teaches recipients to distrust the real one.
+`GATEWAYAPI_SENDER` was worse: it is the alphanumeric sender id an SMS
+arrives from, which on most handsets becomes the permanent thread title, and
+the same provider raises loudly for a missing `GATEWAYAPI_TOKEN` — so its
+silence read as "this one is fine". Both now default to `""` and
+`notifications.E007` refuses the boot when a channel that renders them can
+actually deliver. Error rather than warning, and not gated on `DEBUG`: a
+warning is exactly what a default like this survives.
+
+`COMPANY_ADDRESS` keeps its empty default but now OMITS the footer paragraph
+instead of rendering an empty block. The unsubscribe footer's company link is
+guarded the same way — it used to emit `href=""`.
+
+**An unsubscribe that cannot be clicked is no longer offered.** With
+`FRONTEND_URL` empty the URL was built as a bare path and became the
+`List-Unsubscribe` header — not a valid RFC 2369 URL without a scheme, and a
+dead relative href in the visible footer. The letter advertised one-click
+unsubscribe, `List-Unsubscribe-Post` included, and honoured none of it. Both
+the header and the footer link are now omitted unless the base is absolute,
+and `notifications.E006` names the condition at boot for a deployment that
+routes unsubscribable mail to email without one.
+
+**The translation cache missed per key instead of per key AND language, so
+running this package's own documented command was what broke translation.**
+`manage.py sync_translations` populates every key in `LANGUAGES` (default
+`["en"]`). After it, a Russian render found the key present, skipped the lazy
+`translate.resolve` entirely, fell through to the built-in English — and
+mailed English to every Russian recipient while the journal recorded
+`language="ru"`, because that column records what was ASKED for, not what was
+rendered. A deployment that skipped the recommended step worked; one that
+followed the docs did not. The miss check is now per `(key, language)`, and
+the resolve result MERGES into the cached row rather than replacing it (which
+would have dropped the English the final fallback reads). Covered by a
+two-language regression test with a journal assertion.
+
+**A push row says how many handsets it reached.** Push is the one channel
+whose `deliver` returns True having sent nothing — a recipient with no
+registered device — and that is deliberate and stays: the in-app feed IS this
+journal (`status="sent", channel="push"`), so returning False would delete a
+web-only user's feed item to make a number honest. The number is made honest
+the other way. `NotificationLog.device_count` records it; `0` means "in the
+feed, on no handset"; the `NOTIFICATION UNDELIVERABLE` escalation now reads
+it, so a push-only type to a web-only user stops suppressing the alarm; and a
+dashboard can split "is it in the feed" (`status`) from "did it leave the
+building" (`device_count > 0`). NULL on every other channel and on rows
+written before this release — never back-filled to `0`, which would claim
+knowledge we do not have. The exception is now documented next to the rule it
+breaks, in `channels/registry.py`'s `Deliver` contract and in MODULE.md.
+
+### Not changed
+
+The `BRAND_*` palette keeps its defaults. A vendor palette that looks
+unstyled is a cosmetic default, not a claim about who sent the message.
+
+
 ## 0.21.0 — 2026-09-16
 
 Minor: the provider env vars this package documents now actually work, and
