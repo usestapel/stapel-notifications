@@ -227,6 +227,32 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.all_sessions_revoked.heading": "All sessions have been revoked",
     "notification.all_sessions_revoked.body": "All active sessions on your account have been revoked. You have been signed out of all devices.",
     "notification.all_sessions_revoked.warning": "If you did not initiate this action, please reset your password immediately.",
+    # ── Billing (B1–B3) ─────────────────────────────────────────
+    # Upstream for stapel-billing 0.14.0. Every slot below is copy, not
+    # data: the amount, the item, the dates and the links arrive as caller
+    # variables, so none of these strings has to be re-authored to add a
+    # plan or a currency. The variable NAMES dodge the short-key collision
+    # (`item_name`, not `body`; `decline_reason`, not `warning`) — a caller
+    # variable that shares a name with a slot is silently dropped by the
+    # merge in services.process_notification.
+    "notification.billing.payment_succeeded.subject": "Payment received: {amount}",
+    "notification.billing.payment_succeeded.heading": "Thank you — your payment went through",
+    "notification.billing.payment_succeeded.body": "We received your payment of {amount} for {item_name}.",
+    "notification.billing.payment_succeeded.period": "This covers the period from {period_start} to {period_end}.",
+    "notification.billing.payment_succeeded.cta": "View your invoice",
+    "notification.billing.payment_succeeded.note": "Keep this email for your records. If you do not recognise this payment, contact support and we will look into it.",
+    "notification.billing.payment_failed.subject": "Your payment of {amount} did not go through",
+    "notification.billing.payment_failed.heading": "We could not take your payment",
+    "notification.billing.payment_failed.body": "We tried to charge {amount} for {item_name}, and the payment was declined.",
+    "notification.billing.payment_failed.reason": "Reason given by your bank: {decline_reason}",
+    "notification.billing.payment_failed.cta": "Update your payment method",
+    "notification.billing.payment_failed.note": "Nothing has been charged and nothing has been lost. We will try again automatically, or you can update your card using the button above.",
+    "notification.billing.subscription_ending.subject": "Your {item_name} subscription ends on {period_end}",
+    "notification.billing.subscription_ending.heading": "Your subscription will not renew",
+    "notification.billing.subscription_ending.body": "Your {item_name} subscription is set to end and will not renew. You will not be charged again.",
+    "notification.billing.subscription_ending.period": "You keep full access until {period_end}.",
+    "notification.billing.subscription_ending.cta": "Keep my subscription",
+    "notification.billing.subscription_ending.note": "If you changed your mind, use the button above before the date shown and nothing will be interrupted.",
     # ── Footer / Shared ─────────────────────────────────────────
     "notification.footer.legal": "\u00a9 {company_year} {company_name}",
     "notification.footer.address": "{company_address}",

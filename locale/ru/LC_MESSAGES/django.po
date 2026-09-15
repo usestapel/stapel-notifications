@@ -511,3 +511,75 @@ msgstr "Отписаться"
 #: notification.footer.manage
 msgid "Manage notifications"
 msgstr "Настроить уведомления"
+
+#: notification.billing.payment_succeeded.subject
+msgid "Payment received: {amount}"
+msgstr "Платёж получен: {amount}"
+
+#: notification.billing.payment_succeeded.heading
+msgid "Thank you — your payment went through"
+msgstr "Спасибо — платёж прошёл"
+
+#: notification.billing.payment_succeeded.body
+msgid "We received your payment of {amount} for {item_name}."
+msgstr "Мы получили ваш платёж на сумму {amount} за {item_name}."
+
+#: notification.billing.payment_succeeded.period
+msgid "This covers the period from {period_start} to {period_end}."
+msgstr "Оплачен период с {period_start} по {period_end}."
+
+#: notification.billing.payment_succeeded.cta
+msgid "View your invoice"
+msgstr "Посмотреть счёт"
+
+#: notification.billing.payment_succeeded.note
+msgid "Keep this email for your records. If you do not recognise this payment, contact support and we will look into it."
+msgstr "Сохраните это письмо для отчётности. Если вы не узнаёте этот платёж, напишите в поддержку — мы разберёмся."
+
+#: notification.billing.payment_failed.subject
+msgid "Your payment of {amount} did not go through"
+msgstr "Платёж на сумму {amount} не прошёл"
+
+#: notification.billing.payment_failed.heading
+msgid "We could not take your payment"
+msgstr "Не удалось списать оплату"
+
+#: notification.billing.payment_failed.body
+msgid "We tried to charge {amount} for {item_name}, and the payment was declined."
+msgstr "Мы попытались списать {amount} за {item_name}, но платёж был отклонён."
+
+#: notification.billing.payment_failed.reason
+msgid "Reason given by your bank: {decline_reason}"
+msgstr "Причина, указанная банком: {decline_reason}"
+
+#: notification.billing.payment_failed.cta
+msgid "Update your payment method"
+msgstr "Обновить способ оплаты"
+
+#: notification.billing.payment_failed.note
+msgid "Nothing has been charged and nothing has been lost. We will try again automatically, or you can update your card using the button above."
+msgstr "Деньги не списаны и ничего не потеряно. Мы повторим попытку автоматически — или вы можете обновить карту по кнопке выше."
+
+#: notification.billing.subscription_ending.subject
+msgid "Your {item_name} subscription ends on {period_end}"
+msgstr "Подписка {item_name} заканчивается {period_end}"
+
+#: notification.billing.subscription_ending.heading
+msgid "Your subscription will not renew"
+msgstr "Подписка не будет продлена"
+
+#: notification.billing.subscription_ending.body
+msgid "Your {item_name} subscription is set to end and will not renew. You will not be charged again."
+msgstr "Ваша подписка {item_name} завершается и не будет продлена. Повторных списаний не будет."
+
+#: notification.billing.subscription_ending.period
+msgid "You keep full access until {period_end}."
+msgstr "Полный доступ сохраняется до {period_end}."
+
+#: notification.billing.subscription_ending.cta
+msgid "Keep my subscription"
+msgstr "Сохранить подписку"
+
+#: notification.billing.subscription_ending.note
+msgid "If you changed your mind, use the button above before the date shown and nothing will be interrupted."
+msgstr "Если вы передумали, нажмите кнопку выше до указанной даты — и ничего не прервётся."

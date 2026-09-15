@@ -227,8 +227,13 @@ def valid_pref_fields() -> set[str]:
 
 def _should_send(group: str, channel: str, settings_obj: UserNotificationSettings | None) -> bool:
     """Check if notification should be sent based on user preferences."""
-    # Auth group is always mandatory
-    if group == "auth":
+    # Mandatory groups are not a preference question. This used to compare
+    # against the ``"auth"`` literal, which made every future mandatory group
+    # switch-off-able by default — ``billing`` (a receipt for money taken)
+    # would have been suppressed for anyone who had turned system mail off.
+    from .routing import MANDATORY_GROUPS
+
+    if group in MANDATORY_GROUPS:
         return True
 
     if not settings_obj:

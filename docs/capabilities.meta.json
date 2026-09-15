@@ -261,6 +261,15 @@
       "instead_of": [
         "django.conf.settings.STAPEL_NOTIFICATIONS"
       ]
+    },
+    "notifications/email/billing_payment_succeeded.html": {
+      "intent": "\"Your payment went through\" — `billing.payment_succeeded`, billing group (mandatory, no unsubscribe), email only: the receipt — amount, what was bought, the period a subscription covers, the invoice link. Never compose payment mail yourself."
+    },
+    "notifications/email/billing_payment_failed.html": {
+      "intent": "\"We could not take your payment\" — `billing.payment_failed`, billing group, email only: a declined card stated as a thing to fix, with the bank's reason in words and a link to the billing page."
+    },
+    "notifications/email/billing_subscription_ending.html": {
+      "intent": "\"Your subscription will not renew\" — `billing.subscription_ending`, billing group, email only: the letter a `cancel_at_period_end` subscriber is owed, naming the date access stops."
     }
   }
 }

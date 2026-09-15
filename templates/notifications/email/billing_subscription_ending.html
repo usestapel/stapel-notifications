@@ -1,0 +1,49 @@
+{% extends "notifications/email/_base.html" %}
+
+{% comment %}
+Service already paid for is service still owed. This letter's job is to
+name the date access actually stops — not to argue, and not to read like a
+cancellation confirmation the recipient has to decode.
+{% endcomment %}
+
+{% block content %}
+              <h1 style="margin: 0 0 16px 0; font-family: Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 600; line-height: 26px; color: {{ brand_text|default:"#1C1D20" }};">
+                {{ heading }}
+              </h1>
+              <p style="margin: 0 0 8px 0; font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 22px; color: {{ brand_text|default:"#1C1D20" }};">
+                {{ body }}
+              </p>
+              {% if period_end %}
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0 0 0;">
+                <tr>
+                  <td style="background-color: #F4F6F8; border-radius: 8px; padding: 16px 20px;">
+                    <p style="margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; line-height: 22px; color: {{ brand_text|default:"#1C1D20" }};">
+                      {{ period }}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              {% endif %}
+              {% if resubscribe_url %}
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="button-td" style="padding: 28px 0 0 0;">
+                <tr>
+                  <td align="left">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background-color: {{ brand_primary_dark|default:"#2A90D9" }}; border-radius: 20px;">
+                          <a href="{{ resubscribe_url }}" style="display: inline-block; padding: 12px 32px; font-family: Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 24px; color: #FFFFFF; text-decoration: none; border-radius: 20px;">
+                            {{ cta }}
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              {% endif %}
+              {% if note %}
+              <p style="margin: 20px 0 0 0; font-family: Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px; color: #7D7E81;">
+                {{ note }}
+              </p>
+              {% endif %}
+{% endblock %}

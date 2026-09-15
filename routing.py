@@ -22,13 +22,27 @@ project extends or overrides it WITHOUT forking via the settings namespace::
 
 Groups:
     auth     — mandatory security notifications (no unsubscribe)
+    billing  — mandatory record of money that moved (no unsubscribe)
     messages — user-to-user messages (can disable per channel)
     system   — platform notifications (can disable per channel)
 
-The group set is CLOSED (``VALID_GROUPS``): a group is also the name of the
-per-channel preference field (``email_system``, ``push_messages``, …), so a
-group nobody has a field for is mail the recipient cannot switch off. A type
-registered under an unknown group is ``notifications.E001`` at boot.
+The group set is CLOSED (``VALID_GROUPS``): an UNSUBSCRIBABLE group is also
+the name of the per-channel preference field (``email_system``,
+``push_messages``, …), so an unsubscribable group nobody has a field for is
+mail the recipient cannot switch off. A type registered under an unknown
+group is ``notifications.E001`` at boot.
+
+``billing`` is the second MANDATORY group, and it is a group rather than a
+flag because the thing it changes is the recipient's preference, which is
+exactly what the two flags below deliberately do not touch. A receipt for
+money the platform took is owed to the payer as a record — a person who
+switched off ``email_system`` asked not to be told about platform news, not
+to stop being told when they are charged. It is not ``auth`` either: calling
+a receipt a security notification to borrow that group's mandatory-ness
+would put payment mail under a security classification that decides other
+things (``is_security``, the E002 demotion check) which a receipt has no
+business inheriting. Mandatory groups mint NO preference field — see
+``valid_pref_fields`` — so adding this one needs no column and no migration.
 
 Two ORTHOGONAL flags, neither of them a fourth group. Both govern the
 unsubscribe AFFORDANCE only and leave the group — and therefore the
@@ -64,15 +78,28 @@ from .conf import notifications_settings
 #: carrying an unsubscribe affordance.
 SECURITY_GROUPS = frozenset({"auth"})
 
+#: Groups whose mail is the record of money that moved. Mandatory for the
+#: same reason security mail is — the recipient is owed it — but NOT
+#: security-class: ``is_security`` stays false, and the E002 demotion check
+#: does not claim these types.
+BILLING_GROUPS = frozenset({"billing"})
+
+#: Every group a recipient may not switch off. ``_should_send`` asks THIS,
+#: not the ``"auth"`` literal it used to compare against: a second mandatory
+#: group added beside a hardcoded string is a group that silently becomes
+#: switch-off-able the moment somebody adds it.
+MANDATORY_GROUPS = SECURITY_GROUPS | BILLING_GROUPS
+
 #: The ONLY groups whose mail may carry an unsubscribe affordance. Adding a
 #: name here is the single edit that grants a whole class of mail a one-click
 #: opt-out — which is why it is a literal, reviewable set and not "anything
 #: that is not auth".
 UNSUBSCRIBABLE_GROUPS = frozenset({"messages", "system"})
 
-#: The closed group vocabulary. Every one of these has matching preference
-#: fields in ``services._VALID_PREF_FIELDS``.
-VALID_GROUPS = SECURITY_GROUPS | UNSUBSCRIBABLE_GROUPS
+#: The closed group vocabulary. Every UNSUBSCRIBABLE one of these has matching
+#: preference fields in ``services.valid_pref_fields()``; the mandatory ones
+#: deliberately have none, because there is nothing to ask the recipient.
+VALID_GROUPS = MANDATORY_GROUPS | UNSUBSCRIBABLE_GROUPS
 
 NOTIFICATION_ROUTING = {
     # Group A: Auth/Security (mandatory, no unsubscribe)
@@ -90,6 +117,27 @@ NOTIFICATION_ROUTING = {
     "gdpr.export_ready":       {"channels": ["email"], "group": "auth"},
     "gdpr.inactivity_warning": {"channels": ["email"], "group": "auth"},
     "gdpr.inactivity_closed":  {"channels": ["email"], "group": "auth"},
+
+    # Billing (mandatory, no unsubscribe) — upstream for stapel-billing's
+    # payment.completed / payment.failed / subscription.changed subscribers.
+    # A charge that produced no letter is the default state of a Stripe
+    # account with receipts switched off, and it stayed the default here
+    # too until 0.20.0: six live charges, nothing sent (ironmemo, 2026-09-16).
+    #
+    # Email only, on purpose. These three carry an amount, a period and a
+    # link to a document — a receipt is something the payer keeps and can
+    # forward to an accountant, which is what mail is and what a push is
+    # not. A push saying "you were charged" that cannot show the invoice is
+    # a worse version of the same letter, not a second channel for it.
+    "billing.payment_succeeded":   {"channels": ["email"], "group": "billing",
+                                    "transactional": True,
+                                    "telemetry": ["invoice_url"]},
+    "billing.payment_failed":      {"channels": ["email"], "group": "billing",
+                                    "transactional": True,
+                                    "telemetry": ["retry_url"]},
+    "billing.subscription_ending": {"channels": ["email"], "group": "billing",
+                                    "transactional": True,
+                                    "telemetry": ["resubscribe_url"]},
 
     # Group B: Messages (user can disable per channel)
     "new_message":           {"channels": ["push", "email"],        "group": "messages"},
@@ -171,6 +219,9 @@ DEFAULT_EMAIL_TEMPLATES = {
     "auth_change_urgent": "notifications/email/auth_change.html",
     "auth_change_completed": "notifications/email/auth_change.html",
     "new_message": "notifications/email/new_message.html",
+    "billing.payment_succeeded": "notifications/email/billing_payment_succeeded.html",
+    "billing.payment_failed": "notifications/email/billing_payment_failed.html",
+    "billing.subscription_ending": "notifications/email/billing_subscription_ending.html",
     "report_reviewed": "notifications/email/report_reviewed.html",
     "listing_expiring": "notifications/email/listing_expiring.html",
     "listing_blocked": "notifications/email/listing_blocked.html",

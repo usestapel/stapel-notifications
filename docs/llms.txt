@@ -1,8 +1,8 @@
-# stapel-notifications 0.19.2
+# stapel-notifications 0.20.0
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.
 
-Contract: axes 4 · surface 40 · extension points 6 · operations 7 · error codes 47.
+Contract: axes 4 · surface 43 · extension points 6 · operations 7 · error codes 47.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -29,6 +29,12 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
   The "all sessions have been revoked" notice — notification_type `all_sessions_revoked`, auth group, email only. Send it after a global logout so an owner who did not trigger it finds out.
 - notifications/email/auth_change.html — templates/notifications/email/auth_change.html
   One template serving the whole authenticator-change sequence — notification_types `auth_change_requested`, `auth_change_reminder`, `auth_change_urgent` and `auth_change_completed` (auth group; email, SMS and push). Four stages of a single flow share it, so one EMAIL_TEMPLATES remap re-skins all of them.
+- notifications/email/billing_payment_failed.html — templates/notifications/email/billing_payment_failed.html
+  "We could not take your payment" — `billing.payment_failed`, billing group, email only: a declined card stated as a thing to fix, with the bank's reason in words and a link to the billing page.
+- notifications/email/billing_payment_succeeded.html — templates/notifications/email/billing_payment_succeeded.html
+  "Your payment went through" — `billing.payment_succeeded`, billing group (mandatory, no unsubscribe), email only: the receipt — amount, what was bought, the period a subscription covers, the invoice link. Never compose payment mail yourself.
+- notifications/email/billing_subscription_ending.html — templates/notifications/email/billing_subscription_ending.html
+  "Your subscription will not renew" — `billing.subscription_ending`, billing group, email only: the letter a `cancel_at_period_end` subscriber is owed, naming the date access stops.
 - notifications/email/gdpr_export_ready.html — templates/notifications/email/gdpr_export_ready.html
   "Your data export is ready" — notification_type `gdpr.export_ready`, auth group, email only: the letter a subject-access export has to end with.
 - notifications/email/gdpr_inactivity_closed.html — templates/notifications/email/gdpr_inactivity_closed.html

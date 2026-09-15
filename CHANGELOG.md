@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.20.0 — 2026-09-16
+
+Minor: three new notification types, a second mandatory group, and the
+`_should_send` literal that made the group necessary. No migration, no schema
+change, no API change.
+
+### Added
+
+**Three billing letters — upstream for stapel-billing 0.14.0.**
+`billing.payment_succeeded` (the receipt: amount, what was bought, the period a
+subscription covers, the provider's invoice link), `billing.payment_failed` (a
+declined card, with the bank's reason in words and a link to the billing page)
+and `billing.subscription_ending` (the letter a `cancel_at_period_end`
+subscriber is owed, naming the date access actually stops). Email only and
+transactional: a receipt is a document somebody keeps and forwards to an
+accountant, which is what mail is and a push is not.
+
+Copy for all three is in `translation_keys.NOTIFICATION_KEYS` (en) and in this
+package's own `locale/ru` and `locale/es` catalogues — new for `es`, which this
+package did not ship before. A deployment with no translate service now sends
+these three in Russian and Spanish out of the box.
+
+The producer is stapel-billing, which subscribes to its own `payment.completed`
+/ `payment.failed` / `subscription.changed` facts. It was found (a client fleet,
+2026-09-16) that nothing anywhere had ever done so: six real charges, every one
+dispatched correctly through the outbox, no notification of any kind, and
+`notifications_notificationlog` holding no payment type at all.
+
+**A second mandatory group, `billing`.** Mandatory like `auth` — a receipt for
+money the platform took is a record the payer is owed, and somebody who turned
+`email_system` off asked not to hear about features, not to stop being told when
+their card is charged. Not `auth` either: borrowing that group's mandatory-ness
+would put payment mail under a security classification that decides other things
+(`is_security`, the E002 demotion check) which a receipt has no business
+inheriting. Mandatory groups mint no preference field (`valid_pref_fields`
+iterates `UNSUBSCRIBABLE_GROUPS` only), so this needed no column and no
+migration.
+
+### Fixed
+
+**`_should_send` asks `MANDATORY_GROUPS`, not the string `"auth"`.** The
+literal was correct while `auth` was the only mandatory group and silently
+wrong the moment a second one existed: `billing` would have been suppressed for
+every recipient who had ever switched off system mail — receipts withheld from
+exactly the people who once unticked a box about product news. Behaviour for
+every existing type is unchanged; `auth` is still in the set.
+
+
 ## 0.19.2 — 2026-09-14
 
 Patch: docs only, no code change.

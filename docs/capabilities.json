@@ -1,6 +1,6 @@
 {
   "module": "stapel-notifications",
-  "version": "0.19.2",
+  "version": "0.20.0",
   "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.",
   "axes": [
     {
@@ -231,6 +231,24 @@
       "kind": "template",
       "path": "templates/notifications/email/auth_change.html",
       "intent": "One template serving the whole authenticator-change sequence — notification_types `auth_change_requested`, `auth_change_reminder`, `auth_change_urgent` and `auth_change_completed` (auth group; email, SMS and push). Four stages of a single flow share it, so one EMAIL_TEMPLATES remap re-skins all of them."
+    },
+    {
+      "name": "notifications/email/billing_payment_failed.html",
+      "kind": "template",
+      "path": "templates/notifications/email/billing_payment_failed.html",
+      "intent": "\"We could not take your payment\" — `billing.payment_failed`, billing group, email only: a declined card stated as a thing to fix, with the bank's reason in words and a link to the billing page."
+    },
+    {
+      "name": "notifications/email/billing_payment_succeeded.html",
+      "kind": "template",
+      "path": "templates/notifications/email/billing_payment_succeeded.html",
+      "intent": "\"Your payment went through\" — `billing.payment_succeeded`, billing group (mandatory, no unsubscribe), email only: the receipt — amount, what was bought, the period a subscription covers, the invoice link. Never compose payment mail yourself."
+    },
+    {
+      "name": "notifications/email/billing_subscription_ending.html",
+      "kind": "template",
+      "path": "templates/notifications/email/billing_subscription_ending.html",
+      "intent": "\"Your subscription will not renew\" — `billing.subscription_ending`, billing group, email only: the letter a `cancel_at_period_end` subscriber is owed, naming the date access stops."
     },
     {
       "name": "notifications/email/gdpr_export_ready.html",

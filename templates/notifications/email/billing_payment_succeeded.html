@@ -1,0 +1,58 @@
+{% extends "notifications/email/_base.html" %}
+
+{% comment %}
+The receipt. Every block below is conditional on the DATA, never on the
+copy: a package purchase has no period and a charge whose provider gave us
+no document has no link, and both must produce a letter that reads
+finished rather than one with an empty row or a button pointing nowhere.
+{% endcomment %}
+
+{% block content %}
+              <h1 style="margin: 0 0 16px 0; font-family: Helvetica, Arial, sans-serif; font-size: 20px; font-weight: 600; line-height: 26px; color: {{ brand_text|default:"#1C1D20" }};">
+                {{ heading }}
+              </h1>
+              <p style="margin: 0 0 8px 0; font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 22px; color: {{ brand_text|default:"#1C1D20" }};">
+                {{ body }}
+              </p>
+              {% if period_start and period_end %}
+              <p style="margin: 0 0 8px 0; font-family: Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 400; line-height: 22px; color: {{ brand_text|default:"#1C1D20" }};">
+                {{ period }}
+              </p>
+              {% endif %}
+              <!-- The amount, stated once more on its own so the figure is
+                   findable without reading a sentence. -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 20px 0 0 0;">
+                <tr>
+                  <td style="background-color: #F4F6F8; border-radius: 8px; padding: 16px 20px;">
+                    <p style="margin: 0; font-family: Helvetica, Arial, sans-serif; font-size: 24px; font-weight: 600; line-height: 30px; color: {{ brand_text|default:"#1C1D20" }};">
+                      {{ amount }}
+                    </p>
+                    <p style="margin: 4px 0 0 0; font-family: Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px; color: #7D7E81;">
+                      {{ item_name }}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              {% if invoice_url %}
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="button-td" style="padding: 28px 0 0 0;">
+                <tr>
+                  <td align="left">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="background-color: {{ brand_primary_dark|default:"#2A90D9" }}; border-radius: 20px;">
+                          <a href="{{ invoice_url }}" style="display: inline-block; padding: 12px 32px; font-family: Helvetica, Arial, sans-serif; font-size: 18px; font-weight: 400; line-height: 24px; color: #FFFFFF; text-decoration: none; border-radius: 20px;">
+                            {{ cta }}
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              {% endif %}
+              {% if note %}
+              <p style="margin: 20px 0 0 0; font-family: Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px; color: #7D7E81;">
+                {{ note }}
+              </p>
+              {% endif %}
+{% endblock %}
