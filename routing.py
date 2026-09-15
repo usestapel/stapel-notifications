@@ -122,7 +122,8 @@ NOTIFICATION_ROUTING = {
     # payment.completed / payment.failed / subscription.changed subscribers.
     # A charge that produced no letter is the default state of a Stripe
     # account with receipts switched off, and it stayed the default here
-    # too until 0.20.0: six live charges, nothing sent (ironmemo, 2026-09-16).
+    # too until 0.20.0: six live charges, nothing sent (a client fleet,
+    # 2026-09-16).
     #
     # Email only, on purpose. These three carry an amount, a period and a
     # link to a document — a receipt is something the payer keeps and can
