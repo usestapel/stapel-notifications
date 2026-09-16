@@ -306,6 +306,44 @@ these rows — not of what we sent them; the journal slice would be incomplete w
   the publish job install it instead of a hand-kept list. 0.17.0 never reached PyPI because `channels.testing`
   imported daphne, which nothing had declared.
 
+
+## [0.23.0] — 2026-09-17
+
+### Changed — `view_` on a delivery log no longer means every address and every letter
+
+Every admin here declared `list_display` and `search_fields` and neither
+`fields` nor `exclude`, so the detail page rendered every column — and in this
+app the columns ARE the personal data: who was written to, and what was said
+to them.
+
+A fleet audited on 2026-09-16 wanted to give its operators a read of the
+delivery log — "did the receipt go out, did it bounce" — without handing them
+every customer's address and the text of every letter. It could not: the
+permission is called `view_notificationlog` and there was no way for a fixture
+to mean less than all of it. So it granted nothing, and the operators got
+nothing.
+
+`PERSONAL_FIELDS` per admin, excluded from the detail view by default:
+
+* **NotificationLog** — `recipient`, `title`, `body`, `data`
+* **NotificationDelivery** — `recipient` (the table answers "why was a
+  redelivery suppressed" from the event and the state; the address is not
+  needed to read it)
+* **UserContact** — `email`, `phone`, `telegram_chat_id` (what is left is
+  "does this account have a contact route, is it active")
+* **DevicePushToken** — `token`, which is a credential for reaching a
+  person's device
+
+They leave `list_display` and `search_fields` too. Printing an address in a
+results table is the same disclosure as printing it on a page, and searching
+BY one is worse — it confirms a guess. `user_id` reaches the same rows.
+
+Delivery STATE stays: channel, state, template version, status, timestamps.
+
+A host that has decided its staff may see addresses subclasses and narrows the
+tuple — a reviewable line in that deployment rather than a silent consequence
+of a permission name.
+
 ## [Unreleased]
 
 ## [0.17.0] — 2026-08-24
