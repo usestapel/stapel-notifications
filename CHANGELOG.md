@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.23.1] — 2026-09-17
+
+Patch: delete this module's copies of `gdpr.section.erased` and
+`gdpr.owner.alive`. They were refusing other owners' receipts.
+
+`stapel-core` owns both facts and has shipped schemas for them since 0.81.0.
+This module's copies pinned `owner` to `{"const": "notifications"}` and
+required `owner`, `subject_type`, `subject_key` and `counts`, which core leaves
+optional.
+
+`stapel_core.comm` registers one schema per action name for the whole process,
+so in any service that loaded this copy it became the contract for *every*
+emitter — and a receipt from `identity_mirror:<service>`, or from any owner but
+`notifications`, was rejected. The receipt is emitted inside the erasure's own
+transaction, so the rejection rolled the erasure back while the orchestrator
+counted a success. Confirmed by `stapel_core.comm.E010` at core 0.82.2.
+
+Tests validate against the owner's schema now, which is the one a service
+actually loads. Floor moves to `stapel-core>=0.81.0`.
+
 ## 0.22.0 — 2026-09-16
 
 Minor: four defaults that worked, looked fine and lied. One migration

@@ -49,11 +49,25 @@ from stapel_notifications.models import (
 
 SCHEMAS = Path(__file__).resolve().parent.parent / "schemas"
 
+#: `gdpr.section.erased` and `gdpr.owner.alive` are core's facts, and core has
+#: shipped their schemas since 0.81.0. This module vendored copies that pinned
+#: `owner` to `{"const": "notifications"}`, which made a local test pass while
+#: the deployed contract refused every other owner's receipt. Validating
+#: against the OWNER's schema is the point: it is the one a service loads.
+import stapel_core  # noqa: E402
+
+CORE_SCHEMAS = Path(stapel_core.__file__).resolve().parent / "gdpr" / "schemas"
+
+
+def _schema_path(name: str) -> Path:
+    local = SCHEMAS / "emits" / f"{name}.json"
+    return local if local.exists() else CORE_SCHEMAS / "emits" / f"{name}.json"
+
 
 def _validate(payload: dict, name: str) -> None:
     jsonschema.validate(
         payload,
-        json.loads((SCHEMAS / "emits" / f"{name}.json").read_text()),
+        json.loads(_schema_path(name).read_text()),
         format_checker=jsonschema.FormatChecker(),
     )
 
@@ -330,3 +344,46 @@ class TestTheProbe:
         from stapel_notifications.gdpr import NotificationsGDPRProvider
 
         assert NotificationsGDPRProvider.section == GDPR_OWNER
+
+
+class TestTheReceiptContractIsNotThisModulesSubset:
+    """This module vendored a copy of `gdpr.section.erased` until 0.23.1.
+
+    `stapel_core.comm` registers ONE schema per action name for the whole
+    process, so whichever copy a service loaded became the contract for every
+    emitter in it. This module's copy pinned `owner` to
+    `{"const": "notifications"}` and required four fields core leaves optional
+    — so in any service that loaded it, a receipt from a different owner was
+    rejected. The receipt is emitted inside the erasure's own transaction, so
+    the rejection rolled the erasure back while the orchestrator counted a
+    success.
+    """
+
+    def test_another_owners_receipt_validates(self):
+        """The one the vendored copy refused."""
+        _validate(
+            {
+                "correlation_id": "c1",
+                "owner": "identity_mirror:svc-notifications",
+                "subject_type": "account",
+                "subject_key": "u1",
+                "receipt_id": "identity_mirror:account:u1:c1",
+                "counts": {"identity_mirror": 1},
+            },
+            "gdpr.section.erased",
+        )
+
+    def test_the_legacy_account_only_form_validates(self):
+        """Owners still on {user_id, service} must not be refused either."""
+        _validate(
+            {"correlation_id": "c1", "user_id": "u1", "service": "notifications"},
+            "gdpr.section.erased",
+        )
+
+    def test_this_module_ships_no_copy_of_cores_facts(self):
+        for action in ("gdpr.section.erased", "gdpr.owner.alive"):
+            assert not (SCHEMAS / "emits" / f"{action}.json").exists(), (
+                f"{action} is emitted by stapel_core, which ships its schema. "
+                f"A copy here becomes the contract for every emitter in any "
+                f"service that loads it."
+            )
