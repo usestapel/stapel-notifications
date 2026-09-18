@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.23.1"
+version = "0.24.0"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -29,7 +29,12 @@ dependencies = [
     # committed artifact and its drift gate require. (0.24.0 had already
     # turned comm schema validation on outside DEBUG and made jsonschema a
     # base dep.)
-    "stapel-core>=0.81.0,<1.0",
+    # 0.85.1 floor: the erasure protocol this module used to hand-write is
+    # core's `register_gdpr_owner` since 0.24.0, and 0.85.1 is the release
+    # whose provider bridge decides what already answers for a section
+    # (`gdpr.W012`, `gdpr.E011`) — what keeps one erasure part to one receipt
+    # in a service that installs this app.
+    "stapel-core>=0.85.1,<1.0",
 ]
 
 [project.urls]

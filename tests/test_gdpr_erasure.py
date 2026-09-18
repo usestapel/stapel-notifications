@@ -28,16 +28,16 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from stapel_core.comm import subscribe_action
-from stapel_notifications.actions import (
-    handle_erasure_requested,
-    handle_owner_probe,
-    handle_user_deleted,
-)
+from django.core.checks import run_checks
+
+from stapel_core.comm import action_registry, subscribe_action
+from stapel_core.comm.actions import deliver_to_subscribers
+from stapel_core.gdpr import register_gdpr_owner, registered_gdpr_owners
 from stapel_notifications.erasure import (
     GDPR_OWNER,
     GDPR_SUBJECT_TYPES,
     erase_account,
+    erase_subject,
 )
 from stapel_notifications.models import (
     DevicePushToken,
@@ -48,6 +48,14 @@ from stapel_notifications.models import (
 )
 
 SCHEMAS = Path(__file__).resolve().parent.parent / "schemas"
+
+#: The registration `apps.ready()` made. Same terms means the helper hands the
+#: existing registration back rather than subscribing a second time, so this is
+#: both how the tests reach the protocol handlers and an assertion that
+#: `ready()` performed the registration with exactly these terms.
+NOTIFICATIONS_OWNER = register_gdpr_owner(
+    GDPR_OWNER, GDPR_SUBJECT_TYPES, erase_subject
+)
 
 #: `gdpr.section.erased` and `gdpr.owner.alive` are core's facts, and core has
 #: shipped their schemas since 0.81.0. This module vendored copies that pinned
@@ -207,7 +215,7 @@ class TestTheReceipt:
         _seed(uid)
         correlation = uuid.uuid4()
 
-        handle_erasure_requested(_request("account", uid, correlation))
+        NOTIFICATIONS_OWNER.handle_erasure_requested(_request("account", uid, correlation))
 
         assert len(receipts) == 1
         payload = receipts[0].payload
@@ -227,8 +235,8 @@ class TestTheReceipt:
         _seed(uid)
         event = _request("account", uid)
 
-        handle_erasure_requested(event)
-        handle_erasure_requested(event)
+        NOTIFICATIONS_OWNER.handle_erasure_requested(event)
+        NOTIFICATIONS_OWNER.handle_erasure_requested(event)
 
         assert len(receipts) == 2
         assert receipts[1].payload["counts"] == {
@@ -243,19 +251,19 @@ class TestTheReceipt:
         """A notification is addressed to a person, never to a workspace. A
         receipt from an owner that erased nothing is worse than silence —
         the orchestrator counts it and finalizes."""
-        handle_erasure_requested(_request("workspace", uuid.uuid4()))
+        NOTIFICATIONS_OWNER.handle_erasure_requested(_request("workspace", uuid.uuid4()))
 
         assert receipts == []
 
     def test_an_unusable_key_gets_no_receipt(self, receipts, caplog):
         with caplog.at_level("ERROR", logger="stapel_notifications.actions"):
-            handle_erasure_requested(_request("account", "not-a-uuid"))
+            NOTIFICATIONS_OWNER.handle_erasure_requested(_request("account", "not-a-uuid"))
 
         assert receipts == []
         assert any("unusable" in r.message for r in caplog.records)
 
     def test_a_malformed_request_gets_no_receipt(self, receipts):
-        handle_erasure_requested(
+        NOTIFICATIONS_OWNER.handle_erasure_requested(
             types.SimpleNamespace(
                 payload={"subject_type": "account"}, event_id="e9", service="gdpr"
             )
@@ -272,7 +280,7 @@ class TestDeprecatedUserDeletedPath:
         uid = uuid.uuid4()
         _seed(uid)
 
-        handle_user_deleted(
+        NOTIFICATIONS_OWNER.handle_user_deleted(
             types.SimpleNamespace(payload={"user_id": uid}, event_id="e1")
         )
 
@@ -285,7 +293,7 @@ class TestDeprecatedUserDeletedPath:
         _seed(uid)
         correlation = uuid.uuid4()
 
-        handle_user_deleted(
+        NOTIFICATIONS_OWNER.handle_user_deleted(
             types.SimpleNamespace(
                 payload={"user_id": str(uid), "correlation_id": str(correlation)},
                 event_id="e1",
@@ -301,7 +309,7 @@ class TestDeprecatedUserDeletedPath:
         uid = uuid.uuid4()
         _seed(uid)
 
-        handle_user_deleted(
+        NOTIFICATIONS_OWNER.handle_user_deleted(
             types.SimpleNamespace(payload={"user_id": uid}, event_id="e1")
         )
 
@@ -311,7 +319,7 @@ class TestDeprecatedUserDeletedPath:
 @pytest.mark.django_db
 class TestTheProbe:
     def test_it_answers_with_owner_and_subject_types(self, alive):
-        handle_owner_probe(
+        NOTIFICATIONS_OWNER.handle_owner_probe(
             types.SimpleNamespace(
                 payload={"correlation_id": str(uuid.uuid4())},
                 event_id="p1",
@@ -333,17 +341,78 @@ class TestTheProbe:
     def test_it_is_answered_from_the_erasure_subscriber(self):
         """Co-location IS the contract: answering the probe from anywhere
         else would make ``alive`` a statement about a deployed container
-        rather than about a consumed erasure path."""
+        rather than about a consumed erasure path. One registration builds
+        both handlers over one ``erase``, which is what keeps them
+        together."""
+        assert NOTIFICATIONS_OWNER.handle_owner_probe.stapel_gdpr_owner == GDPR_OWNER
         assert (
-            handle_owner_probe.__module__
-            == handle_erasure_requested.__module__
-            == "stapel_notifications.actions"
+            NOTIFICATIONS_OWNER.handle_erasure_requested.stapel_gdpr_owner
+            == GDPR_OWNER
         )
+        assert NOTIFICATIONS_OWNER.erase is erase_subject
 
     def test_the_owner_name_is_the_providers_section(self):
         from stapel_notifications.gdpr import NotificationsGDPRProvider
 
         assert NotificationsGDPRProvider.section == GDPR_OWNER
+
+
+@pytest.mark.django_db
+class TestTheRegistration:
+    """What ``apps.ready()`` put on the bus, and what one fan-out produces."""
+
+    def test_the_owner_claims_the_account_and_nothing_else(self):
+        assert registered_gdpr_owners()[GDPR_OWNER] == tuple(GDPR_SUBJECT_TYPES)
+
+    def test_the_three_protocol_actions_are_subscribed(self):
+        assert action_registry.handlers("gdpr.erasure.requested")
+        assert action_registry.handlers("gdpr.owner.probe")
+        # The deprecated account signal, until stapel-gdpr 0.6.0 drops it.
+        assert action_registry.handlers("user.deleted")
+
+    def test_boot_reports_no_second_answerer_and_no_stranded_section(self):
+        """``manage.py check`` on this module's settings.
+
+        ``gdpr.W012`` is core's bridge naming a library that answers the
+        protocol by hand beside it; ``gdpr.E011`` is a registered provider
+        nothing in the process answers for. This module must raise neither:
+        one registration, one answerer, one receipt per part.
+        """
+        ids = {message.id for message in run_checks()}
+
+        assert "stapel_core.gdpr.W012" not in ids
+        assert "stapel_core.gdpr.E011" not in ids
+
+    def test_one_fan_out_writes_exactly_one_receipt(self, receipts):
+        """Every subscriber of the action, delivered as the bus delivers it.
+
+        Core's provider bridge is subscribed too and would answer for a
+        section nothing else claims — one part, two receipts, two deletions
+        asserted where one happened.
+        """
+        uid = uuid.uuid4()
+        _seed(uid)
+        handlers = action_registry.handlers("gdpr.erasure.requested")
+
+        failures = deliver_to_subscribers(_request("account", uid), handlers)
+
+        assert failures == []
+        assert len(receipts) == 1
+        assert receipts[0].payload["owner"] == GDPR_OWNER
+        assert receipts[0].payload["counts"]["contacts"] == 1
+
+    def test_a_second_fan_out_removes_nothing_and_still_receipts(self, receipts):
+        uid = uuid.uuid4()
+        _seed(uid)
+        handlers = action_registry.handlers("gdpr.erasure.requested")
+        event = _request("account", uid)
+
+        deliver_to_subscribers(event, handlers)
+        deliver_to_subscribers(event, handlers)
+
+        assert len(receipts) == 2
+        assert receipts[1].payload["counts"]["contacts"] == 0
+        assert receipts[1].payload["receipt_id"] == receipts[0].payload["receipt_id"]
 
 
 class TestTheReceiptContractIsNotThisModulesSubset:

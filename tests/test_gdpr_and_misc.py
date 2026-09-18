@@ -73,23 +73,31 @@ class TestGDPRDelete:
 
 @pytest.mark.django_db
 class TestUserDeletedAction:
+    """The deprecated account signal, subscribed by the owner registration."""
+
     def _event(self, payload):
         return types.SimpleNamespace(payload=payload, event_id="evt-act-1")
 
-    def test_handle_user_deleted_erases_pii(self):
-        from stapel_notifications.actions import handle_user_deleted
+    def _owner(self):
+        from stapel_core.gdpr import register_gdpr_owner
+        from stapel_notifications.erasure import (
+            GDPR_OWNER,
+            GDPR_SUBJECT_TYPES,
+            erase_subject,
+        )
 
+        return register_gdpr_owner(GDPR_OWNER, GDPR_SUBJECT_TYPES, erase_subject)
+
+    def test_handle_user_deleted_erases_pii(self):
         uid = uuid.uuid4()
         _seed(uid)
-        handle_user_deleted(self._event({"user_id": uid}))
+        self._owner().handle_user_deleted(self._event({"user_id": str(uid)}))
         assert not UserContact.objects.filter(user_id=uid).exists()
 
     def test_handle_user_deleted_without_user_id_logs_and_returns(self, caplog):
-        from stapel_notifications.actions import handle_user_deleted
-
-        with caplog.at_level("ERROR", logger="stapel_notifications.actions"):
-            handle_user_deleted(self._event({}))
-        assert any("without user_id" in r.message for r in caplog.records)
+        with caplog.at_level("ERROR", logger="stapel_core.gdpr.owners"):
+            self._owner().handle_user_deleted(self._event({}))
+        assert any("without user_id" in r.getMessage() for r in caplog.records)
 
 
 def test_admin_registers_all_models():

@@ -434,9 +434,9 @@ in-process in a monolith, bus consumer in microservices — transport chosen by
 
 | Event consumed | Handler behavior |
 |---|---|
-| `gdpr.erasure.requested` | Erase the named subject and receipt with counts — see **6a. Erasure** below |
-| `gdpr.owner.probe` | Answer `gdpr.owner.alive` from the same module as the eraser — see **6a. Erasure** below |
-| `user.deleted` | Deprecated upstream (stapel-gdpr removes it in 0.6.0). Same `erasure.erase_account` as the erasure path, and it receipts too when the payload carries a `correlation_id` |
+| `gdpr.erasure.requested` | Erase the named subject and receipt with counts — subscribed by `stapel_core.gdpr.register_gdpr_owner` from `apps.ready()` over `erasure.erase_subject`; see **6a. Erasure** below |
+| `gdpr.owner.probe` | Answer `gdpr.owner.alive` from the subscriber that erases (same registration) — see **6a. Erasure** below |
+| `user.deleted` | Deprecated upstream (stapel-gdpr removes it in 0.6.0). Subscribed by the same registration (`legacy_user_deleted`): the same `erasure.erase_account` as the erasure path, receipting too when the payload carries a `correlation_id` |
 | `user.merged` | Carry the guest's feed rows and push tokens to the survivor; the survivor's `UserNotificationSettings` win on collision; the guest's `UserContact` is dropped, never carried — see **7a. Merge policy** below |
 | `user.deletion_initiated` | Soft-deactivate `UserContact` + `DevicePushToken` rows (reversible; reactivated by normal sync paths) |
 | `translations.changed` | Re-resolve changed `notification.*` keys through `translate.resolve` |
@@ -511,11 +511,16 @@ receipt carries. Two shapes, deliberately different:
 | `NotificationDelivery` | destroyed | keyed by the raw address with no `user_id`, so it is reached through the contact **before** that contact is deleted — the one place the order is load-bearing. Blanking is impossible: the address is part of the claim's uniqueness constraint |
 | `NotificationLog` | anonymised | a delivery audit trail with a hole in it is not an erasure, it is a missing record. The identifiers go, and so does every column that quotes the person — `title`, `body`, and `error_message`, which routinely carries a transport's reply quoting the address back |
 
-**The receipt and the probe are one subscriber.** `actions.py` handles
-`gdpr.erasure.requested` and `gdpr.owner.probe` side by side, deliberately:
-`gdpr.owner.alive` is only evidence that the erasure path is *consumed*
-because it is answered by the code that erases. Split them and `gdpr.W006` /
-`GET /gdpr/api/v1/owners/health` would report a running container instead.
+**The protocol is core's, the erasure is this module's.** `apps.ready()`
+calls `stapel_core.gdpr.register_gdpr_owner("notifications", ("account",),
+erasure.erase_subject)`, which subscribes `gdpr.erasure.requested`,
+`gdpr.owner.probe` and the deprecated `user.deleted` around that one callable
+(0.24.0; before it this module carried its own copy of the protocol, and
+core's provider bridge had to yield to it — `gdpr.W012`). The probe is still
+answered by the subscriber that erases, which is the only reason
+`gdpr.owner.alive` is evidence that the path is *consumed* rather than that a
+container runs. Split them and `gdpr.W006` / `GET
+/gdpr/api/v1/owners/health` would report a running container instead.
 Deployment note: a service with this app installed and declared in
 `DATA_OWNERS` must run a `consume_actions` process, or nothing answers either
 event.

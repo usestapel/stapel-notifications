@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.24.0] — 2026-09-18
+
+Minor: the erasure protocol is core's, not this module's copy of it.
+
+`apps.ready()` now calls
+`stapel_core.gdpr.register_gdpr_owner("notifications", ("account",),
+erasure.erase_subject)`. That one call subscribes `gdpr.erasure.requested`,
+`gdpr.owner.probe` and the deprecated `user.deleted`, builds the receipt
+inside the erasure's transaction with a deterministic `receipt_id`, stays
+silent for a subject type this module does not claim, logs and drops a
+malformed payload, and answers the probe from the subscriber that erases.
+
+`actions.handle_erasure_requested`, `actions.handle_owner_probe`,
+`actions.handle_user_deleted`, `actions._receipt` and the two local payload
+schemas are deleted. Nothing about the erasure itself changed: the same
+`erase_account` destroys the contacts, push tokens, settings and delivery
+claims and anonymises the log rows, in the same order and with the same
+counts, under the same owner name `notifications` — receipts and
+`ErasurePart` rows are keyed by that name, and renaming it would orphan every
+row an orchestrator already holds.
+
+**Why it matters in a service.** Core's provider bridge answers
+`gdpr.erasure.requested` for a registered `GDPRProvider` that nothing else
+answers for. A library that ALSO hand-wrote the protocol made the bridge's
+decision an app-level guess (`gdpr.W012` at core 0.85.1): it yields for every
+section that app registers, whether or not the hand-written handler speaks for
+that one. One registration makes the question exact, and `manage.py check` on
+this module's settings now reports neither `gdpr.W012` nor `gdpr.E011` —
+pinned by a test, alongside one fan-out writing exactly one receipt per part.
+
+`erasure.erase_subject` takes the protocol's third argument (`workspace_id`,
+accepted and ignored — these rows are not partitioned by workspace) and
+answers `None` for an unclaimed subject type instead of raising `KeyError`:
+`None` is what receipts nothing.
+
+Floor: `stapel-core>=0.85.1`.
+
 ## [0.23.1] — 2026-09-17
 
 Patch: delete this module's copies of `gdpr.section.erased` and
