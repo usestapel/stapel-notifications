@@ -50,7 +50,10 @@ class TestGDPRExport:
 
     def test_export_without_data(self):
         data = NotificationsGDPRProvider().export(uuid.uuid4())
-        assert data == {"contact": {}, "settings": {}, "devices": [], "log": []}
+        assert data == {
+            "contact": {}, "settings": {}, "devices": [], "log": [],
+            "parked": [],
+        }
 
 
 @pytest.mark.django_db

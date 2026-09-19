@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "user.contact.changed",
+  "description": "Where a person can be written to. Produced by the single observer in stapel_auth.contact_projection on every write that establishes or changes a deliverable address, and applied here as an idempotent upsert of the UserContact mirror. email and phone are always present and are empty strings when unset, so an address an account gave up is cleared rather than left in place. A fresh sync also reactivates a contact soft-deactivated during a closure grace period. Delivery is at-least-once.",
+  "type": "object",
+  "required": ["user_id", "email", "phone"],
+  "properties": {
+    "user_id":          { "type": "string", "format": "uuid", "description": "The account the addresses belong to." },
+    "email":            { "type": "string", "description": "E-mail address, or \"\" when the account has none." },
+    "phone":            { "type": "string", "description": "E.164 phone number, or \"\" when the account has none." },
+    "email_verified":   { "type": "boolean", "description": "Whether the e-mail address has been proven." },
+    "phone_verified":   { "type": "boolean", "description": "Whether the phone number has been proven." },
+    "telegram_chat_id": { "type": "string", "description": "Numeric telegram chat id, when a producer carries one." }
+  },
+  "additionalProperties": false
+}

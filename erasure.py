@@ -66,6 +66,7 @@ def erase_account(user_id) -> dict[str, int]:
         DevicePushToken,
         NotificationDelivery,
         NotificationLog,
+        ParkedDispatch,
         UserContact,
         UserNotificationSettings,
     )
@@ -84,6 +85,13 @@ def erase_account(user_id) -> dict[str, int]:
             recipient__in=sorted(addresses),
         ).delete()
 
+    # Deleted outright, never anonymised: a parked dispatch holds the
+    # caller's raw template variables (the only thing it can be rendered
+    # from later), so there is nothing in it worth keeping about a person
+    # who asked to be forgotten — and an erasure that left it would leave a
+    # letter queued for an address that is being destroyed in the same
+    # transaction.
+    parked, _ = ParkedDispatch.objects.filter(user_id=user_id).delete()
     contacts, _ = UserContact.objects.filter(user_id=user_id).delete()
     tokens, _ = DevicePushToken.objects.filter(user_id=user_id).delete()
     settings, _ = UserNotificationSettings.objects.filter(user_id=user_id).delete()
@@ -94,6 +102,7 @@ def erase_account(user_id) -> dict[str, int]:
         "push_tokens": int(tokens),
         "settings": int(settings),
         "delivery_claims": int(deliveries),
+        "parked_dispatches": int(parked),
         "log_rows_anonymized": int(logs),
     }
 

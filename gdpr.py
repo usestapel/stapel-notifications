@@ -10,7 +10,13 @@ class NotificationsGDPRProvider(GDPRProvider):
     section = GDPR_OWNER
 
     def export(self, user_id: int) -> dict:
-        from .models import DevicePushToken, NotificationLog, UserContact, UserNotificationSettings
+        from .models import (
+            DevicePushToken,
+            NotificationLog,
+            ParkedDispatch,
+            UserContact,
+            UserNotificationSettings,
+        )
 
         contact = {}
         try:
@@ -52,11 +58,21 @@ class NotificationsGDPRProvider(GDPRProvider):
             'read_at',
         ))
 
+        # Notifications waiting for an address to arrive. Metadata only:
+        # the row's `request` holds the caller's raw template variables, and
+        # an export is a file the subject downloads and keeps — it must not
+        # be the one place a deep link or a caller-supplied value outlives
+        # the 72-hour table it was parked in.
+        parked = list(ParkedDispatch.objects.filter(user_id=user_id).values(
+            'notification_type', 'channel', 'created_at',
+        ))
+
         return {
             'contact':  contact,
             'settings': settings,
             'devices':  _serialize_dates(devices),
             'log':      _serialize_dates(logs),
+            'parked':   _serialize_dates(parked),
         }
 
     def delete(self, user_id: int) -> None:

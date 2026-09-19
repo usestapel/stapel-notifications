@@ -292,3 +292,79 @@ class DevicePushToken(models.Model):
 
     def __str__(self):
         return f"{self.platform}:{self.token[:20]}... (user={self.user_id})"
+
+
+@access.secret  # carries the caller's raw template variables until it is sent or expires (AS-5)
+class ParkedDispatch(models.Model):
+    """A transactional notification that found no address — kept so it can
+    still be sent when the address arrives.
+
+    **Why the journal could not do this job.** ``NotificationLog`` records
+    that a notification was ``skipped`` and why, and that is all it records:
+    ``title``/``body``/``data`` are written on a SENT row and left empty on a
+    skipped one, and ``telemetry.py`` makes sure the caller's variables never
+    reach that table in the first place — for good reason, since for this
+    library's own built-in types those variables are a passcode, a sign-in
+    link and an initial password. So "re-send the skipped ones" cannot be
+    implemented by reading the journal: the letter is not in it, and putting
+    it there would turn a delivery log into a credential store.
+
+    What can honestly be retried is the **request**, not the letter. This row
+    is the arguments ``process_notification`` was called with, parked at the
+    moment the dispatch found no address, and replayed once by
+    ``manage.py notifications_reconcile_contacts --resend-skipped`` after the
+    contact mirror has been repaired.
+
+    **The narrow gate is the design, not a precaution.** A row here holds raw
+    variables, so only types matching ``STAPEL_NOTIFICATIONS["RETRY_ON_CONTACT"]``
+    are ever parked, and ``checks.E008`` refuses a boot whose allowlist names
+    a security-class type. The default pair — a "your thing is ready" and a
+    payment receipt — are exactly the notifications a person is entitled to
+    receive late rather than never.
+
+    **Lifetime is short by contract.** A parked row is deleted when it is
+    sent and when it ages past
+    ``STAPEL_NOTIFICATIONS["RETRY_ON_CONTACT_WINDOW_HOURS"]`` (default 72),
+    whichever comes first, and the reconcile command counts both so neither
+    is silent. It is erased with its subject like every other user-keyed
+    table here (``erasure.py``).
+
+    ``log_id`` is the notification's own key for idempotency: it points at
+    the ``NotificationLog`` row that recorded the skip, it is unique, and the
+    replay both deletes this row and flips that one to ``sent`` in one
+    transaction — so a second ``--resend-skipped`` has nothing left to find,
+    whatever the delivery claim does.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    log_id = models.UUIDField(
+        unique=True,
+        help_text=(
+            "The NotificationLog row that recorded the skip. The retry's "
+            "idempotency key: replaying deletes this row and flips that one, "
+            "in one transaction."
+        ),
+    )
+    user_id = models.UUIDField(db_index=True)
+    notification_type = models.CharField(max_length=50, db_index=True)
+    channel = models.CharField(max_length=10)
+    event_id = models.CharField(max_length=255, blank=True, default="")
+    language = models.CharField(max_length=5, blank=True, default="")
+    request = models.JSONField(
+        default=dict,
+        help_text=(
+            "The process_notification arguments, verbatim — variables "
+            "included, which is why this model is declared secret and why "
+            "the type allowlist is narrow. Never rendered into a log line."
+        ),
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = "Parked Dispatch"
+        verbose_name_plural = "Parked Dispatches"
+        indexes = [models.Index(fields=["created_at", "notification_type"])]
+
+    def __str__(self):
+        # No address, no variables, no rendered copy — an id and a type.
+        return f"Parked({self.notification_type} for {self.user_id})"

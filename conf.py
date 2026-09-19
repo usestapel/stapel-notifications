@@ -272,6 +272,34 @@ DEFAULTS = {
     # Languages to prefetch with `manage.py sync_translations` (the
     # lazy resolve-on-miss path covers anything not listed here).
     "LANGUAGES": ["en"],
+    # ── Retry-when-the-address-arrives ──────────────────────────────────
+    #
+    # Notification types whose dispatch is PARKED — request and all — when
+    # it finds no address for the recipient, so that
+    # `manage.py notifications_reconcile_contacts --resend-skipped` can send
+    # it once the contact mirror catches up. Prefix match on the type name.
+    #
+    # An empty list (NOT the default: see below) switches the mechanism off
+    # and the library's behaviour returns to "skipped is final".
+    #
+    # Why an allowlist and not "retry everything". A parked row holds the
+    # caller's template variables — the only thing a letter can be rendered
+    # from later — and telemetry.py exists precisely because those variables
+    # are, for this library's own built-in types, a passcode, a sign-in link
+    # and an initial password. So the set is narrow by default, and
+    # checks.E008 REFUSES a host that puts a security-class type in it: the
+    # safety is a property of the boot, not of somebody's discipline.
+    #
+    # The two defaults are the transactional classes a person is entitled to
+    # receive late rather than never — "the thing you paid for is ready" and
+    # "we charged your card".
+    "RETRY_ON_CONTACT": ["recordings.ready", "billing.payment_"],
+    # How long a parked dispatch stays worth sending, in hours. A receipt
+    # that arrives three days late is a receipt; one that arrives three
+    # weeks late is a confusing artefact of an outage nobody remembers.
+    # Parked rows older than this are deleted unsent by the reconcile
+    # command, and counted so the deletion is visible rather than silent.
+    "RETRY_ON_CONTACT_WINDOW_HOURS": 72,
 }
 
 notifications_settings = NotificationsAppSettings(

@@ -343,7 +343,7 @@ def test_the_consumes_schema_is_committed():
 
 
 def test_every_user_column_in_this_module_has_an_answer():
-    """The handler names four models. A fifth user column would be silently
+    """The handler names five models. A sixth user column would be silently
     stranded — fail here, not in production."""
     from django.apps import apps
 
@@ -352,6 +352,7 @@ def test_every_user_column_in_this_module_has_an_answer():
         "DevicePushToken.user_id",
         "UserNotificationSettings.user_id",
         "UserContact.user_id",
+        "ParkedDispatch.user_id",
     }
     found = {
         f"{model.__name__}.{field.name}"

@@ -188,6 +188,7 @@ class TestErasure:
             "push_tokens": 1,
             "settings": 1,
             "delivery_claims": 2,
+            "parked_dispatches": 0,
             "log_rows_anonymized": 1,
         }
 
@@ -244,6 +245,7 @@ class TestTheReceipt:
             "push_tokens": 0,
             "settings": 0,
             "delivery_claims": 0,
+            "parked_dispatches": 0,
             "log_rows_anonymized": 0,
         }
 

@@ -51,6 +51,12 @@ JOURNAL_KEYS = frozenset({
     "language_source",
     "recipient_language_unaskable",
     "event_id",
+    # This row was a "skipped — no address" that a later reconcile made
+    # good (contact_gap.replay flips the row rather than appending a second
+    # one). Without the marker, "sent" would be indistinguishable from
+    # "sent on the first try", and the whole point of the repair is that
+    # somebody can audit which letters were late.
+    "resent_from_skipped",
 })
 
 #: The one journal key that is opaque BY DESIGN: a bus message id is not a

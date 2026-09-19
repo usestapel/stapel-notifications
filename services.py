@@ -17,6 +17,7 @@ from .models import (
     NotificationLog,
 )
 from .conf import notifications_settings
+from .contact_gap import park_dispatch, report_missing_contact
 from .delivery import claim as claim_delivery
 from .delivery import confirm as confirm_delivery
 from .delivery import release as release_delivery
@@ -590,7 +591,7 @@ def process_notification(
                     "Skipped %s/%s: no %s address for this recipient",
                     notification_type, channel, channel,
                 )
-                NotificationLog.objects.create(
+                skipped_row = NotificationLog.objects.create(
                     user_id=user_id,
                     notification_type=notification_type,
                     channel=channel,
@@ -598,6 +599,31 @@ def process_notification(
                     language=lang,
                     recipient=recipient,
                     error_message=f"no {channel} address for this recipient",
+                )
+                # The seam that used to end here. A skip for an account that
+                # EXISTS upstream is a broken contact mirror, not a person
+                # without an address, and it now says so at ERROR under a
+                # stable fingerprint — plus, for the narrow allowlist of
+                # transactional types, the request is parked so the mirror's
+                # repair can still deliver it. See contact_gap.py.
+                report_missing_contact(
+                    notification_type=notification_type,
+                    channel=channel,
+                    user_id=user_id,
+                    event_id=event_id,
+                )
+                park_dispatch(
+                    log=skipped_row,
+                    user_id=user_id,
+                    notification_type=notification_type,
+                    channel=channel,
+                    event_id=event_id,
+                    language=lang,
+                    request={
+                        "variables": variables,
+                        "language": lang,
+                        "event_id": event_id,
+                    },
                 )
                 any_reachability_gap = True
                 continue

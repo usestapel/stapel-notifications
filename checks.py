@@ -639,3 +639,56 @@ def check_unsubscribe_has_somewhere_to_point(app_configs, **kwargs):
         ),
         id="stapel_notifications.E006",
     )]
+
+
+@checks.register(checks.Tags.security)
+def check_retry_allowlist_holds_no_security_type(app_configs, **kwargs):
+    """E008 — a parked retry would hold a credential.
+
+    ``RETRY_ON_CONTACT`` names the notification types whose *request* is kept
+    when a dispatch finds no address, so it can be sent once the contact
+    mirror catches up. A parked row therefore holds the caller's template
+    variables verbatim — that is the only thing a letter can be rendered from
+    later, and it is precisely what ``telemetry.py`` spends a module keeping
+    out of the delivery journal, because for this library's own built-in
+    types those variables are a one-time passcode, a sign-in link with its
+    token, an invitation URL that creates an account, and an org-provisioned
+    account's initial password.
+
+    So a security-class type in this list turns a short-lived recovery table
+    into a credential store — and a stale one, since the point of the table
+    is that the row waits. The refusal is at boot rather than at the park
+    site because a runtime skip is silent by nature: the whole failure being
+    repaired here is one that nobody noticed for four months.
+
+    There is nothing to gain either way. A passcode that could not be
+    delivered when it was minted has expired long before an address arrives;
+    re-sending it is not a fix, it is a second passcode with no request
+    behind it.
+    """
+    from .conf import notifications_settings
+    from .routing import is_security
+
+    prefixes = list(notifications_settings.RETRY_ON_CONTACT or [])
+    if not prefixes:
+        return []
+
+    offenders = sorted(
+        ntype for ntype in _effective_types()
+        if is_security(ntype) and any(ntype.startswith(p) for p in prefixes)
+    )
+    if not offenders:
+        return []
+    return [checks.Error(
+        "STAPEL_NOTIFICATIONS['RETRY_ON_CONTACT'] matches security-class "
+        f"notification type(s) ({', '.join(offenders[:5])}). A parked retry "
+        "keeps the caller's template variables so the letter can be "
+        "rendered later — for these types that is a passcode, a sign-in "
+        "link or an initial password, waiting in a table.",
+        hint=(
+            "Narrow the prefixes so no auth-group or security-flagged type "
+            "matches. A passcode that could not be delivered has expired by "
+            "the time an address arrives; there is nothing to re-send."
+        ),
+        id="stapel_notifications.E008",
+    )]

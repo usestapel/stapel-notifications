@@ -1,5 +1,90 @@
 # Changelog
 
+## [0.25.0] — 2026-09-19
+
+Minor: a new model and its migration (`0012_parkeddispatch`), a new consumed
+action, a new management command, a new system check.
+
+### Fixed — the contact mirror had no way to be told, and no way to complain
+
+`UserContact` is a projection of auth and was fed by exactly one event on the
+pre-comm Kafka topic `stapel.auth.user-contact-changed`. Upstream, only the
+change-my-address flow ever produced that event (closed in stapel-auth
+0.44.0), so on a deployment where people sign in with Google the topic
+carried nothing at all. Measured on a live fleet: 192 accounts with a
+verified e-mail upstream, a mirror holding 41 rows — all of them relics of a
+one-off import, none of them belonging to an account that still existed —
+and twenty transactional letters, payment receipts among them, journalled as
+`skipped: no email address for this recipient` over thirty days. No alert, no
+metric, no repair path. Every individual component was working as written.
+
+Three things now stand where nothing did (`contact_gap.py`):
+
+- **`@on_action("user.contact.changed")`** — the apply half of the
+  projection, on the transactional outbox like every other fact this fleet
+  moves. Idempotent upsert; an empty address CLEARS the mirror rather than
+  being read as "no information", because an account that gave up an address
+  must stop being written to there. `manage.py consume_contacts` still reads
+  the legacy topic for a deployment that has not caught up; both land in the
+  same upsert.
+- **It shouts.** A skip for an account that exists upstream (i.e. one
+  carrying a `user_id` — the unauthenticated passcode case stays quiet) logs
+  ERROR under the stable fingerprint `notification_skipped_no_contact`,
+  rate-limited per (type, recipient) with the suppressed count on the next
+  line that gets through. Never an address, a name or a body.
+- **It is measurable.** `notifications_contacts_missing` — address-less skips
+  in the last 24 hours — is published as a gauge and printed by the reconcile
+  command, so the condition has a number to threshold instead of a log line
+  somebody has to think to grep for.
+
+### Added — `manage.py notifications_reconcile_contacts`
+
+`[--dry-run] [--since …] [--resend-skipped] [--page-size N]`. Walks the
+`auth.contacts_page` comm Function (stapel-auth 0.44.0, keyset-paginated) and
+upserts the mirror idempotently. Prints counts only — created / updated /
+unchanged / missing-upstream — because an operator running this during an
+incident is usually pasting the output somewhere, and a repair tool that
+prints its subjects' addresses makes that paste a disclosure.
+
+It never deletes a row the source did not mention. A contact missing upstream
+is either an erasure (which has its own event and its own receipt) or a
+`--since` window that did not include it, and a reconciler that deletes on
+the strength of "I did not see it" is how a repair tool becomes an outage.
+The count is reported instead.
+
+### Added — parked dispatches, and the honest limit on re-sending
+
+Should a transactional mail skipped for a missing address be re-sent when the
+address arrives? Yes — but it cannot be re-sent *from the journal*.
+`NotificationLog` records that a letter was skipped and never the letter, and
+`telemetry.py` exists to keep it that way: for this library's own built-in
+types the caller's variables are a passcode, a sign-in link with its token,
+and an initial password. Re-sending from the journal would mean storing those.
+
+So the **request** is parked, not the letter. `ParkedDispatch` keeps the
+`process_notification` arguments of a skipped dispatch for the narrow
+allowlist `STAPEL_NOTIFICATIONS["RETRY_ON_CONTACT"]` (default: a
+"your thing is ready" and the payment family) and
+`--resend-skipped` replays each **once**, inside
+`RETRY_ON_CONTACT_WINDOW_HOURS` (default 72); older rows are deleted unsent
+and counted. A replay flips the original journal row to `sent` with
+`data.resent_from_skipped` rather than appending a second row, so "did this
+customer get their receipt?" keeps a single answer, and the parked row's
+deletion in the same transaction is the idempotency. A provider that is
+reached and refuses leaves the row parked to try again; a dispatch that
+reaches no channel for a reason an address cannot fix drops it.
+
+`checks.E008` refuses a boot whose allowlist matches a security-class type,
+and `is_retry_eligible` refuses it again at runtime, because a check can be
+silenced. There is nothing to gain either way: a passcode that could not be
+delivered when it was minted has expired long before an address arrives.
+
+`ParkedDispatch` is wired into the rest of the account life cycle like every
+other user-keyed table here — erased with its subject (`parked_dispatches` on
+the receipt), re-parented on `user.merged` (it is this module's own row and
+the same person is still owed the letter), and exported as metadata only,
+never its `request`.
+
 ## [0.24.0] — 2026-09-18
 
 Minor: the erasure protocol is core's, not this module's copy of it.

@@ -105,6 +105,8 @@ without touching a template.
 |-----|------|--------|---------|----------|---------|
 | SMTP_TIMEOUT | int | env | connect/read timeout in seconds used by the SMTP provider when the host has not set Django's `EMAIL_TIMEOUT`; without one a slow mail server hangs the request until the proxy gives up. | no | 15 |
 | LANGUAGES | list[str] | env | languages `manage.py sync_translations` prefetches; the lazy resolve-on-miss path covers anything not listed. | no | [en] |
+| RETRY_ON_CONTACT | list[str] | env | notification types (prefix match) whose dispatch is PARKED when it finds no address for the recipient, so `manage.py notifications_reconcile_contacts --resend-skipped` can send it once the contact mirror catches up. A parked row holds the caller's raw template variables — the only thing a letter can be rendered from later — so the set is narrow, and `checks.E008` refuses a boot whose list matches a security-class type (a passcode has expired long before an address arrives). `[]` switches the mechanism off and "skipped" goes back to being final. | no | [recordings.ready, billing.payment_] |
+| RETRY_ON_CONTACT_WINDOW_HOURS | int | env | how long a parked dispatch stays worth sending. Older rows are deleted unsent and counted. A receipt that arrives three days late is a receipt; three weeks late it is an artefact of an outage the recipient cannot place. | no | 72 |
 
 ### Bus consumer groups
 

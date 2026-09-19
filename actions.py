@@ -75,6 +75,7 @@ def handle_user_merged(event):
     from .models import (
         DevicePushToken,
         NotificationLog,
+        ParkedDispatch,
         UserContact,
         UserNotificationSettings,
     )
@@ -113,6 +114,16 @@ def handle_user_merged(event):
                 ).delete()
             # Auth owns this row; the survivor's own sync fills it.
             contacts, _ = UserContact.objects.filter(user_id=from_user_id).delete()
+            # Re-parented, unlike the contact above. A parked dispatch is
+            # this module's own row, not a projection: it is a letter the
+            # SAME PERSON is still owed ("you paid", "your file is ready"),
+            # and the account they are owed it on is now the survivor. Its
+            # uniqueness is on log_id, which a merge does not touch, so
+            # nothing can collide. Dropping it would make a merge the one
+            # way to lose a receipt.
+            parked = ParkedDispatch.objects.filter(
+                user_id=from_user_id
+            ).update(user_id=into_user_id)
     except (TypeError, ValueError, ValidationError):
         # A UUIDField raises ValidationError — NOT a ValueError — for an id
         # that is not a UUID, and an id that cannot address a row here names
@@ -126,8 +137,79 @@ def handle_user_merged(event):
 
     logger.info(
         "user.merged %s -> %s: %s log row(s), %s push token(s), %s settings "
-        "row(s) carried over, %s guest contact row(s) dropped",
-        from_user_id, into_user_id, logs, tokens, settings_kept, contacts,
+        "row(s), %s parked dispatch(es) carried over, %s guest contact "
+        "row(s) dropped",
+        from_user_id, into_user_id, logs, tokens, settings_kept, parked,
+        contacts,
+    )
+
+
+@on_action("user.contact.changed")
+def handle_user_contact_changed(event):
+    """Mirror the account's deliverable address — the projection's apply half.
+
+    ``UserContact`` is a projection of auth, and this is the only writer of
+    it that belongs in this module. The producer is one observer in
+    ``stapel_auth.contact_projection``, which fires on every write that
+    establishes or changes an address: registration, OAuth first login, a
+    guest upgrade, an authenticator change, an admin edit, a shell.
+
+    **The history is the reason this handler exists at all.** The fact used
+    to travel only on the pre-comm Kafka topic
+    ``stapel.auth.user-contact-changed``, produced by exactly one auth flow
+    (change-my-address) — so on a Google-first deployment the topic carried
+    literally nothing and the mirror stayed empty while every account had an
+    e-mail. The transport is now the transactional outbox, like every other
+    fact this fleet moves; ``manage.py consume_contacts`` still reads the
+    legacy topic and remains correct for a deployment that has not caught
+    up, and both paths land in this same idempotent upsert.
+
+    ``email``/``phone`` are written whenever the key is present, including
+    when it is empty: an account that gave up an address must stop being
+    written to there, and treating "" as "no information" is how a mirror
+    keeps mailing a mailbox its owner abandoned. A fresh sync also
+    REACTIVATES a contact soft-deactivated during an account-closure grace
+    period, matching the legacy consumer.
+
+    Idempotent by construction (update_or_create), which at-least-once
+    delivery requires.
+    """
+    from .models import UserContact
+
+    payload = event.payload or {}
+    user_id = payload.get("user_id")
+    if not user_id:
+        logger.error(
+            "user.contact.changed without user_id: %s",
+            getattr(event, "event_id", "?"),
+        )
+        return
+
+    defaults = {}
+    for key in ("email", "phone", "telegram_chat_id"):
+        if key in payload:
+            defaults[key] = str(payload[key] or "")
+    if not defaults:
+        return
+    defaults["is_active"] = True
+
+    try:
+        _obj, created = UserContact.objects.update_or_create(
+            user_id=user_id, defaults=defaults,
+        )
+    except (TypeError, ValueError, ValidationError):
+        # A UUIDField raises ValidationError for an id that is not a UUID,
+        # and an id that addresses no row names nobody. Saying so quietly
+        # beats a redelivery loop over a payload no retry can fix.
+        logger.error(
+            "user.contact.changed with an unusable user id: %s",
+            getattr(event, "event_id", "?"),
+        )
+        return
+    # Counts and ids only — never the address itself.
+    logger.info(
+        "contact mirrored for user %s (%s)",
+        user_id, "created" if created else "updated",
     )
 
 
