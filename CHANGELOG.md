@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.26.0] — 2026-09-20
+
+Minor: the contacts-missing gauge declares how several workers combine. Floor
+`stapel-core>=0.88.0`.
+
+### Fixed — a count over this service's own rows, multiplied by the workers
+
+`stapel_notifications_contacts_missing` is a count of rows in this service's
+own table, so every worker that publishes it computes the same number. Under
+multiprocess metrics without a declared mode `prometheus_client` emits one
+series per pid, and summing across workers would report a contact gap N times
+larger than it is — an alert for an outage that is not happening.
+
+`livemostrecent`. Inert in a single-process deployment.
+
 ## [0.25.0] — 2026-09-19
 
 Minor: a new model and its migration (`0012_parkeddispatch`), a new consumed

@@ -172,7 +172,14 @@ def publish_contacts_missing_gauge(hours: int = 24) -> int:
 
     value = contacts_missing_count(hours)
     try:
-        metrics.gauge(GAUGE, value, labels={"window_hours": str(hours)})
+        metrics.gauge(
+            GAUGE, value, labels={"window_hours": str(hours)},
+            # A count over this service's own rows: every worker that
+            # publishes it computes the same number, so the freshest one is
+            # the truth. Summing across workers would multiply the gap by the
+            # worker count and page for an outage that is not happening.
+            multiprocess_mode="livemostrecent",
+        )
     except Exception:  # pragma: no cover - a metrics backend is optional
         logger.debug("contact-gap gauge not published", exc_info=True)
     return value
