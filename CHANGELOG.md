@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.26.1] — 2026-10-14
+
+### Fixed — a cached translation that lost its placeholders is not used
+
+Measured on a client fleet: ten library keys were cached in every language
+as design-mock fillers with their `{placeholders}` gone — every footer read
+"(c) 2026 Service company", the code letter's subject carried no code. The
+cache writer stores whatever the translate service returns, so the rows came
+back after deletion. `_resolve_translations` now refuses a cached (or
+gettext) value that carries a placeholder the source lacks, or none of the
+source's placeholders, falls back to the source text and logs a WARNING
+naming the keys. Dropping some placeholders (a translation that leaves out
+`{company_name}`) stays allowed.
+
 ## [0.26.0] — 2026-09-20
 
 Minor: the contacts-missing gauge declares how several workers combine. Floor

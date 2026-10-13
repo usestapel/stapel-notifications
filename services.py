@@ -99,6 +99,23 @@ def _override_for(key: str, lang: str, overrides: dict) -> tuple[str | None, str
     return None, None
 
 
+_PLACEHOLDER = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def _same_placeholders(text: str, source: str) -> bool:
+    """May *text* stand for *source*, judged by its ``{placeholders}``?
+
+    No placeholder the source lacks (it would render raw), and not ALL of
+    the source's dropped: a translation may leave out ``{company_name}``,
+    but one with none of the source's slots is a filler, not a translation.
+    """
+    have = set(_PLACEHOLDER.findall(text))
+    want = set(_PLACEHOLDER.findall(source))
+    if not have <= want:
+        return False
+    return not want or bool(have)
+
+
 def _gettext_default(default: str, lang: str) -> str | None:
     """The host's own gettext catalogue, asked under ``lang``.
 
@@ -190,6 +207,7 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
 
     overrides = _text_overrides()
     untranslated = []
+    refused = []
     for key in keys:
         pinned, override_default = _override_for(key, lang, overrides)
         if pinned:
@@ -198,18 +216,32 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
         default = override_default or NOTIFICATION_KEYS.get(key, key)
         if key in cached:
             text = cached[key].get(lang)
-            if text:
+            if text and _same_placeholders(text, default):
                 translations[key] = text
                 continue
+            if text:
+                refused.append(key)
         text = _gettext_default(default, lang)
-        if text:
+        if text and _same_placeholders(text, default):
             translations[key] = text
             continue
+        cached_en = (cached.get(key) or {}).get("en")
         translations[key] = (
-            (cached.get(key) or {}).get("en") or default
+            cached_en if cached_en and _same_placeholders(cached_en, default)
+            else default
         )
         if not _has_nothing_to_translate(default):
             untranslated.append(key)
+
+    if refused:
+        # A translation whose {placeholders} differ from the source renders
+        # a filler ("(c) 2026 Service company") or a raw brace in every
+        # letter; the source text is the honest fallback.
+        logger.warning(
+            "notifications: %d cached %s translation(s) dropped — their "
+            "placeholders differ from the source text. Keys: %s",
+            len(refused), lang, ", ".join(refused[:5]),
+        )
 
     if untranslated and lang.split("-")[0] != "en":
         # Not debug: "you asked for ru and are getting English" is the
