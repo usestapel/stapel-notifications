@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.27.0] — 2026-10-15
+
+### Fixed — a live push token is never moved to another account
+
+`POST /devices/` with a token that is active for a DIFFERENT account now
+answers `409 error.409.conflict` and leaves the binding where it is. A device
+token is a bearer value: moving it on request let anybody who learned one take
+that account's push routing (and aim their own notifications at its device).
+The hand-over path is the previous account's own unregister (logout, or
+`DELETE /devices/by-id/<id>/` from its device list). A binding the push
+provider already rejected (`is_active=False`) still moves, with the audit line.
+
 ## [0.26.1] — 2026-10-14
 
 ### Fixed — a cached translation that lost its placeholders is not used

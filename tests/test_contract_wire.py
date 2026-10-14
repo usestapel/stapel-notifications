@@ -379,13 +379,14 @@ def _device_register(call):
     """Three states of the same write, because they take three different
     branches: a first registration, a re-registration of a token the caller
     already holds (``update_or_create``), and a rebinding that first DELETES
-    another account's binding for the same physical device."""
+    another account's binding the push provider already rejected (a LIVE
+    one is refused with 409 and never reaches a 201)."""
     first = make_user()
     returning = make_user()
     taker = make_user()
 
     held = make_device(returning, platform="ios")
-    handed_over = make_device(make_user(), platform="android")
+    handed_over = make_device(make_user(), platform="android", is_active=False)
 
     return [
         (
@@ -400,7 +401,7 @@ def _device_register(call):
             call(client_for(returning), data={"token": held.token, "platform": "ios"}),
         ),
         (
-            "a rebinding that removes another account's binding",
+            "a rebinding that removes another account's rejected binding",
             call(
                 client_for(taker),
                 data={"token": handed_over.token, "platform": "web"},

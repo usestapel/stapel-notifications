@@ -230,9 +230,11 @@ class TestDeviceTokenRebinding:
         row = DevicePushToken.objects.get(token="tok-shared")
         assert row.user_id == user.id and row.is_active
 
-    def test_rebinding_removes_other_users_binding(
+    def test_a_live_token_is_not_moved_to_another_account(
         self, authed_client, user, other_user, caplog
     ):
+        """A token is a bearer value: presenting another account's live token
+        must not take that account's push routing."""
         assert self._register(authed_client).status_code == 201
 
         from rest_framework.test import APIClient
@@ -241,15 +243,43 @@ class TestDeviceTokenRebinding:
         other_client.force_authenticate(user=other_user)
         with caplog.at_level("WARNING", logger="stapel_notifications.views"):
             resp = self._register(other_client, platform="android")
-        assert resp.status_code == 201
+        assert resp.status_code == 409
+        assert resp.json()["localizable_error"] == "error.409.conflict"
 
-        rows = DevicePushToken.objects.filter(token="tok-shared")
-        assert rows.count() == 1  # no silent duplicate, no silent re-bind
-        row = rows.get()
-        assert row.user_id == other_user.id
-        assert row.platform == "android"
-        # audit trail for the ownership change
+        row = DevicePushToken.objects.get(token="tok-shared")
+        assert row.user_id == user.id and row.platform == "ios" and row.is_active
+        assert any("rebinding refused" in r.message for r in caplog.records)
+
+    def test_a_rejected_binding_moves_with_an_audit_line(
+        self, authed_client, user, other_user, caplog
+    ):
+        """A binding the provider already rejected routes nothing: the move
+        takes nothing from anybody, and is logged."""
+        assert self._register(authed_client).status_code == 201
+        DevicePushToken.objects.filter(token="tok-shared").update(is_active=False)
+
+        from rest_framework.test import APIClient
+
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_user)
+        with caplog.at_level("WARNING", logger="stapel_notifications.views"):
+            resp = self._register(other_client, platform="android")
+        assert resp.status_code == 201
+        row = DevicePushToken.objects.get(token="tok-shared")
+        assert row.user_id == other_user.id and row.is_active
         assert any("rebinding" in r.message for r in caplog.records)
+
+    def test_after_the_owner_unregisters_another_account_may_register(
+        self, authed_client, user, other_user
+    ):
+        assert self._register(authed_client).status_code == 201
+        assert authed_client.delete("/devices/tok-shared/").status_code in (200, 204)
+
+        from rest_framework.test import APIClient
+
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_user)
+        assert self._register(other_client).status_code == 201
 
     def test_same_user_reregister_is_quiet(self, authed_client, user, caplog):
         self._register(authed_client)

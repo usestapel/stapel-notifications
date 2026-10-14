@@ -10,16 +10,12 @@ line:
     **a guest may read its own notification feed — which is empty — and may
     not touch the device-token registry.**
 
-The registry is the sharp half, and not merely because pushing to a throwaway
-account is pointless. A device token identifies one *physical device*, and
-``DeviceTokenView`` deliberately **removes another account's binding** when
-the same token arrives under a new user (the hand-over case, logged as a
-rebinding). With guest sessions on, that turns into a live defect on any
-shared device: a user logs out, the app mints an anonymous session, the app
-re-registers the same device token — and the previous, real account silently
-stops receiving push. Requiring a real account on both the register and the
-unregister side closes that path, and costs nothing: an anonymous session has
-no durable identity worth notifying.
+The registry is the sharp half. A device token identifies one *physical
+device* and is a bearer value, so ``DeviceTokenView`` never moves a token
+that is live for another account (409): the hand-over path is the previous
+account's own unregister. A guest session is kept off both register and
+unregister for the same reason — an anonymous session has no durable
+identity worth notifying, and must not hold a device's routing.
 
 The feed is the opposite case. It reads ``NotificationLog`` filtered by
 ``request.user.id``, so a guest's answer is an empty page — which is the
@@ -40,6 +36,7 @@ from stapel_core.django.api.errors import (
     StapelErrorSerializer,
     StapelResponse,
 )
+from stapel_core.django.api.errors import ERR_409_CONFLICT
 from stapel_core.django.api.pagination import CreatedAtAnchorPagination
 from stapel_core.django.api.permissions import (
     ANONYMOUS_ALLOWED,
@@ -119,10 +116,8 @@ def _device_dto(device: DevicePushToken) -> DeviceListItemResponse:
 class DeviceTokenView(SerializerSeamMixin, APIView):
     """List the caller's push devices, or register one."""
 
-    # A token is a physical device, and the rebinding branch below DELETES a
-    # previous account's binding for it. A guest session must not be able to
-    # take a device's notification routing away from the real account that
-    # last held it — see the module header for the shared-device scenario.
+    # A token is a physical device. A guest session must not be able to
+    # hold a device's notification routing — see the module header.
     permission_classes = [IsNotAnonymousUser]
     request_serializer_class = DeviceTokenRequestSerializer
     response_serializer_class = DeviceTokenResponseSerializer
@@ -168,6 +163,7 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
         responses={
             201: DeviceTokenResponseSerializer,
             400: StapelErrorSerializer,
+            409: StapelErrorSerializer,
         },
     )
     def post(self, request):  # noqa: R007
@@ -182,14 +178,30 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
             return StapelErrorResponse(400, ERR_400_INVALID_PLATFORM)
 
         with transaction.atomic():
-            # A device token identifies one physical device.  When another
-            # account registers the same token (device handed over, account
-            # switch), silently re-binding via update_or_create would move
-            # the token without a trace — remove the previous binding
-            # explicitly and leave an audit log line instead.
-            stale = DevicePushToken.objects.filter(token=token).exclude(
-                user_id=request.user.id
-            ).first()
+            # A device token identifies one physical device, and it is a
+            # bearer value: whoever learns it can present it. A token that is
+            # LIVE for another account stays there — moving it on request
+            # would let anybody who saw the token take that account's push
+            # routing (and point their own notifications at its device). The
+            # hand-over path is the previous account's own unregister
+            # (logout, or DELETE from its device list). A binding the push
+            # provider already rejected (is_active=False) routes nothing, so
+            # moving it takes nothing from anybody.
+            stale = (
+                DevicePushToken.objects.select_for_update()
+                .filter(token=token)
+                .exclude(user_id=request.user.id)
+                .first()
+            )
+            if stale is not None and stale.is_active:
+                logger.warning(
+                    "push token rebinding refused: token %s... is live for "
+                    "user %s, requested by user %s",
+                    token[:20],
+                    stale.user_id,
+                    request.user.id,
+                )
+                return StapelErrorResponse(409, ERR_409_CONFLICT)
             if stale is not None:
                 logger.warning(
                     "push token rebinding: token %s... moves from user %s "
