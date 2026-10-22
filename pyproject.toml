@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.28.0"
+version = "0.28.1"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -34,7 +34,7 @@ dependencies = [
     # whose provider bridge decides what already answers for a section
     # (`gdpr.W012`, `gdpr.E011`) — what keeps one erasure part to one receipt
     # in a service that installs this app.
-    "stapel-core>=0.88.0,<1.0",
+    "stapel-core>=0.94.0,<1.0",
 ]
 
 [project.urls]

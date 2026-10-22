@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.28.1] — 2026-10-22
+
+### Fixed — the in-process subscription survives a bus reset
+
+0.28.0 subscribed `notification.requested` on the bus instance through private
+attributes (`MemoryBus._subscribers`, `RoutingBus._target_for`), so a bus
+re-created by `reset_bus()` or emptied by `MemoryBus.clear()` stopped sending
+until `ensure_in_process_consumer()` was called again. It now uses core's
+public `subscribe_in_process` / `carries_in_process` (stapel-core 0.94.0, the
+new floor), which outlive both; stapel-cdn's ref sync uses the same mechanism.
+
 ## [0.28.0] — 2026-10-22
 
 ### Fixed — a notification requested in a monolith is sent

@@ -471,12 +471,13 @@ would be a poison pill the bus redelivers forever. Schema:
 
 Bus consumers (Kafka topics, `management/commands/consume_*.py`). On an
 in-process bus (MemoryBus, the default) no consumer process can run, so
-`apps.ready()` subscribes `notification.requested` on the bus itself
-(`intake.ensure_in_process_consumer`); the handler runs after the
-publisher's transaction commits (`on_commit(robust=True)`), synchronously in
-that process, and both transports call `intake.handle_notification_requested`.
-A bus re-created by `reset_bus()` or emptied by `MemoryBus.clear()` has lost
-the subscription — call `ensure_in_process_consumer()` again (tests only):
+`apps.ready()` subscribes `notification.requested` in-process with core's
+`stapel_core.bus.subscribe_in_process` (`intake.ensure_in_process_consumer`);
+the subscription survives `reset_bus()` and `MemoryBus.clear()`, a routing
+bus delivers it through the topic's backend, and a broker ignores it. The
+handler runs after the publisher's transaction commits
+(`on_commit(robust=True)`), synchronously in that process, and both
+transports call `intake.handle_notification_requested`:
 
 | Topic / event | Command | Effect |
 |---|---|---|

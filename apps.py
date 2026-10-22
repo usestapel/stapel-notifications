@@ -17,8 +17,8 @@ class NotificationsConfig(AppConfig):
         from . import actions  # noqa: F401
 
         # request_notification() is a bus publish. On an in-process bus no
-        # consumer process can exist, so the handler subscribes here; on a
-        # broker the consume_notifications command reads the topic.
+        # consumer process can exist, so the handler subscribes in-process
+        # here (inert on a broker, where consume_notifications reads it).
         from .intake import ensure_in_process_consumer
 
         try:

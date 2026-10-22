@@ -71,46 +71,18 @@ def _deliver_after_commit(event) -> None:
     )
 
 
-def _topic_backend(bus):
-    """The backend that actually carries the notification topic.
-
-    A routing bus delegates per topic prefix; the topic may land on an
-    in-process backend even when the router itself is not one.
-    """
-    target_for = getattr(bus, "_target_for", None)
-    backend_for = getattr(bus, "_backend_for", None)
-    if callable(target_for) and callable(backend_for):
-        return backend_for(target_for(TOPIC_NOTIFICATION_REQUESTED))
-    return bus
-
-
 def ensure_in_process_consumer(bus=None) -> bool:
-    """Subscribe the notification handler when the bus is in-process.
+    """Subscribe the notification handler for an in-process bus.
 
-    Returns True when the topic is consumed in this process after the call.
-    Idempotent: a second call (another ``ready()``, a test) finds the handler
-    already registered and adds nothing. A bus created later
-    (``reset_bus()``) or cleared (``MemoryBus.clear()``) has lost the
-    subscription; call this again — production never does either.
+    Uses core's persistent subscription (``subscribe_in_process``): it
+    survives ``reset_bus()`` and ``MemoryBus.clear()`` and is inert on a
+    broker, where the ``consume_notifications`` command reads the topic.
+    Idempotent. Returns True when the topic is delivered in this process.
     """
-    from stapel_core.bus import get_bus
+    from stapel_core.bus import carries_in_process, subscribe_in_process
 
-    backend = _topic_backend(bus if bus is not None else get_bus())
-    if not getattr(backend, "in_process", False):
-        return False
-    subscribe = getattr(backend, "subscribe", None)
-    if not callable(subscribe):
-        logger.error(
-            "%s is in-process but has no subscribe(); notification requests "
-            "published on it are never dispatched", type(backend).__name__,
-        )
-        return False
-    registered = getattr(backend, "_subscribers", {}).get(
-        TOPIC_NOTIFICATION_REQUESTED, ()
-    )
-    if _deliver_after_commit not in registered:
-        subscribe(TOPIC_NOTIFICATION_REQUESTED, _deliver_after_commit)
-    return True
+    subscribe_in_process(TOPIC_NOTIFICATION_REQUESTED, _deliver_after_commit)
+    return carries_in_process(TOPIC_NOTIFICATION_REQUESTED, bus)
 
 
 def sync_profile_preferences(payload: dict) -> bool:

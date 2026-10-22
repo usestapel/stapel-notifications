@@ -17,7 +17,7 @@ import pytest
 from django.db import transaction
 from django.test import override_settings
 
-from stapel_core.bus import get_bus
+from stapel_core.bus import get_bus, in_process_subscribers, reset_bus
 from stapel_core.comm import emit
 from stapel_core.kafka.topics import TOPIC_NOTIFICATION_REQUESTED
 from stapel_core.notifications import request_notification
@@ -49,9 +49,20 @@ def _gdpr_export_request():
 
 class TestRequestNotificationInProcess:
     def test_app_ready_subscribed_the_consumer(self):
-        bus = get_bus()
-        assert bus.in_process
-        assert _deliver_after_commit in bus._subscribers[TOPIC_NOTIFICATION_REQUESTED]
+        assert get_bus().in_process
+        assert _deliver_after_commit in in_process_subscribers(TOPIC_NOTIFICATION_REQUESTED)
+
+    @pytest.mark.parametrize("reset", ["reset_bus", "clear"])
+    def test_a_reset_bus_still_sends(self, reset, django_capture_on_commit_callbacks):
+        """0.28.0's subscription lived on the bus instance and died with it."""
+        if reset == "reset_bus":
+            reset_bus()
+        else:
+            get_bus().clear()
+        with override_settings(STAPEL_NOTIFICATIONS=MOCK):
+            with django_capture_on_commit_callbacks(execute=True):
+                assert _gdpr_export_request() is True
+        assert NotificationLog.objects.filter(notification_type="gdpr.export_ready").exists()
 
     def test_request_is_dispatched_after_commit(self, django_capture_on_commit_callbacks):
         with override_settings(STAPEL_NOTIFICATIONS=MOCK):
@@ -74,11 +85,10 @@ class TestRequestNotificationInProcess:
         assert NotificationLog.objects.count() == 0
 
     def test_subscription_is_idempotent(self):
-        bus = get_bus()
-        before = list(bus._subscribers[TOPIC_NOTIFICATION_REQUESTED])
+        before = in_process_subscribers(TOPIC_NOTIFICATION_REQUESTED)
         assert ensure_in_process_consumer() is True
-        assert ensure_in_process_consumer(bus) is True
-        assert bus._subscribers[TOPIC_NOTIFICATION_REQUESTED] == before
+        assert ensure_in_process_consumer(get_bus()) is True
+        assert in_process_subscribers(TOPIC_NOTIFICATION_REQUESTED) == before
 
     def test_broker_bus_is_left_to_the_command(self):
         class BrokerBus:
@@ -88,6 +98,16 @@ class TestRequestNotificationInProcess:
                 raise AssertionError("a broker bus is consumed by the command")
 
         assert ensure_in_process_consumer(BrokerBus()) is False
+
+    def test_no_private_bus_attributes(self):
+        """The intake reads only core's public bus API."""
+        import inspect
+
+        from stapel_notifications import intake
+
+        source = inspect.getsource(intake)
+        for private in ("_subscribers", "_target_for", "_backend_for"):
+            assert private not in source
 
 
 class TestProfileChangedAction:
