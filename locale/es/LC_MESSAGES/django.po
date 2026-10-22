@@ -55,6 +55,10 @@ msgstr "Actualizar tu método de pago"
 msgid "Nothing has been charged and nothing has been lost. We will try again automatically, or you can update your card using the button above."
 msgstr "No se ha cobrado nada y no has perdido nada. Lo intentaremos de nuevo automáticamente, o puedes actualizar tu tarjeta con el botón de arriba."
 
+#: notification.billing.payment_failed.final_note
+msgid "This was our last automatic attempt — we will not try to take this payment again. To keep your plan, update your payment method using the button above."
+msgstr "Este fue nuestro último intento automático: no volveremos a intentar este cobro. Para mantener tu plan, actualiza tu método de pago con el botón de arriba."
+
 #: notification.billing.subscription_ending.subject
 msgid "Your {item_name} subscription ends on {period_end}"
 msgstr "Tu suscripción {item_name} termina el {period_end}"

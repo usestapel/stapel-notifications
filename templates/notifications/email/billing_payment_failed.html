@@ -38,7 +38,11 @@
                 </tr>
               </table>
               {% endif %}
-              {% if note %}
+              {% if final_attempt and final_note %}
+              <p style="margin: 20px 0 0 0; font-family: Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px; color: #7D7E81;">
+                {{ final_note }}
+              </p>
+              {% elif note %}
               <p style="margin: 20px 0 0 0; font-family: Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 400; line-height: 20px; color: #7D7E81;">
                 {{ note }}
               </p>

@@ -253,6 +253,23 @@ class TestTheDeclineNotice:
             user, capture_email
         )["html"]
 
+    def test_an_ordinary_decline_promises_another_try(self, user, capture_email):
+        body = _text(self._send(user, capture_email)["html"])
+
+        assert "We will try again automatically" in body
+        assert "last automatic attempt" not in body
+
+    def test_the_last_attempt_does_not_promise_another_try(
+        self, user, capture_email
+    ):
+        """After the provider's final retry, "we will try again" is false."""
+        html = self._send(user, capture_email, final_attempt=True)["html"]
+        body = _text(html)
+
+        assert "last automatic attempt" in body
+        assert "We will try again automatically" not in body
+        assert "https://app.example/billing" in html
+
     def test_with_no_reason_the_reason_line_is_absent(self, user, capture_email):
         """Not 'Reason given by your bank:' followed by nothing."""
         body = _text(self._send(user, capture_email, decline_reason="")["html"])
@@ -344,6 +361,20 @@ class TestTheLettersAreWrittenInTheRecipientsLanguage:
     ):
         mail = self._send(
             user, capture_email, "billing.payment_failed", DECLINE, language
+        )
+        assert needle in _text(mail["html"])
+
+    @pytest.mark.parametrize("language,needle", [
+        ("ru", "последняя автоматическая попытка"),
+        ("es", "último intento automático"),
+        ("en", "last automatic attempt"),
+    ])
+    def test_the_last_attempt_notice_in_each_language(
+        self, user, capture_email, language, needle
+    ):
+        mail = self._send(
+            user, capture_email, "billing.payment_failed",
+            {**DECLINE, "final_attempt": True}, language,
         )
         assert needle in _text(mail["html"])
 

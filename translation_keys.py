@@ -247,6 +247,9 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.billing.payment_failed.reason": "Reason given by your bank: {decline_reason}",
     "notification.billing.payment_failed.cta": "Update your payment method",
     "notification.billing.payment_failed.note": "Nothing has been charged and nothing has been lost. We will try again automatically, or you can update your card using the button above.",
+    # The attempt after which the provider stops retrying: the note above
+    # would promise a try that will not happen.
+    "notification.billing.payment_failed.final_note": "This was our last automatic attempt — we will not try to take this payment again. To keep your plan, update your payment method using the button above.",
     "notification.billing.subscription_ending.subject": "Your {item_name} subscription ends on {period_end}",
     "notification.billing.subscription_ending.heading": "Your subscription will not renew",
     "notification.billing.subscription_ending.body": "Your {item_name} subscription is set to end and will not renew. You will not be charged again.",

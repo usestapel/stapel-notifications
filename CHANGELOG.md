@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.1] — 2026-10-22
+
+### Added — the declined-payment notice has a last-attempt variant
+
+`billing.payment_failed` gains the copy slot `final_note` (en, ru, es). When
+the caller passes `final_attempt: true` (stapel-billing 0.24.1 does, once the
+provider has stopped retrying an invoice), the letter says this was the last
+automatic attempt instead of "we will try again automatically", which by then
+is false. Without the variable the letter is unchanged.
+
 ## [0.27.0] — 2026-10-15
 
 ### Fixed — a live push token is never moved to another account
