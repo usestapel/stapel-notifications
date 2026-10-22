@@ -179,6 +179,38 @@ msgstr "Учётная запись закрыта из-за длительно�
 msgid "If you believe this was a mistake, please contact our support team."
 msgstr "Если это ошибка, напишите в нашу поддержку."
 
+#: notification.gdpr.dsar.received.subject
+msgid "We received your privacy request"
+msgstr "Мы получили ваш запрос о персональных данных"
+
+#: notification.gdpr.dsar.received.body
+msgid "We have recorded your request about your personal data and will answer it by {resolve_due_date}."
+msgstr "Мы зарегистрировали ваш запрос о персональных данных и ответим на него до {resolve_due_date}."
+
+#: notification.gdpr.dsar.received.reference_line
+msgid "Your reference: {reference}"
+msgstr "Номер вашего запроса: {reference}"
+
+#: notification.gdpr.dsar.received.warning
+msgid "If you did not send this request, please contact our support team."
+msgstr "Если вы не отправляли этот запрос, напишите в нашу поддержку."
+
+#: notification.gdpr.dsar.opened.subject
+msgid "New privacy request ({kind})"
+msgstr "Новый запрос о персональных данных ({kind})"
+
+#: notification.gdpr.dsar.opened.heading
+msgid "A privacy request arrived"
+msgstr "Поступил запрос о персональных данных"
+
+#: notification.gdpr.dsar.opened.body
+msgid "A {kind} request from {subject_email} arrived via {channel}. It must be resolved by {resolve_due_date}."
+msgstr "Запрос типа {kind} от {subject_email} поступил через {channel}. Срок ответа — до {resolve_due_date}."
+
+#: notification.gdpr.dsar.opened.reference_line
+msgid "Reference: {reference}"
+msgstr "Номер запроса: {reference}"
+
 #: notification.workspace.invitation.subject
 msgid "You are invited to {workspace_name}"
 msgstr "Вас пригласили в {workspace_name}"

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "profile.changed",
+  "description": "A user profile was created or its fields were updated.",
+  "type": "object",
+  "required": [
+    "user_id",
+    "display_name",
+    "avatar",
+    "location_id",
+    "location_display_name_narrow",
+    "location_display_name_broad",
+    "app_language",
+    "auto_detected_language",
+    "email_messages",
+    "email_system",
+    "push_messages",
+    "push_system"
+  ],
+  "properties": {
+    "user_id":                      { "type": "string", "format": "uuid" },
+    "display_name":                 { "type": "string" },
+    "avatar":                       { "type": "string" },
+    "location_id":                  { "type": ["integer", "null"] },
+    "location_display_name_narrow": { "type": "string" },
+    "location_display_name_broad":  { "type": "string" },
+    "app_language":                 { "type": ["string", "null"] },
+    "auto_detected_language":       { "type": ["string", "null"] },
+    "email_messages":               { "type": "boolean" },
+    "email_system":                 { "type": "boolean" },
+    "push_messages":                { "type": "boolean" },
+    "push_system":                  { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

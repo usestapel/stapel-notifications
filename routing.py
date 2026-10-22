@@ -117,6 +117,10 @@ NOTIFICATION_ROUTING = {
     "gdpr.export_ready":       {"channels": ["email"], "group": "auth"},
     "gdpr.inactivity_warning": {"channels": ["email"], "group": "auth"},
     "gdpr.inactivity_closed":  {"channels": ["email"], "group": "auth"},
+    # Data-subject requests (stapel-gdpr dsar.py): the subject's statutory
+    # acknowledgement, and the privacy queue owner's "a request arrived".
+    "gdpr.dsar.received":      {"channels": ["email"], "group": "auth"},
+    "gdpr.dsar.opened":        {"channels": ["email"], "group": "auth"},
 
     # Billing (mandatory, no unsubscribe) — upstream for stapel-billing's
     # payment.completed / payment.failed / subscription.changed subscribers.
@@ -236,6 +240,8 @@ DEFAULT_EMAIL_TEMPLATES = {
     "gdpr.export_ready": "notifications/email/gdpr_export_ready.html",
     "gdpr.inactivity_warning": "notifications/email/gdpr_inactivity_warning.html",
     "gdpr.inactivity_closed": "notifications/email/gdpr_inactivity_closed.html",
+    "gdpr.dsar.received": "notifications/email/gdpr_dsar_received.html",
+    "gdpr.dsar.opened": "notifications/email/gdpr_dsar_opened.html",
     "workspace.invitation": "notifications/email/workspace_invitation.html",
     "workspace.invitation.new_user": "notifications/email/workspace_invitation_new_user.html",
     "workspace.invitation.reminder": "notifications/email/workspace_invitation_reminder.html",

@@ -17,7 +17,7 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 | Area | Details |
 |---|---|
 | Multi-channel dispatch | `services.process_notification` resolves language → contacts → translations → templates and dispatches to `email` / `sms` / `push` / `telegram` channels, with per-channel `NotificationLog` rows (`sent` / `failed` / `skipped`) and `event_id` idempotency |
-| Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (28 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*`, `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `moderation.report_received`, `moderation.sanction_issued`, `moderation.appeal_resolved` (stapel-moderation upstream, registry-only — no producer in this package), `workspace.invitation` + `.new_user`/`.reminder`/`.decline_confirmed`/`.declined`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
+| Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (33 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*` (incl. `gdpr.dsar.received`/`gdpr.dsar.opened`), `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `moderation.report_received`, `moderation.sanction_issued`, `moderation.appeal_resolved` (stapel-moderation upstream, registry-only — no producer in this package), `workspace.invitation` + `.new_user`/`.reminder`/`.decline_confirmed`/`.declined`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
 | User preferences | `UserNotificationSettings` (per channel×group booleans — `{email,push,sms,telegram}_{messages,system}`; **no language** — see §5), enforced in `services._should_send`; `auth` group always sends |
 | Contact projection | `UserContact` (email/phone/telegram_chat_id synced from auth via bus; `is_active` soft-off during account-closure grace period) |
 | Push tokens + feed | `DevicePushToken` model; REST API: `GET/POST devices/`, `DELETE devices/{token}/`, `DELETE devices/by-id/{id}/`, `GET feed/` (push log as feed — rows carry `read_at`, the envelope carries `unread_count`), `POST feed/read/` (mark rows or the whole feed read), `GET notification-keys/` (translation-key export for the translate collector) |
@@ -438,7 +438,9 @@ in-process in a monolith, bus consumer in microservices — transport chosen by
 | `gdpr.owner.probe` | Answer `gdpr.owner.alive` from the subscriber that erases (same registration) — see **6a. Erasure** below |
 | `user.deleted` | Deprecated upstream (stapel-gdpr removes it in 0.6.0). Subscribed by the same registration (`legacy_user_deleted`): the same `erasure.erase_account` as the erasure path, receipting too when the payload carries a `correlation_id` |
 | `user.merged` | Carry the guest's feed rows and push tokens to the survivor; the survivor's `UserNotificationSettings` win on collision; the guest's `UserContact` is dropped, never carried — see **7a. Merge policy** below |
-| `user.deletion_initiated` | Soft-deactivate `UserContact` + `DevicePushToken` rows (reversible; reactivated by normal sync paths) |
+| `user.deletion_initiated` | Soft-deactivate the active `UserContact` + `DevicePushToken` rows and stamp them `closure_paused_at` (reversible) |
+| `user.deletion_cancelled` | Reactivate exactly the rows stamped `closure_paused_at` — never a token the push provider rejected |
+| `profile.changed` | Upsert `UserNotificationSettings` channel switches (incl. an unsubscribe) — `intake.sync_profile_preferences`, the same function as `consume_profiles` |
 | `translations.changed` | Re-resolve changed `notification.*` keys through `translate.resolve` |
 
 #### 7a. Merge policy (`user.merged`)
@@ -467,7 +469,14 @@ is logged and dropped — `UUIDField` answers `"not-a-uuid"` with
 would be a poison pill the bus redelivers forever. Schema:
 `schemas/consumes/user.merged.json`.
 
-Bus consumers (Kafka topics, `management/commands/consume_*.py`):
+Bus consumers (Kafka topics, `management/commands/consume_*.py`). On an
+in-process bus (MemoryBus, the default) no consumer process can run, so
+`apps.ready()` subscribes `notification.requested` on the bus itself
+(`intake.ensure_in_process_consumer`); the handler runs after the
+publisher's transaction commits (`on_commit(robust=True)`), synchronously in
+that process, and both transports call `intake.handle_notification_requested`.
+A bus re-created by `reset_bus()` or emptied by `MemoryBus.clear()` has lost
+the subscription — call `ensure_in_process_consumer()` again (tests only):
 
 | Topic / event | Command | Effect |
 |---|---|---|

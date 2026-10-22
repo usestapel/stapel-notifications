@@ -192,6 +192,7 @@ def handle_user_contact_changed(event):
     if not defaults:
         return
     defaults["is_active"] = True
+    defaults["closure_paused_at"] = None
 
     try:
         _obj, created = UserContact.objects.update_or_create(
@@ -213,30 +214,85 @@ def handle_user_contact_changed(event):
     )
 
 
+def _closure_user_id(event, name):
+    """The event's user id as a UUID, or None (logged) for an unusable one."""
+    import uuid
+
+    raw = (event.payload or {}).get("user_id")
+    if not raw:
+        logger.error("%s event without user_id: %s", name, event.event_id)
+        return None
+    try:
+        return uuid.UUID(str(raw))
+    except (TypeError, ValueError, AttributeError):
+        logger.error("%s event with an unusable user_id: %s", name, event.event_id)
+        return None
+
+
 @on_action("user.deletion_initiated")
 def handle_user_deletion_initiated(event):
     """Account-closure grace period started: stop notifying the user.
 
     Soft and reversible — the contact and the push tokens are only
-    deactivated, not erased (full erasure stays on ``user.deleted``).
-    Reactivation happens through the normal sync paths (contact-changed
-    events, device re-registration); there is currently no dedicated
-    "closure cancelled" event to subscribe to (see CHANGELOG).
+    deactivated, not erased (full erasure stays on ``user.deleted``). Each
+    row deactivated here is stamped ``closure_paused_at`` so
+    ``user.deletion_cancelled`` turns back on exactly these rows and never a
+    token the push provider rejected or a contact deactivated for another
+    reason.
     """
+    from django.utils import timezone
+
     from .models import DevicePushToken, UserContact
 
-    user_id = event.payload.get("user_id")
-    if not user_id:
-        logger.error(
-            "user.deletion_initiated event without user_id: %s", event.event_id
-        )
+    user_id = _closure_user_id(event, "user.deletion_initiated")
+    if user_id is None:
         return
-    contacts = UserContact.objects.filter(user_id=user_id).update(is_active=False)
-    tokens = DevicePushToken.objects.filter(user_id=user_id).update(is_active=False)
+    now = timezone.now()
+    contacts = UserContact.objects.filter(user_id=user_id, is_active=True).update(
+        is_active=False, closure_paused_at=now,
+    )
+    tokens = DevicePushToken.objects.filter(user_id=user_id, is_active=True).update(
+        is_active=False, closure_paused_at=now,
+    )
     logger.info(
         "deactivated %d contact(s) and %d push token(s) for user %s "
         "(deletion grace period)", contacts, tokens, user_id,
     )
+
+
+@on_action("user.deletion_cancelled")
+def handle_user_deletion_cancelled(event):
+    """Account closure cancelled: undo exactly what the grace period paused.
+
+    Idempotent: a redelivery finds no row still stamped and changes nothing.
+    """
+    from .models import DevicePushToken, UserContact
+
+    user_id = _closure_user_id(event, "user.deletion_cancelled")
+    if user_id is None:
+        return
+    contacts = UserContact.objects.filter(
+        user_id=user_id, closure_paused_at__isnull=False,
+    ).update(is_active=True, closure_paused_at=None)
+    tokens = DevicePushToken.objects.filter(
+        user_id=user_id, closure_paused_at__isnull=False,
+    ).update(is_active=True, closure_paused_at=None)
+    logger.info(
+        "reactivated %d contact(s) and %d push token(s) for user %s "
+        "(account closure cancelled)", contacts, tokens, user_id,
+    )
+
+
+@on_action("profile.changed")
+def handle_profile_changed(event):
+    """A recipient's channel switches changed in profiles (incl. unsubscribe).
+
+    The same function as the legacy ``consume_profiles`` topic command, so
+    a monolith (no consumer process) and a fleet apply one rule.
+    """
+    from .intake import sync_profile_preferences
+
+    sync_profile_preferences(event.payload or {})
 
 
 @on_action("translations.changed")

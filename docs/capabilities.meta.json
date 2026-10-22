@@ -176,6 +176,12 @@
     "notifications/email/gdpr_inactivity_warning.html": {
       "intent": "\"Your account will be closed in N days\" — notification_type `gdpr.inactivity_warning`, auth group, email only: the warning a retention-driven closure owes the account before it happens."
     },
+    "notifications/email/gdpr_dsar_received.html": {
+      "intent": "\"We received your privacy request\" — notification_type `gdpr.dsar.received`, auth group, email only: the statutory acknowledgement of a data-subject request, with its answer-by date and reference."
+    },
+    "notifications/email/gdpr_dsar_opened.html": {
+      "intent": "\"A privacy request arrived\" — notification_type `gdpr.dsar.opened`, auth group, email only: tells the privacy-queue owner a data-subject request is waiting and when it is due."
+    },
     "notifications/email/gdpr_inactivity_closed.html": {
       "intent": "\"Your account has been closed\" — notification_type `gdpr.inactivity_closed`, auth group, email only: the terminal notice of a retention closure."
     },

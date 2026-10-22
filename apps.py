@@ -16,6 +16,20 @@ class NotificationsConfig(AppConfig):
         # microservices — same code, transport chosen by STAPEL_COMM).
         from . import actions  # noqa: F401
 
+        # request_notification() is a bus publish. On an in-process bus no
+        # consumer process can exist, so the handler subscribes here; on a
+        # broker the consume_notifications command reads the topic.
+        from .intake import ensure_in_process_consumer
+
+        try:
+            ensure_in_process_consumer()
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception(
+                "notifications: could not subscribe the in-process consumer"
+            )
+
         # System checks (notifications.W001/W002: a deployment that cannot
         # ask a recipient's language writes to everybody in the sender's).
         from . import checks  # noqa: F401

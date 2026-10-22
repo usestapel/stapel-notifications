@@ -1,6 +1,6 @@
 {
   "module": "stapel-notifications",
-  "version": "0.27.1",
+  "version": "0.28.0",
   "provides": "Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.",
   "axes": [
     {
@@ -249,6 +249,18 @@
       "kind": "template",
       "path": "templates/notifications/email/billing_subscription_ending.html",
       "intent": "\"Your subscription will not renew\" — `billing.subscription_ending`, billing group, email only: the letter a `cancel_at_period_end` subscriber is owed, naming the date access stops."
+    },
+    {
+      "name": "notifications/email/gdpr_dsar_opened.html",
+      "kind": "template",
+      "path": "templates/notifications/email/gdpr_dsar_opened.html",
+      "intent": "\"A privacy request arrived\" — notification_type `gdpr.dsar.opened`, auth group, email only: tells the privacy-queue owner a data-subject request is waiting and when it is due."
+    },
+    {
+      "name": "notifications/email/gdpr_dsar_received.html",
+      "kind": "template",
+      "path": "templates/notifications/email/gdpr_dsar_received.html",
+      "intent": "\"We received your privacy request\" — notification_type `gdpr.dsar.received`, auth group, email only: the statutory acknowledgement of a data-subject request, with its answer-by date and reference."
     },
     {
       "name": "notifications/email/gdpr_export_ready.html",

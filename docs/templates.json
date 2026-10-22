@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.27.1",
+  "module_version": "0.28.0",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -694,6 +694,139 @@
       ],
       "group": "billing",
       "transactional": true
+    },
+    {
+      "key": "gdpr.dsar.opened",
+      "template": "notifications/email/gdpr_dsar_opened.html",
+      "chain": [
+        "notifications/email/gdpr_dsar_opened.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "channel",
+          "kind",
+          "reference",
+          "resolve_due_date",
+          "subject_email"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "reference_line",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "reference_line": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "gdpr.dsar.received",
+      "template": "notifications/email/gdpr_dsar_received.html",
+      "chain": [
+        "notifications/email/gdpr_dsar_received.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "reference",
+          "resolve_due_date"
+        ],
+        "translation": [
+          "body",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "reference_line",
+          "subject",
+          "warning"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "reference_line": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional",
+        "warning": "required"
+      },
+      "channels": [
+        "email"
+      ],
+      "group": "auth",
+      "transactional": false
     },
     {
       "key": "gdpr.export_ready",
@@ -2310,6 +2443,8 @@
         "billing.payment_failed",
         "billing.payment_succeeded",
         "billing.subscription_ending",
+        "gdpr.dsar.opened",
+        "gdpr.dsar.received",
         "gdpr.export_ready",
         "gdpr.inactivity_closed",
         "gdpr.inactivity_warning",
@@ -2372,6 +2507,7 @@
         "brand_text",
         "case_ref",
         "change_type",
+        "channel",
         "chat_url",
         "code",
         "company_address",
@@ -2404,6 +2540,7 @@
         "invoice_url",
         "ip_address",
         "item_name",
+        "kind",
         "link",
         "listing_title",
         "listing_url",
@@ -2425,6 +2562,9 @@
         "reason",
         "reason_label",
         "reason_line",
+        "reference",
+        "reference_line",
+        "resolve_due_date",
         "resubscribe_url",
         "retry_url",
         "revoke_url",
@@ -2437,6 +2577,7 @@
         "sender_name",
         "sms",
         "subject",
+        "subject_email",
         "target_label",
         "unsubscribe_url",
         "username",
@@ -2460,6 +2601,8 @@
         "billing.payment_failed",
         "billing.payment_succeeded",
         "billing.subscription_ending",
+        "gdpr.dsar.opened",
+        "gdpr.dsar.received",
         "gdpr.export_ready",
         "gdpr.inactivity_closed",
         "gdpr.inactivity_warning",
@@ -2515,6 +2658,7 @@
         "brand_text",
         "case_ref",
         "change_type",
+        "channel",
         "chat_url",
         "code",
         "company_address",
@@ -2547,6 +2691,7 @@
         "invoice_url",
         "ip_address",
         "item_name",
+        "kind",
         "link",
         "listing_title",
         "listing_url",
@@ -2568,6 +2713,9 @@
         "reason",
         "reason_label",
         "reason_line",
+        "reference",
+        "reference_line",
+        "resolve_due_date",
         "resubscribe_url",
         "retry_url",
         "revoke_url",
@@ -2580,6 +2728,7 @@
         "sender_name",
         "sms",
         "subject",
+        "subject_email",
         "target_label",
         "unsubscribe_url",
         "username",
@@ -2877,6 +3026,95 @@
         "period_end",
         "resubscribe_url",
         "subject"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/gdpr_dsar_opened.html",
+      "role": "letter",
+      "used_by": [
+        "gdpr.dsar.opened"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "reference_line": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "channel",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "kind",
+        "logo_url",
+        "reference",
+        "reference_line",
+        "resolve_due_date",
+        "subject",
+        "subject_email"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/gdpr_dsar_received.html",
+      "role": "letter",
+      "used_by": [
+        "gdpr.dsar.received"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "heading": "required",
+        "reference_line": "required",
+        "warning": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "reference",
+        "reference_line",
+        "resolve_due_date",
+        "subject",
+        "warning"
       ],
       "unknown_tags": []
     },

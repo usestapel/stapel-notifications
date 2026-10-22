@@ -74,6 +74,14 @@ class UserContact(models.Model):
             "Inactive contacts are not used as notification recipients."
         ),
     )
+    closure_paused_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Set when the account-closure grace period deactivated this row; "
+            "user.deletion_cancelled reactivates exactly the stamped rows."
+        ),
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -262,6 +270,15 @@ class DevicePushToken(models.Model):
     ]
     platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
     is_active = models.BooleanField(default=True)
+    closure_paused_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Set when the account-closure grace period deactivated this "
+            "token; a provider-rejected token is never stamped, so "
+            "user.deletion_cancelled does not revive it."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

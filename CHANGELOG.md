@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.28.0] — 2026-10-22
+
+### Fixed — a notification requested in a monolith is sent
+
+`request_notification()` (stapel-core) publishes `notification.requested` on
+the bus, and only the `consume_notifications` command read it. On the default
+in-process bus no consumer process can run, so every OTP, receipt and
+invitation returned True and nothing went out. `apps.ready()` now subscribes
+the same handler to an in-process bus (`intake.ensure_in_process_consumer`,
+idempotent, also resolves a routing bus's backend for the topic). It sends
+after the publisher's transaction commits (`on_commit(robust=True)`): a
+rolled-back request mails nobody and a failed send does not break the
+caller's commit. The send runs synchronously in that process, in the
+request; a broker deployment is unchanged.
+
+### Fixed — an unsubscribe reaches the notification settings
+
+stapel-profiles emits `profile.changed` as a comm action; only the legacy
+`consume_profiles` topic command applied it, so a recipient who switched a
+channel off or clicked unsubscribe kept getting mail. A
+`@on_action("profile.changed")` handler now applies it through
+`intake.sync_profile_preferences`, the function the command uses too.
+
+### Fixed — cancelling an account closure turns notifications back on
+
+`user.deletion_initiated` deactivated the contact and push tokens and nothing
+reactivated them when the closure was cancelled. The initiation now stamps
+the rows it pauses (`closure_paused_at`, additive migration 0013) and a new
+`user.deletion_cancelled` handler reactivates exactly those, never a token the
+push provider rejected. Both handlers log and drop a non-UUID `user_id`
+instead of raising into redelivery. A contact sync clears the stamp.
+
+### Added — the DSAR letters stapel-gdpr requests
+
+`gdpr.dsar.received` (the subject's acknowledgement: answer-by date and
+reference) and `gdpr.dsar.opened` (the privacy-queue owner's alert), auth
+group, email only, en + ru copy. Before, both were dropped as unknown types
+while stapel-gdpr recorded the acknowledgement as sent. The copy reads
+`resolve_due_date`, which stapel-gdpr passes from 0.9.0. The llms.txt budget
+goes 6400 -> 6600 for the two template entries.
+
 ## [0.27.1] — 2026-10-22
 
 ### Added — the declined-payment notice has a last-attempt variant
