@@ -619,7 +619,11 @@ def process_notification(
                 # the single most common shape in the library: an OTP for an
                 # email-only recipient still wrote an sms row reading
                 # "sent → unknown".
-                logger.warning(
+                # INFO: a recipient without an address on one of the routed
+                # channels is ordinary (an e-mail-only account and an OTP
+                # routed to e-mail + SMS). The case that matters — a known
+                # account the mirror lost — is raised to ERROR just below.
+                logger.info(
                     "Skipped %s/%s: no %s address for this recipient",
                     notification_type, channel, channel,
                 )

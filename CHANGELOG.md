@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.28.2] — 2026-11-04
+
+### Changed — a recipient without an address on a channel is INFO
+
+"Skipped <type>/<channel>: no <channel> address for this recipient" logged a
+WARNING for every OTP sent to an e-mail-only recipient of a type routed to
+SMS as well. It is ordinary and now logs at INFO; the journal row is
+unchanged, and a known account the contact mirror lost is still raised to
+ERROR under `notification_skipped_no_contact`.
+
 ## [0.28.1] — 2026-10-22
 
 ### Fixed — the in-process subscription survives a bus reset

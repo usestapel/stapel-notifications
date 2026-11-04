@@ -281,6 +281,24 @@ class TestRegistryDrivesThePipeline:
         log = NotificationLog.objects.get()
         assert log.status == "skipped"
 
+    def test_a_missing_address_is_logged_at_info_not_warning(self, user, caplog):
+        """An e-mail-only recipient of a type routed to SMS too is ordinary;
+        a WARNING per OTP was noise. The known-account case is ERROR
+        elsewhere (contact_gap)."""
+        import logging
+
+        with self._register(), caplog.at_level(logging.DEBUG, "stapel_notifications.services"):
+            notifications_settings.reload()
+            process_notification(
+                notification_type="invoice_ready",
+                user_id=None,
+                email="nobody@example.com",
+                variables={"body": "x"},
+            )
+
+        skipped = [r for r in caplog.records if r.getMessage().startswith("Skipped ")]
+        assert [r.levelno for r in skipped] == [logging.INFO]
+
     def test_a_builtin_override_replaces_the_delivery(self, user):
         """Same routing, same templates, different wire."""
         UserContact.objects.create(user_id=user.id, email="u@example.com")
