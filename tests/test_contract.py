@@ -85,10 +85,11 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # rediscover) and the valid_pref_fields reader it makes necessary, and
 # 6000 -> 6400 for the two device-registry operations of 0.17.0 (list the
 # caller's push devices; unregister one by id), and 6400 -> 6600 for the two
-# DSAR letters stapel-gdpr requests (gdpr.dsar.received/opened). The
+# DSAR letters stapel-gdpr requests (gdpr.dsar.received/opened), and
+# 6600 -> 6700 for the two order receipts (orders.placed/status_changed). The
 # budget stays enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 6600
+LLMS_TXT_BUDGET = 6700
 
 
 def _emit(out_dir: Path) -> None:

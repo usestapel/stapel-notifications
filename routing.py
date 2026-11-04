@@ -168,6 +168,13 @@ NOTIFICATION_ROUTING = {
     "moderation.sanction_issued":  {"channels": ["push", "email"],  "group": "system",
                                      "telemetry": ["appeal_url"]},
     "moderation.appeal_resolved":  {"channels": ["push", "email"],  "group": "system"},
+    # Order receipts to the buyer (stapel-orders upstream, registry-only —
+    # no producer in this package). "order_url" is declared telemetry so the
+    # journal keeps the link the letter carried; omitting it renders no CTA.
+    "orders.placed":         {"channels": ["push", "email"],        "group": "system",
+                               "telemetry": ["order_url"]},
+    "orders.status_changed": {"channels": ["push", "email"],        "group": "system",
+                               "telemetry": ["order_url"]},
     "workspace.invitation":  {"channels": ["email"], "group": "system",
                               "transactional": True},
     # Invite variant for a not-yet-registered recipient: the acceptance link
@@ -233,6 +240,8 @@ DEFAULT_EMAIL_TEMPLATES = {
     "moderation.report_received": "notifications/email/moderation_report_received.html",
     "moderation.sanction_issued": "notifications/email/moderation_sanction_issued.html",
     "moderation.appeal_resolved": "notifications/email/moderation_appeal_resolved.html",
+    "orders.placed": "notifications/email/orders_placed.html",
+    "orders.status_changed": "notifications/email/orders_status_changed.html",
     "magic_link_login": "notifications/email/magic_link_login.html",
     "new_device_login": "notifications/email/new_device_login.html",
     "suspicious_login": "notifications/email/suspicious_login.html",

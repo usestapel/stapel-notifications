@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.28.3] — 2026-11-05
+
+### Added — order receipts (registry-only)
+
+Two built-in types for a cart/checkout module, `orders.placed` and
+`orders.status_changed` (system group, push + email). Variables:
+`order_number`, `total`, `currency`, `status`, `order_url`. The CTA renders
+only when `order_url` is passed, and `order_url` is declared telemetry. No
+producer lives in this package.
+
 ## [0.28.2] — 2026-11-04
 
 ### Changed — a recipient without an address on a channel is INFO

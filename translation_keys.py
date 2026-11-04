@@ -208,6 +208,21 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.moderation.appeal_resolved.heading": "Your appeal has been resolved",
     "notification.moderation.appeal_resolved.body": "Your appeal has been reviewed. Outcome: {outcome_label}.",
     "notification.moderation.appeal_resolved.note_line": "{appeal_note}",
+    # ── Orders (stapel-orders upstream, registry-only) ─────────────────
+    # Receipts to the buyer. The CTA renders only when the caller passes
+    # "order_url" (ORDER_URL_TEMPLATE on the orders side; empty = no link).
+    "notification.orders.placed.subject": "Order {order_number} received",
+    "notification.orders.placed.heading": "Thank you for your order",
+    "notification.orders.placed.body": "We received your order {order_number} for {total} {currency}. We'll let you know when its status changes.",
+    "notification.orders.placed.cta": "View order",
+    "notification.orders.placed.push_title": "Order received",
+    "notification.orders.placed.push_body": "Order {order_number} for {total} {currency} was received.",
+    "notification.orders.status_changed.subject": "Order {order_number}: {status}",
+    "notification.orders.status_changed.heading": "Your order has been updated",
+    "notification.orders.status_changed.body": "Your order {order_number} is now {status}.",
+    "notification.orders.status_changed.cta": "View order",
+    "notification.orders.status_changed.push_title": "Order updated",
+    "notification.orders.status_changed.push_body": "Order {order_number} is now {status}.",
     # ── Magic Link Login (A6) ───────────────────────────────────
     "notification.magic_link_login.subject": "Your {company_name} sign-in link",
     "notification.magic_link_login.heading": "Sign in to {company_name}",

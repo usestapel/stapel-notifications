@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.28.2",
+  "module_version": "0.28.3",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -1603,6 +1603,153 @@
       "transactional": false
     },
     {
+      "key": "orders.placed",
+      "template": "notifications/email/orders_placed.html",
+      "chain": [
+        "notifications/email/orders_placed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "currency",
+          "order_number",
+          "order_url",
+          "total"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "order_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "orders.status_changed",
+      "template": "notifications/email/orders_status_changed.html",
+      "chain": [
+        "notifications/email/orders_status_changed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "order_number",
+          "order_url",
+          "status"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "order_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
       "key": "otp_code",
       "template": "notifications/email/otp_code.html",
       "chain": [
@@ -2456,6 +2603,8 @@
         "moderation.sanction_issued",
         "new_device_login",
         "new_message",
+        "orders.placed",
+        "orders.status_changed",
         "otp_code",
         "report_reviewed",
         "suspicious_login",
@@ -2518,6 +2667,7 @@
         "content_html",
         "content_text",
         "cta",
+        "currency",
         "days_remaining",
         "decline_reason",
         "device_name",
@@ -2552,6 +2702,8 @@
         "note",
         "note_line",
         "notifications_chat_url",
+        "order_number",
+        "order_url",
         "outcome_label",
         "password_label",
         "period",
@@ -2576,9 +2728,11 @@
         "security_url",
         "sender_name",
         "sms",
+        "status",
         "subject",
         "subject_email",
         "target_label",
+        "total",
         "unsubscribe_url",
         "username",
         "username_label",
@@ -2614,6 +2768,8 @@
         "moderation.sanction_issued",
         "new_device_login",
         "new_message",
+        "orders.placed",
+        "orders.status_changed",
         "otp_code",
         "report_reviewed",
         "suspicious_login",
@@ -2669,6 +2825,7 @@
         "content_html",
         "content_text",
         "cta",
+        "currency",
         "days_remaining",
         "decline_reason",
         "device_name",
@@ -2703,6 +2860,8 @@
         "note",
         "note_line",
         "notifications_chat_url",
+        "order_number",
+        "order_url",
         "outcome_label",
         "password_label",
         "period",
@@ -2727,9 +2886,11 @@
         "security_url",
         "sender_name",
         "sms",
+        "status",
         "subject",
         "subject_email",
         "target_label",
+        "total",
         "unsubscribe_url",
         "username",
         "username_label",
@@ -3643,6 +3804,107 @@
         "push_body",
         "push_title",
         "sender_name",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/orders_placed.html",
+      "role": "letter",
+      "used_by": [
+        "orders.placed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "order_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "currency",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "order_number",
+        "order_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "total",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/orders_status_changed.html",
+      "role": "letter",
+      "used_by": [
+        "orders.status_changed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "order_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "order_number",
+        "order_url",
+        "push_body",
+        "push_title",
+        "status",
         "subject",
         "unsubscribe_url"
       ],

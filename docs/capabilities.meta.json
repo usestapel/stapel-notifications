@@ -197,6 +197,12 @@
     "notifications/email/listing_blocked.html": {
       "intent": "\"Your listing has been blocked\" — notification_type `listing_blocked`, system group, push and email: the moderation-block notice for the owner. Carries an optional statement of reasons (`reason_label`) and appeal link (`appeal_url`) for DSA Art. 17."
     },
+    "notifications/email/orders_placed.html": {
+      "intent": "`orders.placed`: buyer receipt (number, total); CTA only with `order_url`. Registry-only."
+    },
+    "notifications/email/orders_status_changed.html": {
+      "intent": "`orders.status_changed`: order moved to a new status; CTA only with `order_url`. Registry-only."
+    },
     "notifications/email/moderation_report_received.html": {
       "intent": "\"Your report has been received\" — notification_type `moderation.report_received`, system group, push and email: the receipt for the person who filed a report, before any verdict (DSA Art. 16(4)). stapel-moderation upstream — registry-only, no producer in this package yet."
     },

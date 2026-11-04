@@ -1,8 +1,8 @@
-# stapel-notifications 0.28.2
+# stapel-notifications 0.28.3
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.
 
-Contract: axes 4 · surface 45 · extension points 6 · operations 7 · error codes 47.
+Contract: axes 4 · surface 47 · extension points 6 · operations 7 · error codes 47.
 Generated from docs/capabilities.json by `stapel-llms-txt` — do not edit; drift-gated by `make contract-check`.
 
 ## Configuration axes — what a product switches on
@@ -61,6 +61,10 @@ This is the answer to "does Stapel already have something for X?". `instead of` 
   The "new sign-in to your account" security notice — notification_type `new_device_login`, auth group, email only: the letter to send when a session appears from a device the account has not used before.
 - notifications/email/new_message.html — templates/notifications/email/new_message.html
   The user-to-user message letter — notification_type `new_message`, messages group (the user can switch it off per channel), routed to push first and email second.
+- notifications/email/orders_placed.html — templates/notifications/email/orders_placed.html
+  `orders.placed`: buyer receipt (number, total); CTA only with `order_url`. Registry-only.
+- notifications/email/orders_status_changed.html — templates/notifications/email/orders_status_changed.html
+  `orders.status_changed`: order moved to a new status; CTA only with `order_url`. Registry-only.
 - notifications/email/otp_code.html — templates/notifications/email/otp_code.html
   The one-time-code letter — notification_type `otp_code`, auth group (mandatory, no unsubscribe), routed to email and SMS. Request the type instead of composing a verification-code mail: the code formatting, the branding and the language resolution are already handled.
 - notifications/email/report_reviewed.html — templates/notifications/email/report_reviewed.html
