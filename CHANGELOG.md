@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.28.4] — 2026-11-05
+
+### Added — reservation notices (registry-only)
+
+Four built-in types for a reservations module (system group, push + email):
+`reservations.booked`, `reservations.status_changed` and
+`reservations.reminder` to the customer, `reservations.new_for_provider` to
+the provider. Variables: `reservation_number`, `title`, `start_local`,
+`timezone`, `status`, `reservation_url`. The CTA renders only when
+`reservation_url` is passed, and it is declared telemetry. No producer lives
+in this package.
+
+### Added — community activity types (registry-only)
+
+Three built-in types for a feed module, all in the `messages` group (the
+recipient may switch them off): `feed.comment_received` (push + email),
+`feed.reaction_received` (push; the producer debounces per target) and
+`feed.new_post_from_followed` (push; off on the producer side by default).
+Variables: `post_id`, `actor_id`, `post_url`. The email CTA renders only when
+`post_url` is passed, and `post_url` is declared telemetry. No producer lives
+in this package.
+
+### Changed
+
+Shorter `intent` lines for the dispatch, group and unsubscribe readers and the
+base/footer templates, so the seven new types fit the existing 6700-token
+`llms.txt` budget instead of raising it.
+
 ## [0.28.3] — 2026-11-05
 
 ### Added — order receipts (registry-only)

@@ -2,7 +2,7 @@
   "artifact": "templates",
   "schema_version": 1,
   "module": "stapel-notifications",
-  "module_version": "0.28.3",
+  "module_version": "0.28.4",
   "routing_key": "notification_type",
   "template_root": "templates",
   "call_sites": [
@@ -694,6 +694,77 @@
       ],
       "group": "billing",
       "transactional": true
+    },
+    {
+      "key": "feed.comment_received",
+      "template": "notifications/email/feed_comment_received.html",
+      "chain": [
+        "notifications/email/feed_comment_received.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "post_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "post_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "messages",
+      "transactional": false
     },
     {
       "key": "gdpr.dsar.opened",
@@ -1890,6 +1961,307 @@
       "transactional": false
     },
     {
+      "key": "reservations.booked",
+      "template": "notifications/email/reservations_booked.html",
+      "chain": [
+        "notifications/email/reservations_booked.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "reservation_number",
+          "reservation_url",
+          "start_local",
+          "timezone",
+          "title"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "reservation_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "reservations.new_for_provider",
+      "template": "notifications/email/reservations_new_for_provider.html",
+      "chain": [
+        "notifications/email/reservations_new_for_provider.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "reservation_number",
+          "reservation_url",
+          "start_local",
+          "timezone",
+          "title"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "reservation_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "reservations.reminder",
+      "template": "notifications/email/reservations_reminder.html",
+      "chain": [
+        "notifications/email/reservations_reminder.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "reservation_number",
+          "reservation_url",
+          "start_local",
+          "timezone",
+          "title"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "reservation_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "reservations.status_changed",
+      "template": "notifications/email/reservations_status_changed.html",
+      "chain": [
+        "notifications/email/reservations_status_changed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "reservation_number",
+          "reservation_url",
+          "start_local",
+          "status",
+          "timezone",
+          "title"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "reservation_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
       "key": "suspicious_login",
       "template": "notifications/email/suspicious_login.html",
       "chain": [
@@ -2590,6 +2962,7 @@
         "billing.payment_failed",
         "billing.payment_succeeded",
         "billing.subscription_ending",
+        "feed.comment_received",
         "gdpr.dsar.opened",
         "gdpr.dsar.received",
         "gdpr.export_ready",
@@ -2607,6 +2980,10 @@
         "orders.status_changed",
         "otp_code",
         "report_reviewed",
+        "reservations.booked",
+        "reservations.new_for_provider",
+        "reservations.reminder",
+        "reservations.status_changed",
         "suspicious_login",
         "workspace.invitation",
         "workspace.invitation.decline_confirmed",
@@ -2709,6 +3086,7 @@
         "period",
         "period_end",
         "period_start",
+        "post_url",
         "push_body",
         "push_title",
         "reason",
@@ -2716,6 +3094,8 @@
         "reason_line",
         "reference",
         "reference_line",
+        "reservation_number",
+        "reservation_url",
         "resolve_due_date",
         "resubscribe_url",
         "retry_url",
@@ -2728,10 +3108,13 @@
         "security_url",
         "sender_name",
         "sms",
+        "start_local",
         "status",
         "subject",
         "subject_email",
         "target_label",
+        "timezone",
+        "title",
         "total",
         "unsubscribe_url",
         "username",
@@ -2755,6 +3138,7 @@
         "billing.payment_failed",
         "billing.payment_succeeded",
         "billing.subscription_ending",
+        "feed.comment_received",
         "gdpr.dsar.opened",
         "gdpr.dsar.received",
         "gdpr.export_ready",
@@ -2772,6 +3156,10 @@
         "orders.status_changed",
         "otp_code",
         "report_reviewed",
+        "reservations.booked",
+        "reservations.new_for_provider",
+        "reservations.reminder",
+        "reservations.status_changed",
         "suspicious_login",
         "workspace.invitation",
         "workspace.invitation.decline_confirmed",
@@ -2867,6 +3255,7 @@
         "period",
         "period_end",
         "period_start",
+        "post_url",
         "push_body",
         "push_title",
         "reason",
@@ -2874,6 +3263,8 @@
         "reason_line",
         "reference",
         "reference_line",
+        "reservation_number",
+        "reservation_url",
         "resolve_due_date",
         "resubscribe_url",
         "retry_url",
@@ -2886,10 +3277,13 @@
         "security_url",
         "sender_name",
         "sms",
+        "start_local",
         "status",
         "subject",
         "subject_email",
         "target_label",
+        "timezone",
+        "title",
         "total",
         "unsubscribe_url",
         "username",
@@ -3187,6 +3581,54 @@
         "period_end",
         "resubscribe_url",
         "subject"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/feed_comment_received.html",
+      "role": "letter",
+      "used_by": [
+        "feed.comment_received"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "post_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "post_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url"
       ],
       "unknown_tags": []
     },
@@ -4001,6 +4443,215 @@
         "push_body",
         "push_title",
         "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/reservations_booked.html",
+      "role": "letter",
+      "used_by": [
+        "reservations.booked"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "reservation_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "reservation_number",
+        "reservation_url",
+        "start_local",
+        "subject",
+        "timezone",
+        "title",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/reservations_new_for_provider.html",
+      "role": "letter",
+      "used_by": [
+        "reservations.new_for_provider"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "reservation_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "reservation_number",
+        "reservation_url",
+        "start_local",
+        "subject",
+        "timezone",
+        "title",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/reservations_reminder.html",
+      "role": "letter",
+      "used_by": [
+        "reservations.reminder"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "reservation_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "reservation_number",
+        "reservation_url",
+        "start_local",
+        "subject",
+        "timezone",
+        "title",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/reservations_status_changed.html",
+      "role": "letter",
+      "used_by": [
+        "reservations.status_changed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "reservation_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "reservation_number",
+        "reservation_url",
+        "start_local",
+        "status",
+        "subject",
+        "timezone",
+        "title",
         "unsubscribe_url"
       ],
       "unknown_tags": []

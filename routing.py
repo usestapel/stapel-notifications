@@ -175,6 +175,29 @@ NOTIFICATION_ROUTING = {
                                "telemetry": ["order_url"]},
     "orders.status_changed": {"channels": ["push", "email"],        "group": "system",
                                "telemetry": ["order_url"]},
+    # Reservation notices (stapel-reservations upstream, registry-only — no
+    # producer in this package). Customer: booked, status_changed, reminder;
+    # provider: new_for_provider. "reservation_url" is declared telemetry;
+    # omitting it renders no CTA.
+    "reservations.booked":           {"channels": ["push", "email"], "group": "system",
+                                      "telemetry": ["reservation_url"]},
+    "reservations.status_changed":   {"channels": ["push", "email"], "group": "system",
+                                      "telemetry": ["reservation_url"]},
+    "reservations.reminder":         {"channels": ["push", "email"], "group": "system",
+                                      "telemetry": ["reservation_url"]},
+    "reservations.new_for_provider": {"channels": ["push", "email"], "group": "system",
+                                      "telemetry": ["reservation_url"]},
+    # Community activity to a post's author (stapel-feed upstream,
+    # registry-only — no producer in this package). "messages": the person
+    # may switch these off. "post_url" is declared telemetry; omitting it
+    # renders no CTA. new_post_from_followed is off on the feed side by
+    # default (a fan-out per follower is the host's cost decision).
+    "feed.comment_received":        {"channels": ["push", "email"], "group": "messages",
+                                      "telemetry": ["post_url"]},
+    "feed.reaction_received":       {"channels": ["push"],          "group": "messages",
+                                      "telemetry": ["post_url"]},
+    "feed.new_post_from_followed":  {"channels": ["push"],          "group": "messages",
+                                      "telemetry": ["post_url"]},
     "workspace.invitation":  {"channels": ["email"], "group": "system",
                               "transactional": True},
     # Invite variant for a not-yet-registered recipient: the acceptance link
@@ -240,8 +263,13 @@ DEFAULT_EMAIL_TEMPLATES = {
     "moderation.report_received": "notifications/email/moderation_report_received.html",
     "moderation.sanction_issued": "notifications/email/moderation_sanction_issued.html",
     "moderation.appeal_resolved": "notifications/email/moderation_appeal_resolved.html",
+    "feed.comment_received": "notifications/email/feed_comment_received.html",
     "orders.placed": "notifications/email/orders_placed.html",
     "orders.status_changed": "notifications/email/orders_status_changed.html",
+    "reservations.booked": "notifications/email/reservations_booked.html",
+    "reservations.status_changed": "notifications/email/reservations_status_changed.html",
+    "reservations.reminder": "notifications/email/reservations_reminder.html",
+    "reservations.new_for_provider": "notifications/email/reservations_new_for_provider.html",
     "magic_link_login": "notifications/email/magic_link_login.html",
     "new_device_login": "notifications/email/new_device_login.html",
     "suspicious_login": "notifications/email/suspicious_login.html",

@@ -208,6 +208,19 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.moderation.appeal_resolved.heading": "Your appeal has been resolved",
     "notification.moderation.appeal_resolved.body": "Your appeal has been reviewed. Outcome: {outcome_label}.",
     "notification.moderation.appeal_resolved.note_line": "{appeal_note}",
+    # ── Feed (stapel-feed upstream, registry-only) ─────────────────────
+    # Activity on the recipient's own posts. The CTA renders only when the
+    # caller passes "post_url" (POST_URL_TEMPLATE on the feed side).
+    "notification.feed.comment_received.subject": "New comment on your post",
+    "notification.feed.comment_received.heading": "Someone commented on your post",
+    "notification.feed.comment_received.body": "There is a new comment under your post.",
+    "notification.feed.comment_received.cta": "View post",
+    "notification.feed.comment_received.push_title": "New comment",
+    "notification.feed.comment_received.push_body": "Someone commented on your post.",
+    "notification.feed.reaction_received.push_title": "New reaction",
+    "notification.feed.reaction_received.push_body": "Someone reacted to your post.",
+    "notification.feed.new_post_from_followed.push_title": "New post",
+    "notification.feed.new_post_from_followed.push_body": "Someone you follow posted an update.",
     # ── Orders (stapel-orders upstream, registry-only) ─────────────────
     # Receipts to the buyer. The CTA renders only when the caller passes
     # "order_url" (ORDER_URL_TEMPLATE on the orders side; empty = no link).
@@ -223,6 +236,33 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.orders.status_changed.cta": "View order",
     "notification.orders.status_changed.push_title": "Order updated",
     "notification.orders.status_changed.push_body": "Order {order_number} is now {status}.",
+    # ── Reservations (stapel-reservations upstream, registry-only) ─────
+    # The CTA renders only when the caller passes "reservation_url"
+    # (RESERVATION_URL_TEMPLATE on the reservations side; empty = no link).
+    "notification.reservations.booked.subject": "Booking {reservation_number} confirmed: {title}",
+    "notification.reservations.booked.heading": "Your booking is in",
+    "notification.reservations.booked.body": "You booked {title} for {start_local} ({timezone}). Booking number {reservation_number}.",
+    "notification.reservations.booked.cta": "View booking",
+    "notification.reservations.booked.push_title": "Booking received",
+    "notification.reservations.booked.push_body": "{title}, {start_local}.",
+    "notification.reservations.status_changed.subject": "Booking {reservation_number}: {status}",
+    "notification.reservations.status_changed.heading": "Your booking has been updated",
+    "notification.reservations.status_changed.body": "Your booking of {title} for {start_local} ({timezone}) is now {status}.",
+    "notification.reservations.status_changed.cta": "View booking",
+    "notification.reservations.status_changed.push_title": "Booking updated",
+    "notification.reservations.status_changed.push_body": "{title}, {start_local}: {status}.",
+    "notification.reservations.reminder.subject": "Reminder: {title} at {start_local}",
+    "notification.reservations.reminder.heading": "Your booking is coming up",
+    "notification.reservations.reminder.body": "A reminder: {title} at {start_local} ({timezone}). Booking number {reservation_number}.",
+    "notification.reservations.reminder.cta": "View booking",
+    "notification.reservations.reminder.push_title": "Upcoming booking",
+    "notification.reservations.reminder.push_body": "{title} at {start_local}.",
+    "notification.reservations.new_for_provider.subject": "New booking {reservation_number}: {title}",
+    "notification.reservations.new_for_provider.heading": "You have a new booking",
+    "notification.reservations.new_for_provider.body": "{title} was booked for {start_local} ({timezone}). Booking number {reservation_number}.",
+    "notification.reservations.new_for_provider.cta": "Open the agenda",
+    "notification.reservations.new_for_provider.push_title": "New booking",
+    "notification.reservations.new_for_provider.push_body": "{title}, {start_local}.",
     # ── Magic Link Login (A6) ───────────────────────────────────
     "notification.magic_link_login.subject": "Your {company_name} sign-in link",
     "notification.magic_link_login.heading": "Sign in to {company_name}",
