@@ -146,6 +146,12 @@ STAPEL_NOTIFICATIONS = {
   renders the given body inside the brand layout (`_raw_content.html`) and
   permits an **unregistered** type (group defaults to `system`) — **only where
   the deployment opened it**, `RAW_CONTENT` is `"off"` by default (§2a).
+- Dedup key: `request_notification(..., dedup_key="post:7", dedup_ttl=300)`
+  (stapel-core >= 0.95.3) delivers at most one request per
+  `(notification_type, dedup_key)` within the window, claimed atomically in
+  the default cache by the consumer every transport calls; no `dedup_ttl` →
+  `DEDUP_DEFAULT_TTL` (86400 s). A failed delivery releases the claim.
+  `W007`: the default cache is `DummyCache`, so nothing is deduplicated.
 - CI gate: `manage.py check_notifications` statically verifies literal
   `request_notification` call sites against the effective registry, and
   follows `RAW_CONTENT`: with the hatch shut a `content_html=` call site on an

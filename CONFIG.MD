@@ -79,6 +79,7 @@ the only thing that ever touches it.
 | RAW_CONTENT | str | env | axis: may a caller supply the body of a branded letter — `off` \| `text` (body yes, markup reduced to text) \| `html` (trusted producers only; boot-warns `W004`, because caller markup inside this brand's layout is first-party phishing with valid SPF/DKIM). | no | off |
 | TELEMETRY | dict | env | per-type allowlist of caller variables the delivery journal may store: `{"<type>": [...], "*": [...]}`. Deny-by-default, and a declared key is still dropped when its value is credential-shaped. | no | {} |
 | DELIVERY_CLAIM_TTL | int | env | seconds after which a delivery claim whose process died may be taken over by a redelivery, so a crash between claim and send cannot silence a notification forever. | no | 900 |
+| DEDUP_DEFAULT_TTL | int | env | seconds a `dedup_key` claim lasts when the request names no `dedup_ttl`: one delivery per (notification_type, dedup_key) per window, claimed in the default cache. | no | 86400 |
 
 ### Branding and template variables
 

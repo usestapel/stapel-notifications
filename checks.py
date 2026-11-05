@@ -692,3 +692,22 @@ def check_retry_allowlist_holds_no_security_type(app_configs, **kwargs):
         ),
         id="stapel_notifications.E008",
     )]
+
+
+@checks.register(checks.Tags.compatibility)
+def check_dedup_cache(app_configs, **kwargs):
+    """W007: dedup keys are claimed in a cache that remembers nothing."""
+    from django.core.cache import caches
+
+    backend = type(caches["default"]).__name__
+    if backend != "DummyCache":
+        return []
+    return [
+        checks.Warning(
+            "The default cache is DummyCache: notification dedup keys are never "
+            "remembered, so every request carrying a dedup_key is delivered.",
+            hint="Configure a shared cache (Redis/Memcached) for the process "
+                 "that consumes notification.requested.",
+            id="stapel_notifications.W007",
+        )
+    ]

@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.29.0] — 2026-11-05
+
+### Added — dedup keys on notification requests
+
+A `notification.requested` payload carrying `dedup_key` (stapel-core 0.95.3:
+`request_notification(..., dedup_key=, dedup_ttl=)`) is delivered at most
+once per `(notification_type, dedup_key)` within its window. The claim is a
+`cache.add` in the default cache, made in `handle_notification_requested`,
+the one function the in-process subscriber and `consume_notifications` both
+call. A request without `dedup_ttl` gets `DEDUP_DEFAULT_TTL` (new setting,
+86400 s); a delivery that raises releases its claim so a retry can send.
+Requests without a key are untouched. New boot check `W007`: the default
+cache is `DummyCache`, which remembers no claim. The stapel-core floor moves
+to 0.95.3.
+
 ## [0.28.4] — 2026-11-05
 
 ### Added — reservation notices (registry-only)

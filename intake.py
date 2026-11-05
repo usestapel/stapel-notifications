@@ -18,6 +18,36 @@ from stapel_core.kafka.topics import TOPIC_NOTIFICATION_REQUESTED
 
 logger = logging.getLogger(__name__)
 
+_DEDUP_PREFIX = "stapel_notifications:dedup"
+
+
+def dedup_cache_key(notification_type: str, dedup_key: str) -> str:
+    """The cache key a ``(notification_type, dedup_key)`` claim is held under."""
+    return f"{_DEDUP_PREFIX}:{notification_type}:{dedup_key}"
+
+
+def _dedup_window(payload: dict) -> int:
+    from .conf import notifications_settings
+
+    ttl = payload.get("dedup_ttl")
+    if isinstance(ttl, int) and not isinstance(ttl, bool) and ttl > 0:
+        return ttl
+    return int(notifications_settings.DEDUP_DEFAULT_TTL)
+
+
+def _claim_dedup(notification_type: str, payload: dict) -> str | None:
+    """Claim the request's dedup key. Returns the cache key, ``""`` when the
+    request carries none, or ``None`` when the key is already claimed."""
+    from django.core.cache import cache
+
+    dedup_key = payload.get("dedup_key")
+    if not (isinstance(dedup_key, str) and dedup_key):
+        return ""
+    key = dedup_cache_key(notification_type, dedup_key)
+    if cache.add(key, 1, _dedup_window(payload)):
+        return key
+    return None
+
 
 def handle_notification_requested(event) -> None:
     """Dispatch one ``notification.requested`` envelope (any transport)."""
@@ -36,10 +66,32 @@ def handle_notification_requested(event) -> None:
             event.event_id,
         )
         return
+    claim = _claim_dedup(notification_type, payload)
+    if claim is None:
+        logger.info(
+            "Skipping notification: type=%s, dedup_key already delivered "
+            "within its window (event_id=%s)",
+            notification_type, event.event_id,
+        )
+        return
     logger.info(
         "Processing notification: type=%s, event_id=%s",
         notification_type, event.event_id,
     )
+    try:
+        _process(process_notification, notification_type, payload, event)
+    except Exception:
+        if claim:
+            # A request that was not delivered must stay deliverable: a
+            # redelivery or retry inside the window would otherwise be
+            # swallowed as a duplicate of nothing.
+            from django.core.cache import cache
+
+            cache.delete(claim)
+        raise
+
+
+def _process(process_notification, notification_type: str, payload: dict, event) -> None:
     process_notification(
         notification_type=notification_type,
         user_id=payload.get("user_id"),

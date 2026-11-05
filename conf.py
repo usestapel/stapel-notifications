@@ -188,6 +188,10 @@ DEFAULTS = {
     # slow SMTP round trip, short enough that a crashed consumer does not
     # silence a notification for the rest of the day.
     "DELIVERY_CLAIM_TTL": 900,
+    # Window in seconds for a request carrying a dedup_key but no dedup_ttl
+    # (request_notification(..., dedup_key=...)). One delivery per
+    # (notification_type, dedup_key) per window, claimed in the default cache.
+    "DEDUP_DEFAULT_TTL": 86400,
     # Channel backends: short registry name or dotted path to a provider
     # class with .send(...).
     #
