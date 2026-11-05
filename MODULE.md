@@ -23,7 +23,7 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 | Push tokens + feed | `DevicePushToken` model; REST API: `GET/POST devices/`, `DELETE devices/{token}/`, `DELETE devices/by-id/{id}/`, `GET feed/` (push log as feed — rows carry `read_at`, the envelope carries `unread_count`), `POST feed/read/` (mark rows or the whole feed read), `GET notification-keys/` (translation-key export for the translate collector) |
 | Live feed (optional) | `notifications:user:<id>` Signal stream carrying `notification.new` and `notification.read` on the v1 envelope; socket `ws/notifications/inbox` behind the `[realtime]` extra — see § Live feed |
 | Branded email layer | `templates/notifications/email/_base.html` shared shell + 25 per-type templates + `_raw_content.html` escape hatch; branding driven entirely by settings |
-| i18n | `TranslationCache` model, lazy pull through the `translate.resolve` comm Function, English defaults in `translation_keys.NOTIFICATION_KEYS` |
+| i18n | `TranslationCache` model, lazy pull through the `translate.resolve` comm Function, English defaults in `translation_keys.NOTIFICATION_KEYS`, packaged gettext catalogues for de/es/fr/it/nl/pl/pt/ru covering every slot (§6) |
 | GDPR | `NotificationsGDPRProvider` (section `notifications`) registered in `apps.ready()` on `stapel_core.gdpr.gdpr_registry` — export + erase |
 | Ops commands | `consume_notifications`, `consume_contacts`, `consume_profiles` (bus consumers), `sync_translations` (prefetch), `check_notifications` (CI gate: every literal `request_notification` call site must reference a registered type), `eject_notification_templates` (copy packaged templates into the host project) |
 
@@ -394,11 +394,24 @@ entry in `NOTIFICATION_KEYS`, so `TEXT` is its only copy source.
 - The translate module emits a thin **`translations.changed`** invalidation
   event (`{language, keys_changed}`); the `actions.py` subscriber re-resolves
   the affected `notification.*` keys.
-- Render path degrades gracefully: cache → lazy `translate.resolve` on miss →
-  cached `en` value → built-in English default from
+- Render path, per key: a language the host pinned in `TEXT` → cache → lazy
+  `translate.resolve` on miss → gettext (Django's merged catalogue, so the
+  host's `LOCALE_PATHS` and earlier apps win, then this package's own
+  `locale/` read directly) → cached `en` value → built-in English default from
   `translation_keys.NOTIFICATION_KEYS` (also served at
   `GET notification-keys/` for the translate collector,
-  `source='backend:notifications'`).
+  `source='backend:notifications'`). A cached value for a non-English
+  language that is just the English source (translate answers a key it lacks
+  with the default language's text) does not count as a translation.
+- **Packaged catalogues:** `locale/{de,es,fr,it,nl,pl,pt,ru}/LC_MESSAGES/django.po`
+  (+ compiled `.mo`) cover every slot of every built-in type — email
+  subject/body/footer, SMS and push. The msgid is the English default, the
+  `#:` lines name the keys that use it. Gates in `tests/test_letter_catalogues.py`:
+  full coverage, same `{placeholders}`/line breaks/markup as English, `.mo` ==
+  `.po`, and a letter of every type in every shipped language with no English
+  slot left. After editing a `.po`: `msgfmt --check-format -o django.mo
+  django.po` in its directory, then `make messages-check`. A new key needs its
+  entry in all eight catalogues or the coverage gate fails.
 - Language resolution order per notification (`language.py`, ordered by
   *whose statement each step is*): the recipient's **chosen** language,
   asked of profiles at send time via the `profiles.language` comm Function

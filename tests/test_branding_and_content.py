@@ -349,12 +349,12 @@ class TestTranslationFallback:
         needs to see; it otherwise looks like success — the mail sends."""
         import logging
 
-        # A language the package does NOT ship — ru is now covered by the
-        # bundled catalogue, so it would (correctly) stay quiet.
+        # A language the package does NOT ship (tests/test_letter_catalogues
+        # SHIPPED); a shipped one is covered and (correctly) stays quiet.
         with caplog.at_level(logging.WARNING):
-            _process(language="de")
+            _process(language="ja")
         assert any(
-            "no de translation" in r.getMessage() for r in caplog.records
+            "no ja translation" in r.getMessage() for r in caplog.records
         ), [r.getMessage() for r in caplog.records]
 
     def test_english_request_does_not_warn(self, caplog):

@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.30.0] — 2026-11-05
+
+### Added — every letter in eight languages
+
+The packaged gettext catalogues now cover every slot of every built-in type —
+email subject, body and footer, SMS and push — in German, Spanish, French,
+Italian, Dutch, Polish, Portuguese and Russian (204 strings each; de, fr, it,
+nl, pl and pt are new, es grew from the three billing letters to all of
+them, ru gained the moderation, feed, order and reservation types). Before,
+account-security, privacy, workspace and billing mail fell back to English
+for most of these readers. Host copy keeps precedence: a language pinned in
+`TEXT`, a cached translation and the host's own `LOCALE_PATHS` all still
+win over the packaged words.
+
+New gate `tests/test_letter_catalogues.py`: full coverage per language, the
+English `{placeholders}`, line breaks and markup in every translation, the
+compiled `.mo` equal to its `.po`, and a letter of every type sent in every
+shipped language with no slot left in English (spy on the resolved copy plus
+the captured email, SMS and push).
+
+### Fixed — an English echo no longer outranks the catalogue
+
+- `translate.resolve` answers a key it lacks in the asked language with the
+  default language's text, and that answer was cached under the asked
+  language, where it beat the gettext step. A non-English cache value equal
+  to the English source is now skipped.
+- Django's merged catalogue lets an app listed earlier answer a shared msgid
+  with itself (a REST framework catalogue maps "Username" to "Username" in
+  Italian). When the merged answer is an echo, this package's own catalogue
+  is read directly.
+
 ## [0.29.0] — 2026-11-05
 
 ### Added — dedup keys on notification requests

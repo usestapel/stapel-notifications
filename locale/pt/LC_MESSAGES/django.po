@@ -1,0 +1,850 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: stapel-notifications\n"
+"Language: pt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: notification.otp_code.subject
+msgid "Your {company_name} verification code: {code}"
+msgstr "Código de verificação {company_name}: {code}"
+
+#: notification.otp_code.heading
+msgid "Your verification code"
+msgstr "O seu código de verificação"
+
+#: notification.otp_code.body
+msgid "Use the code below to verify your identity:"
+msgstr "Utilize o código abaixo para confirmar a sua identidade:"
+
+#: notification.otp_code.warning
+msgid "Don't share this code with anyone. If you didn't request this, you can safely ignore this email."
+msgstr "Não partilhe este código com ninguém. Se não o pediu, pode ignorar este e-mail."
+
+#: notification.otp_code.expiry
+msgid "This code expires in {expiry_minutes} minutes."
+msgstr "Este código expira dentro de {expiry_minutes} minutos."
+
+#: notification.otp_code.sms
+msgid "Your {company_name} code: {code}. Expires in {expiry_minutes} min."
+msgstr "Código {company_name}: {code}. Expira em {expiry_minutes} min."
+
+#: notification.auth_change_requested.subject
+#: notification.auth_change_requested.push_title
+msgid "Authenticator change requested"
+msgstr "Alteração de autenticação solicitada"
+
+#: notification.auth_change_requested.heading
+msgid "Change requested"
+msgstr "Alteração solicitada"
+
+#: notification.auth_change_requested.body
+msgid "Your {change_type} change has been requested. New {change_type}: {masked_new_value}. Change will complete on: {scheduled_date}."
+msgstr "Foi solicitada a alteração do seu {change_type}. Novo {change_type}: {masked_new_value}. A alteração será concluída em {scheduled_date}."
+
+#: notification.auth_change_requested.warning
+msgid "If you did not request this change, please contact support immediately."
+msgstr "Se não solicitou esta alteração, contacte o suporte imediatamente."
+
+#: notification.auth_change_requested.sms
+msgid "{company_name}: Your {change_type} change has been requested. Completes {scheduled_date}. Contact support if unexpected."
+msgstr "{company_name}: foi solicitada a alteração de {change_type}. Será concluída em {scheduled_date}. Se não esperava isso, fale com o suporte."
+
+#: notification.auth_change_requested.push_body
+msgid "Your {change_type} change will complete on {scheduled_date}."
+msgstr "A alteração do seu {change_type} será concluída em {scheduled_date}."
+
+#: notification.auth_change_reminder.subject
+msgid "Reminder: {change_type} change in {days_remaining} days"
+msgstr "Lembrete: alteração de {change_type} dentro de {days_remaining} dias"
+
+#: notification.auth_change_reminder.heading
+msgid "Change reminder"
+msgstr "Lembrete de alteração"
+
+#: notification.auth_change_reminder.body
+msgid "Your {change_type} will be changed to {masked_new_value} in {days_remaining} days."
+msgstr "O seu {change_type} será alterado para {masked_new_value} dentro de {days_remaining} dias."
+
+#: notification.auth_change_reminder.warning
+msgid "If you did not request this, please contact support."
+msgstr "Se não fez este pedido, contacte o suporte."
+
+#: notification.auth_change_reminder.sms
+msgid "{company_name}: Your {change_type} changes in {days_remaining} days to {masked_new_value}. Contact support if unexpected."
+msgstr "{company_name}: alteração de {change_type} para {masked_new_value}. Dias restantes: {days_remaining}. Se não esperava isso, fale com o suporte."
+
+#: notification.auth_change_reminder.push_title
+msgid "{change_type} change in {days_remaining} days"
+msgstr "Alteração de {change_type} dentro de {days_remaining} dias"
+
+#: notification.auth_change_reminder.push_body
+msgid "Your {change_type} will be changed to {masked_new_value}."
+msgstr "O seu {change_type} será alterado para {masked_new_value}."
+
+#: notification.auth_change_urgent.subject
+#: notification.auth_change_urgent.push_title
+msgid "URGENT: {change_type} change tomorrow"
+msgstr "URGENTE: alteração de {change_type} amanhã"
+
+#: notification.auth_change_urgent.heading
+msgid "Change tomorrow"
+msgstr "Alteração amanhã"
+
+#: notification.auth_change_urgent.body
+msgid "Your {change_type} will be changed TOMORROW ({scheduled_date}). This is your last chance to cancel."
+msgstr "O seu {change_type} será alterado AMANHÃ ({scheduled_date}). Esta é a sua última oportunidade para cancelar."
+
+#: notification.auth_change_urgent.warning
+msgid "After this change, you will need the new {change_type} to log in."
+msgstr "Após esta alteração, precisará do novo {change_type} para iniciar sessão."
+
+#: notification.auth_change_urgent.sms
+msgid "URGENT: {company_name} {change_type} changes tomorrow ({scheduled_date}). Last chance to cancel!"
+msgstr "URGENTE: a alteração de {change_type} na conta {company_name} acontece amanhã ({scheduled_date}). Última oportunidade para cancelar!"
+
+#: notification.auth_change_urgent.push_body
+msgid "Last chance to cancel your {change_type} change."
+msgstr "Última oportunidade para cancelar a alteração do seu {change_type}."
+
+#: notification.auth_change_completed.subject
+msgid "{change_type} successfully changed"
+msgstr "{change_type} alterado com sucesso"
+
+#: notification.auth_change_completed.heading
+msgid "Change completed"
+msgstr "Alteração concluída"
+
+#: notification.auth_change_completed.body
+msgid "Your account {change_type} has been successfully changed."
+msgstr "O {change_type} da sua conta foi alterado com sucesso."
+
+#: notification.auth_change_completed.warning
+msgid "If you did not authorize this change, contact support immediately."
+msgstr "Se não autorizou esta alteração, contacte o suporte imediatamente."
+
+#: notification.auth_change_completed.sms
+msgid "{company_name}: Your {change_type} has been changed. Contact support if unexpected."
+msgstr "{company_name}: a alteração de {change_type} foi concluída. Se não esperava isso, fale com o suporte."
+
+#: notification.auth_change_completed.push_title
+msgid "{change_type} changed"
+msgstr "{change_type} alterado"
+
+#: notification.auth_change_completed.push_body
+msgid "Your account {change_type} has been updated."
+msgstr "O {change_type} da sua conta foi atualizado."
+
+#: notification.gdpr.export_ready.subject
+#: notification.gdpr.export_ready.heading
+msgid "Your data export is ready"
+msgstr "A sua exportação de dados está pronta"
+
+#: notification.gdpr.export_ready.body
+msgid "The copy of your personal data you requested is ready to download. The download link is valid for a limited time."
+msgstr "A cópia dos seus dados pessoais que solicitou está pronta para transferência. O link de transferência é válido por tempo limitado."
+
+#: notification.gdpr.export_ready.cta
+msgid "Download my data"
+msgstr "Transferir os meus dados"
+
+#: notification.gdpr.export_ready.warning
+msgid "If you did not request this export, please contact support immediately."
+msgstr "Se não solicitou esta exportação, contacte o suporte imediatamente."
+
+#: notification.gdpr.inactivity_warning.subject
+msgid "Your account will be closed in {days_remaining} days"
+msgstr "A sua conta será encerrada dentro de {days_remaining} dias"
+
+#: notification.gdpr.inactivity_warning.heading
+msgid "We miss you"
+msgstr "Sentimos a sua falta"
+
+#: notification.gdpr.inactivity_warning.body
+msgid "Your account has been inactive for a long time. It will be closed and your data deleted in {days_remaining} days unless you sign in again."
+msgstr "A sua conta está inativa há muito tempo. Será encerrada e os seus dados eliminados dentro de {days_remaining} dias, a menos que volte a iniciar sessão."
+
+#: notification.gdpr.inactivity_warning.warning
+msgid "Signing in once is enough to keep your account active."
+msgstr "Basta iniciar sessão uma vez para manter a sua conta ativa."
+
+#: notification.gdpr.inactivity_closed.subject
+#: notification.gdpr.inactivity_closed.heading
+msgid "Your account has been closed"
+msgstr "A sua conta foi encerrada"
+
+#: notification.gdpr.inactivity_closed.body
+msgid "Your account was closed due to prolonged inactivity and your personal data has been deleted, as required by our data retention policy."
+msgstr "A sua conta foi encerrada devido a inatividade prolongada e os seus dados pessoais foram eliminados, conforme exigido pela nossa política de retenção de dados."
+
+#: notification.gdpr.inactivity_closed.warning
+#: notification.listing_blocked.warning
+msgid "If you believe this was a mistake, please contact our support team."
+msgstr "Se acredita que se trata de um erro, contacte a nossa equipa de suporte."
+
+#: notification.gdpr.dsar.received.subject
+#: notification.gdpr.dsar.received.heading
+msgid "We received your privacy request"
+msgstr "Recebemos o seu pedido de privacidade"
+
+#: notification.gdpr.dsar.received.body
+msgid "We have recorded your request about your personal data and will answer it by {resolve_due_date}."
+msgstr "Registámos o seu pedido relativo aos seus dados pessoais e responderemos até {resolve_due_date}."
+
+#: notification.gdpr.dsar.received.reference_line
+msgid "Your reference: {reference}"
+msgstr "A sua referência: {reference}"
+
+#: notification.gdpr.dsar.received.warning
+msgid "If you did not send this request, please contact our support team."
+msgstr "Se não enviou este pedido, contacte a nossa equipa de suporte."
+
+#: notification.gdpr.dsar.opened.subject
+msgid "New privacy request ({kind})"
+msgstr "Novo pedido de privacidade ({kind})"
+
+#: notification.gdpr.dsar.opened.heading
+msgid "A privacy request arrived"
+msgstr "Chegou um pedido de privacidade"
+
+#: notification.gdpr.dsar.opened.body
+msgid "A {kind} request from {subject_email} arrived via {channel}. It must be resolved by {resolve_due_date}."
+msgstr "Chegou um pedido do tipo {kind} de {subject_email} através de {channel}. Tem de ser resolvido até {resolve_due_date}."
+
+#: notification.gdpr.dsar.opened.reference_line
+msgid "Reference: {reference}"
+msgstr "Referência: {reference}"
+
+#: notification.workspace.invitation.subject
+#: notification.workspace.invitation.new_user.subject
+msgid "You are invited to {workspace_name}"
+msgstr "Foi convidado para {workspace_name}"
+
+#: notification.workspace.invitation.heading
+#: notification.workspace.invitation.new_user.heading
+msgid "Workspace invitation"
+msgstr "Convite para espaço de trabalho"
+
+#: notification.workspace.invitation.body
+msgid "{inviter_name} invited you to join the workspace “{workspace_name}”."
+msgstr "{inviter_name} convidou-o a juntar-se ao espaço de trabalho “{workspace_name}”."
+
+#: notification.workspace.invitation.cta
+#: notification.workspace.invitation.reminder.cta
+msgid "Accept invitation"
+msgstr "Aceitar convite"
+
+#: notification.workspace.invitation.role_line
+#: notification.workspace.invitation.new_user.role_line
+#: notification.workspace.invitation.reminder.role_line
+msgid "You're invited to join as {role_name}."
+msgstr "Foi convidado a juntar-se com a função {role_name}."
+
+#: notification.workspace.invitation.new_user.body
+msgid "{inviter_name} invited you to join the workspace “{workspace_name}”. You don't have an account yet — the button below creates one and joins you to the workspace."
+msgstr "{inviter_name} convidou-o a juntar-se ao espaço de trabalho “{workspace_name}”. Ainda não tem conta — o botão abaixo cria uma e adiciona-o ao espaço de trabalho."
+
+#: notification.workspace.invitation.new_user.cta
+msgid "Create account & join"
+msgstr "Criar conta e aderir"
+
+#: notification.workspace.invitation.new_user.warning
+msgid "This link is personal — don't forward it. If you weren't expecting this invitation, you can safely ignore this email."
+msgstr "Este link é pessoal — não o reencaminhe. Se não esperava este convite, pode ignorar este e-mail."
+
+#: notification.workspace.invitation.reminder.subject
+msgid "Reminder: your invitation to {workspace_name}"
+msgstr "Lembrete: o seu convite para {workspace_name}"
+
+#: notification.workspace.invitation.reminder.heading
+msgid "Invitation reminder"
+msgstr "Lembrete de convite"
+
+#: notification.workspace.invitation.reminder.body
+msgid "{inviter_name} invited you to join the workspace “{workspace_name}”, and the invitation is still waiting for you. The button below carries a fresh link; the link from the earlier email no longer works."
+msgstr "{inviter_name} convidou-o a juntar-se ao espaço de trabalho “{workspace_name}” e o convite continua à sua espera. O botão abaixo contém um link novo; o link do e-mail anterior já não funciona."
+
+#: notification.workspace.invitation.reminder.warning
+msgid "If you don't want to join, you can simply ignore this email."
+msgstr "Se não pretende aderir, basta ignorar este e-mail."
+
+#: notification.workspace.invitation.decline_confirmed.subject
+msgid "You declined the invitation to {workspace_name}"
+msgstr "Recusou o convite para {workspace_name}"
+
+#: notification.workspace.invitation.decline_confirmed.heading
+#: notification.workspace.invitation.declined.heading
+msgid "Invitation declined"
+msgstr "Convite recusado"
+
+#: notification.workspace.invitation.decline_confirmed.body
+msgid "You declined the invitation to join the workspace “{workspace_name}”. No account was created for you, and the invitation link no longer works."
+msgstr "Recusou o convite para se juntar ao espaço de trabalho “{workspace_name}”. Não foi criada nenhuma conta para si e o link do convite já não funciona."
+
+#: notification.workspace.invitation.decline_confirmed.warning
+msgid "If you didn't do this, no action is needed — the invitation is closed and cannot be used by anyone. Ask whoever invited you to send a new one."
+msgstr "Se não foi você, não é necessária qualquer ação — o convite está encerrado e não pode ser usado por ninguém. Peça a quem o convidou que envie um novo."
+
+#: notification.workspace.invitation.declined.subject
+msgid "Your invitation to {workspace_name} was declined"
+msgstr "O seu convite para {workspace_name} foi recusado"
+
+#: notification.workspace.invitation.declined.body
+msgid "{invitee_email} declined your invitation to the workspace “{workspace_name}”. Nobody was added, and that invitation can no longer be used."
+msgstr "{invitee_email} recusou o seu convite para o espaço de trabalho “{workspace_name}”. Ninguém foi adicionado e esse convite já não pode ser usado."
+
+#: notification.workspace.invitation.declined.warning
+msgid "If this was a mistake, you can invite the same address again."
+msgstr "Se foi um engano, pode voltar a convidar o mesmo endereço."
+
+#: notification.workspace.provisioned_account.subject
+msgid "Your {workspace_name} account is ready"
+msgstr "A sua conta {workspace_name} está pronta"
+
+#: notification.workspace.provisioned_account.heading
+msgid "Your account is ready"
+msgstr "A sua conta está pronta"
+
+#: notification.workspace.provisioned_account.body
+msgid "An account has been created for you in the workspace “{workspace_name}”. Use the credentials below to sign in."
+msgstr "Foi criada uma conta para si no espaço de trabalho “{workspace_name}”. Utilize as credenciais abaixo para iniciar sessão."
+
+#: notification.workspace.provisioned_account.username_label
+msgid "Username"
+msgstr "Nome de utilizador"
+
+#: notification.workspace.provisioned_account.password_label
+msgid "Temporary password"
+msgstr "Palavra-passe temporária"
+
+#: notification.workspace.provisioned_account.cta
+#: notification.magic_link_login.cta
+msgid "Sign in"
+msgstr "Iniciar sessão"
+
+#: notification.workspace.provisioned_account.warning
+msgid "For your security, you'll be asked to change this password or set up two-factor authentication the first time you sign in."
+msgstr "Por motivos de segurança, ser-lhe-á pedido que altere esta palavra-passe ou configure a autenticação de dois fatores no primeiro início de sessão."
+
+#: notification.workspace.mfa_suspension.subject
+msgid "Your access to {workspace_name} has been suspended"
+msgstr "O seu acesso a {workspace_name} foi suspenso"
+
+#: notification.workspace.mfa_suspension.heading
+msgid "Access suspended — two-factor authentication required"
+msgstr "Acesso suspenso — é necessária autenticação de dois fatores"
+
+#: notification.workspace.mfa_suspension.body
+msgid "Your access to the workspace “{workspace_name}” has been suspended because it now requires two-factor authentication (2FA) and your account doesn't have it enabled yet."
+msgstr "O seu acesso ao espaço de trabalho “{workspace_name}” foi suspenso porque este passou a exigir autenticação de dois fatores (2FA) e a sua conta ainda não a tem ativada."
+
+#: notification.workspace.mfa_suspension.cta
+msgid "Enable two-factor authentication"
+msgstr "Ativar autenticação de dois fatores"
+
+#: notification.workspace.mfa_suspension.warning
+msgid "Your access will be restored automatically once you enable 2FA — no need to contact anyone."
+msgstr "O seu acesso será restabelecido automaticamente assim que ativar a 2FA — não precisa de contactar ninguém."
+
+#: notification.workspace.mfa_restored.subject
+msgid "Your access to {workspace_name} has been restored"
+msgstr "O seu acesso a {workspace_name} foi restabelecido"
+
+#: notification.workspace.mfa_restored.heading
+msgid "Access restored"
+msgstr "Acesso restabelecido"
+
+#: notification.workspace.mfa_restored.body
+msgid "Two-factor authentication is now enabled on your account, and your access to the workspace “{workspace_name}” has been restored."
+msgstr "A autenticação de dois fatores está agora ativada na sua conta e o seu acesso ao espaço de trabalho “{workspace_name}” foi restabelecido."
+
+#: notification.workspace.mfa_restored.cta
+msgid "Go to workspace"
+msgstr "Ir para o espaço de trabalho"
+
+#: notification.workspace.member_password_reset.subject
+msgid "Your {workspace_name} password was reset"
+msgstr "A sua palavra-passe de {workspace_name} foi redefinida"
+
+#: notification.workspace.member_password_reset.heading
+msgid "Your password was reset"
+msgstr "A sua palavra-passe foi redefinida"
+
+#: notification.workspace.member_password_reset.body
+msgid "Your password for the workspace “{workspace_name}” was reset by {actor_name}, and your active sessions have been signed out. Your new password is not in this email — {actor_name} will give it to you directly."
+msgstr "A sua palavra-passe do espaço de trabalho “{workspace_name}” foi redefinida por {actor_name} e as suas sessões ativas foram terminadas. A nova palavra-passe não consta deste e-mail — {actor_name} irá comunicá-la diretamente."
+
+#: notification.workspace.member_password_reset.cta
+msgid "Go to sign in"
+msgstr "Ir para o início de sessão"
+
+#: notification.workspace.member_password_reset.warning
+msgid "If you weren't expecting this, contact {actor_name} or your workspace administrator immediately — a password reset you didn't ask for can mean someone is trying to take over your account."
+msgstr "Se não esperava isto, contacte de imediato {actor_name} ou o administrador do espaço de trabalho — uma redefinição de palavra-passe que não pediu pode significar que alguém está a tentar apoderar-se da sua conta."
+
+#: notification.new_message.subject
+#: notification.new_message.heading
+#: notification.new_message.push_title
+msgid "New message from {sender_name}"
+msgstr "Nova mensagem de {sender_name}"
+
+#: notification.new_message.body
+msgid "You have a new message about “{listing_title}”."
+msgstr "Tem uma nova mensagem sobre “{listing_title}”."
+
+#: notification.new_message.cta
+msgid "Open Chat"
+msgstr "Abrir conversa"
+
+#: notification.report_reviewed.subject
+#: notification.report_reviewed.heading
+msgid "Your report has been reviewed"
+msgstr "A sua denúncia foi analisada"
+
+#: notification.report_reviewed.body
+msgid "You reported a listing. After checking it, we have taken action."
+msgstr "Denunciou um anúncio. Depois de o verificarmos, tomámos medidas."
+
+#: notification.report_reviewed.cta
+#: notification.moderation.report_received.cta
+msgid "View Details"
+msgstr "Ver detalhes"
+
+#: notification.report_reviewed.push_title
+msgid "Report reviewed"
+msgstr "Denúncia analisada"
+
+#: notification.report_reviewed.push_body
+msgid "Your report has been reviewed and action was taken."
+msgstr "A sua denúncia foi analisada e foram tomadas medidas."
+
+#: notification.listing_expiring.subject
+msgid "Your listing will expire soon"
+msgstr "O seu anúncio expira em breve"
+
+#: notification.listing_expiring.heading
+msgid "Your listing is expiring"
+msgstr "O seu anúncio está prestes a expirar"
+
+#: notification.listing_expiring.body
+msgid "Your listing “{listing_title}” will be unpublished in {days_remaining} days. You can turn on auto-republish to keep it active."
+msgstr "O seu anúncio “{listing_title}” deixará de estar publicado dentro de {days_remaining} dias. Pode ativar a republicação automática para o manter ativo."
+
+#: notification.listing_expiring.cta
+msgid "View Listing"
+msgstr "Ver anúncio"
+
+#: notification.listing_expiring.push_title
+msgid "Listing expiring"
+msgstr "Anúncio prestes a expirar"
+
+#: notification.listing_expiring.push_body
+msgid "“{listing_title}” expires in {days_remaining} days."
+msgstr "“{listing_title}” expira dentro de {days_remaining} dias."
+
+#: notification.listing_blocked.subject
+#: notification.listing_blocked.heading
+msgid "Your listing has been blocked"
+msgstr "O seu anúncio foi bloqueado"
+
+#: notification.listing_blocked.body
+msgid "Your listing “{listing_title}” has been blocked for violating {company_name} guidelines."
+msgstr "O seu anúncio “{listing_title}” foi bloqueado por violar as regras de {company_name}."
+
+#: notification.listing_blocked.reason_line
+msgid "Reason: {reason_label}."
+msgstr "Motivo: {reason_label}."
+
+#: notification.listing_blocked.cta
+msgid "Learn More"
+msgstr "Saber mais"
+
+#: notification.listing_blocked.appeal_cta
+#: notification.moderation.sanction_issued.cta
+msgid "Appeal this decision"
+msgstr "Recorrer desta decisão"
+
+#: notification.listing_blocked.push_title
+msgid "Listing blocked"
+msgstr "Anúncio bloqueado"
+
+#: notification.listing_blocked.push_body
+msgid "“{listing_title}” was blocked for guideline violations."
+msgstr "“{listing_title}” foi bloqueado por violação das regras."
+
+#: notification.moderation.report_received.subject
+#: notification.moderation.report_received.heading
+msgid "Your report has been received"
+msgstr "A sua denúncia foi recebida"
+
+#: notification.moderation.report_received.body
+msgid "We received your report about “{target_label}” (ref. {case_ref}). We'll let you know once it has been reviewed."
+msgstr "Recebemos a sua denúncia sobre “{target_label}” (ref. {case_ref}). Iremos informá-lo assim que for analisada."
+
+#: notification.moderation.report_received.push_title
+msgid "Report received"
+msgstr "Denúncia recebida"
+
+#: notification.moderation.report_received.push_body
+msgid "We received your report about “{target_label}”."
+msgstr "Recebemos a sua denúncia sobre “{target_label}”."
+
+#: notification.moderation.sanction_issued.subject
+#: notification.moderation.sanction_issued.heading
+msgid "Action has been taken on your account"
+msgstr "Foi aplicada uma medida à sua conta"
+
+#: notification.moderation.sanction_issued.body
+msgid "Your account has received a {sanction_kind}. Reason: {reason_label}."
+msgstr "Foi aplicada a seguinte medida à sua conta: {sanction_kind}. Motivo: {reason_label}."
+
+#: notification.moderation.sanction_issued.expiry_line
+msgid "This restriction lasts until {expires_label}."
+msgstr "Esta restrição vigora até {expires_label}."
+
+#: notification.moderation.sanction_issued.warning
+msgid "If you believe this is a mistake, you can appeal this decision."
+msgstr "Se considera que se trata de um erro, pode recorrer desta decisão."
+
+#: notification.moderation.sanction_issued.push_title
+msgid "Account action taken"
+msgstr "Medida aplicada à conta"
+
+#: notification.moderation.sanction_issued.push_body
+msgid "Your account has received a {sanction_kind}."
+msgstr "Foi aplicada a seguinte medida à sua conta: {sanction_kind}."
+
+#: notification.moderation.appeal_resolved.subject
+#: notification.moderation.appeal_resolved.heading
+msgid "Your appeal has been resolved"
+msgstr "O seu recurso foi decidido"
+
+#: notification.moderation.appeal_resolved.body
+msgid "Your appeal has been reviewed. Outcome: {outcome_label}."
+msgstr "O seu recurso foi analisado. Resultado: {outcome_label}."
+
+#: notification.feed.comment_received.subject
+msgid "New comment on your post"
+msgstr "Novo comentário na sua publicação"
+
+#: notification.feed.comment_received.heading
+msgid "Someone commented on your post"
+msgstr "Alguém comentou a sua publicação"
+
+#: notification.feed.comment_received.body
+msgid "There is a new comment under your post."
+msgstr "Há um novo comentário na sua publicação."
+
+#: notification.feed.comment_received.cta
+msgid "View post"
+msgstr "Ver publicação"
+
+#: notification.feed.comment_received.push_title
+msgid "New comment"
+msgstr "Novo comentário"
+
+#: notification.feed.comment_received.push_body
+msgid "Someone commented on your post."
+msgstr "Alguém comentou a sua publicação."
+
+#: notification.feed.reaction_received.push_title
+msgid "New reaction"
+msgstr "Nova reação"
+
+#: notification.feed.reaction_received.push_body
+msgid "Someone reacted to your post."
+msgstr "Alguém reagiu à sua publicação."
+
+#: notification.feed.new_post_from_followed.push_title
+msgid "New post"
+msgstr "Nova publicação"
+
+#: notification.feed.new_post_from_followed.push_body
+msgid "Someone you follow posted an update."
+msgstr "Alguém que segue publicou uma atualização."
+
+#: notification.orders.placed.subject
+msgid "Order {order_number} received"
+msgstr "Encomenda {order_number} recebida"
+
+#: notification.orders.placed.heading
+msgid "Thank you for your order"
+msgstr "Obrigado pela sua encomenda"
+
+#: notification.orders.placed.body
+msgid "We received your order {order_number} for {total} {currency}. We'll let you know when its status changes."
+msgstr "Recebemos a sua encomenda {order_number} no valor de {total} {currency}. Iremos informá-lo quando o estado mudar."
+
+#: notification.orders.placed.cta
+#: notification.orders.status_changed.cta
+msgid "View order"
+msgstr "Ver encomenda"
+
+#: notification.orders.placed.push_title
+msgid "Order received"
+msgstr "Encomenda recebida"
+
+#: notification.orders.placed.push_body
+msgid "Order {order_number} for {total} {currency} was received."
+msgstr "A encomenda {order_number} no valor de {total} {currency} foi recebida."
+
+#: notification.orders.status_changed.subject
+msgid "Order {order_number}: {status}"
+msgstr "Encomenda {order_number}: {status}"
+
+#: notification.orders.status_changed.heading
+msgid "Your order has been updated"
+msgstr "A sua encomenda foi atualizada"
+
+#: notification.orders.status_changed.body
+msgid "Your order {order_number} is now {status}."
+msgstr "O estado da sua encomenda {order_number} é agora: {status}."
+
+#: notification.orders.status_changed.push_title
+msgid "Order updated"
+msgstr "Encomenda atualizada"
+
+#: notification.orders.status_changed.push_body
+msgid "Order {order_number} is now {status}."
+msgstr "Estado da encomenda {order_number}: {status}."
+
+#: notification.reservations.booked.subject
+msgid "Booking {reservation_number} confirmed: {title}"
+msgstr "Reserva {reservation_number} confirmada: {title}"
+
+#: notification.reservations.booked.heading
+msgid "Your booking is in"
+msgstr "A sua reserva está feita"
+
+#: notification.reservations.booked.body
+msgid "You booked {title} for {start_local} ({timezone}). Booking number {reservation_number}."
+msgstr "Reservou {title} para {start_local} ({timezone}). Número da reserva: {reservation_number}."
+
+#: notification.reservations.booked.cta
+#: notification.reservations.status_changed.cta
+#: notification.reservations.reminder.cta
+msgid "View booking"
+msgstr "Ver reserva"
+
+#: notification.reservations.booked.push_title
+msgid "Booking received"
+msgstr "Reserva recebida"
+
+#: notification.reservations.status_changed.subject
+msgid "Booking {reservation_number}: {status}"
+msgstr "Reserva {reservation_number}: {status}"
+
+#: notification.reservations.status_changed.heading
+msgid "Your booking has been updated"
+msgstr "A sua reserva foi atualizada"
+
+#: notification.reservations.status_changed.body
+msgid "Your booking of {title} for {start_local} ({timezone}) is now {status}."
+msgstr "O estado da sua reserva de {title} para {start_local} ({timezone}) é agora: {status}."
+
+#: notification.reservations.status_changed.push_title
+msgid "Booking updated"
+msgstr "Reserva atualizada"
+
+#: notification.reservations.reminder.subject
+msgid "Reminder: {title} at {start_local}"
+msgstr "Lembrete: {title} em {start_local}"
+
+#: notification.reservations.reminder.heading
+msgid "Your booking is coming up"
+msgstr "A sua reserva está a aproximar-se"
+
+#: notification.reservations.reminder.body
+msgid "A reminder: {title} at {start_local} ({timezone}). Booking number {reservation_number}."
+msgstr "Lembrete: {title} em {start_local} ({timezone}). Número da reserva: {reservation_number}."
+
+#: notification.reservations.reminder.push_title
+msgid "Upcoming booking"
+msgstr "Reserva próxima"
+
+#: notification.reservations.reminder.push_body
+msgid "{title} at {start_local}."
+msgstr "{title} em {start_local}."
+
+#: notification.reservations.new_for_provider.subject
+msgid "New booking {reservation_number}: {title}"
+msgstr "Nova reserva {reservation_number}: {title}"
+
+#: notification.reservations.new_for_provider.heading
+msgid "You have a new booking"
+msgstr "Tem uma nova reserva"
+
+#: notification.reservations.new_for_provider.body
+msgid "{title} was booked for {start_local} ({timezone}). Booking number {reservation_number}."
+msgstr "{title} foi reservado para {start_local} ({timezone}). Número da reserva: {reservation_number}."
+
+#: notification.reservations.new_for_provider.cta
+msgid "Open the agenda"
+msgstr "Abrir a agenda"
+
+#: notification.reservations.new_for_provider.push_title
+msgid "New booking"
+msgstr "Nova reserva"
+
+#: notification.magic_link_login.subject
+msgid "Your {company_name} sign-in link"
+msgstr "O seu link de início de sessão {company_name}"
+
+#: notification.magic_link_login.heading
+msgid "Sign in to {company_name}"
+msgstr "Inicie sessão em {company_name}"
+
+#: notification.magic_link_login.body
+msgid "Click the button below to sign in. This link expires in 15 minutes and can only be used once."
+msgstr "Clique no botão abaixo para iniciar sessão. Este link expira dentro de 15 minutos e só pode ser usado uma vez."
+
+#: notification.magic_link_login.warning
+msgid "If you didn't request this, you can safely ignore this email."
+msgstr "Se não fez este pedido, pode ignorar este email com segurança."
+
+#: notification.new_device_login.subject
+msgid "New sign-in to your account"
+msgstr "Novo início de sessão na sua conta"
+
+#: notification.new_device_login.heading
+msgid "New sign-in detected"
+msgstr "Novo início de sessão detetado"
+
+#: notification.new_device_login.body
+msgid "Your account was signed in from a new device.\n\nDevice: {device_name}\nIP: {ip_address}"
+msgstr "Foi iniciada sessão na sua conta a partir de um novo dispositivo.\n\nDispositivo: {device_name}\nIP: {ip_address}"
+
+#: notification.new_device_login.cta
+msgid "Secure my account"
+msgstr "Proteger a minha conta"
+
+#: notification.new_device_login.warning
+msgid "If this was you, no action is needed. If you don't recognise this sign-in, secure your account immediately."
+msgstr "Se foi você, não é necessária qualquer ação. Se não reconhece este início de sessão, proteja a sua conta imediatamente."
+
+#: notification.suspicious_login.subject
+#: notification.suspicious_login.heading
+msgid "Suspicious sign-in detected"
+msgstr "Início de sessão suspeito detetado"
+
+#: notification.suspicious_login.badge
+msgid "Security alert"
+msgstr "Alerta de segurança"
+
+#: notification.suspicious_login.body
+msgid "A sign-in from an unrecognised location was detected on your account.\n\nDevice: {device_name}\nIP: {ip_address}"
+msgstr "Foi detetado um início de sessão a partir de uma localização desconhecida na sua conta.\n\nDispositivo: {device_name}\nIP: {ip_address}"
+
+#: notification.suspicious_login.cta
+msgid "This wasn't me — revoke all sessions"
+msgstr "Não fui eu — revogar todas as sessões"
+
+#: notification.suspicious_login.warning
+msgid "If this was you, no action is needed. If not, click the button above immediately to revoke all sessions."
+msgstr "Se foi você, não é necessária qualquer ação. Caso contrário, clique imediatamente no botão acima para revogar todas as sessões."
+
+#: notification.all_sessions_revoked.subject
+msgid "All sessions revoked"
+msgstr "Todas as sessões revogadas"
+
+#: notification.all_sessions_revoked.heading
+msgid "All sessions have been revoked"
+msgstr "Todas as sessões foram revogadas"
+
+#: notification.all_sessions_revoked.body
+msgid "All active sessions on your account have been revoked. You have been signed out of all devices."
+msgstr "Todas as sessões ativas da sua conta foram revogadas. A sua sessão foi terminada em todos os dispositivos."
+
+#: notification.all_sessions_revoked.warning
+msgid "If you did not initiate this action, please reset your password immediately."
+msgstr "Se não iniciou esta ação, redefina a sua palavra-passe imediatamente."
+
+#: notification.billing.payment_succeeded.subject
+msgid "Payment received: {amount}"
+msgstr "Pagamento recebido: {amount}"
+
+#: notification.billing.payment_succeeded.heading
+msgid "Thank you — your payment went through"
+msgstr "Obrigado — o seu pagamento foi concluído"
+
+#: notification.billing.payment_succeeded.body
+msgid "We received your payment of {amount} for {item_name}."
+msgstr "Recebemos o seu pagamento de {amount} referente a {item_name}."
+
+#: notification.billing.payment_succeeded.period
+msgid "This covers the period from {period_start} to {period_end}."
+msgstr "Abrange o período de {period_start} a {period_end}."
+
+#: notification.billing.payment_succeeded.cta
+msgid "View your invoice"
+msgstr "Ver a sua fatura"
+
+#: notification.billing.payment_succeeded.note
+msgid "Keep this email for your records. If you do not recognise this payment, contact support and we will look into it."
+msgstr "Guarde este e-mail para os seus registos. Se não reconhece este pagamento, contacte o suporte e iremos analisar a situação."
+
+#: notification.billing.payment_failed.subject
+msgid "Your payment of {amount} did not go through"
+msgstr "O seu pagamento de {amount} não foi concluído"
+
+#: notification.billing.payment_failed.heading
+msgid "We could not take your payment"
+msgstr "Não foi possível processar o seu pagamento"
+
+#: notification.billing.payment_failed.body
+msgid "We tried to charge {amount} for {item_name}, and the payment was declined."
+msgstr "Tentámos cobrar {amount} referente a {item_name}, mas o pagamento foi recusado."
+
+#: notification.billing.payment_failed.reason
+msgid "Reason given by your bank: {decline_reason}"
+msgstr "Motivo indicado pelo seu banco: {decline_reason}"
+
+#: notification.billing.payment_failed.cta
+msgid "Update your payment method"
+msgstr "Atualizar o método de pagamento"
+
+#: notification.billing.payment_failed.note
+msgid "Nothing has been charged and nothing has been lost. We will try again automatically, or you can update your card using the button above."
+msgstr "Nada foi cobrado e nada se perdeu. Voltaremos a tentar automaticamente, ou pode atualizar o seu cartão através do botão acima."
+
+#: notification.billing.payment_failed.final_note
+msgid "This was our last automatic attempt — we will not try to take this payment again. To keep your plan, update your payment method using the button above."
+msgstr "Esta foi a nossa última tentativa automática — não voltaremos a tentar cobrar este pagamento. Para manter o seu plano, atualize o método de pagamento através do botão acima."
+
+#: notification.billing.subscription_ending.subject
+msgid "Your {item_name} subscription ends on {period_end}"
+msgstr "A sua subscrição de {item_name} termina a {period_end}"
+
+#: notification.billing.subscription_ending.heading
+msgid "Your subscription will not renew"
+msgstr "A sua subscrição não será renovada"
+
+#: notification.billing.subscription_ending.body
+msgid "Your {item_name} subscription is set to end and will not renew. You will not be charged again."
+msgstr "A sua subscrição de {item_name} vai terminar e não será renovada. Não lhe será cobrado mais nada."
+
+#: notification.billing.subscription_ending.period
+msgid "You keep full access until {period_end}."
+msgstr "Mantém o acesso total até {period_end}."
+
+#: notification.billing.subscription_ending.cta
+msgid "Keep my subscription"
+msgstr "Manter a minha subscrição"
+
+#: notification.billing.subscription_ending.note
+msgid "If you changed your mind, use the button above before the date shown and nothing will be interrupted."
+msgstr "Se mudou de ideias, utilize o botão acima antes da data indicada e nada será interrompido."
+
+#: notification.footer.consent
+msgid "You received this email because you agreed to receive messages from {company_name}."
+msgstr "Recebeu este e-mail porque aceitou receber mensagens de {company_name}."
+
+#: notification.footer.unsubscribe
+msgid "Unsubscribe"
+msgstr "Cancelar subscrição"
+
+#: notification.footer.manage
+msgid "Manage notifications"
+msgstr "Gerir notificações"

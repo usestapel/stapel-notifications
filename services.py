@@ -4,9 +4,12 @@ Notification service orchestrator.
 Resolves language, contact info, translations, and dispatches to channels.
 """
 
+import functools
+import gettext as gettext_module
 import logging
 import re
 import string
+from pathlib import Path
 
 from stapel_core.notifications.tokens import generate_unsubscribe_token
 
@@ -116,24 +119,46 @@ def _same_placeholders(text: str, source: str) -> bool:
     return not want or bool(have)
 
 
+def _echoes_english(text: str, key: str, default: str, lang: str) -> bool:
+    """Is *text*, cached for a non-English *lang*, just the English source?"""
+    if lang.split("-")[0] == "en":
+        return False
+    return text in (default, NOTIFICATION_KEYS.get(key))
+
+
+#: The catalogues this package ships, one per language (``locale/<lang>``).
+PACKAGED_LOCALE = Path(__file__).resolve().parent / "locale"
+
+
+@functools.lru_cache(maxsize=None)
+def _packaged_catalogue(lang: str) -> gettext_module.NullTranslations:
+    from django.utils.translation import to_locale
+
+    return gettext_module.translation(
+        "django", localedir=str(PACKAGED_LOCALE), languages=[to_locale(lang)], fallback=True,
+    )
+
+
 def _gettext_default(default: str, lang: str) -> str | None:
-    """The host's own gettext catalogue, asked under ``lang``.
+    """The gettext catalogues, asked under ``lang``.
 
-    A host that shipped `locale/ru/LC_MESSAGES/django.po` has already done
-    the standard Django thing, and until now this package could not see
-    it: its strings live in NOTIFICATION_KEYS and its only route to
-    another language was a translate service. So a correctly-internationalised
-    project still sent English email and nothing said why (a client,
-    2026-07-29).
+    First Django's merged catalogue, so a host's ``LOCALE_PATHS`` (and any
+    app listed before this one) keeps precedence over the words this package
+    ships. The English default doubles as the msgid, which is exactly how
+    gettext is meant to be used.
 
-    The English default doubles as the msgid, which is exactly how
-    gettext is meant to be used. Returns None when the catalogue has no
-    entry — gettext echoes the msgid back, and echoing is not translating.
+    Then this package's own catalogue, read directly: the merged one lets an
+    earlier app answer a shared msgid with the msgid itself (a REST framework
+    catalogue translates "Username" as "Username" in Italian), which shadows
+    the translation shipped here. Returns None when neither has an entry —
+    gettext echoes the msgid back, and echoing is not translating.
     """
     from django.utils import translation
 
     with translation.override(lang):
         translated = translation.gettext(default)
+    if translated == default:
+        translated = _packaged_catalogue(lang).gettext(default)
     return translated if translated != default else None
 
 
@@ -216,6 +241,11 @@ def _resolve_translations(keys: list[str], lang: str) -> dict[str, str]:
         default = override_default or NOTIFICATION_KEYS.get(key, key)
         if key in cached:
             text = cached[key].get(lang)
+            if text and _echoes_english(text, key, default, lang):
+                # translate.resolve answers a key it lacks in `lang` with the
+                # default language's text; that is not a translation and must
+                # not outvote the packaged catalogue below.
+                text = None
             if text and _same_placeholders(text, default):
                 translations[key] = text
                 continue

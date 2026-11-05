@@ -121,8 +121,10 @@ class TestLazyResolveOnMiss:
         assert translations[self.KEY] == "Cached"
         assert fake_resolve == []  # no resolve call for cache hits
 
+    # "ja": a language this package ships no catalogue for, so the built-in
+    # English is the last step left (a shipped one degrades to its catalogue).
     def test_translate_down_degrades_to_builtin_default(self, broken_resolve):
-        translations = _resolve_translations([self.KEY], "de")
+        translations = _resolve_translations([self.KEY], "ja")
         assert translations[self.KEY] == NOTIFICATION_KEYS[self.KEY]  # en fallback
         assert TranslationCache.objects.count() == 0
 
@@ -131,5 +133,5 @@ class TestLazyResolveOnMiss:
     ):
         with function_registry_sandbox._lock:
             function_registry_sandbox._providers.pop("translate.resolve", None)
-        translations = _resolve_translations([self.KEY], "de")
+        translations = _resolve_translations([self.KEY], "ja")
         assert translations[self.KEY] == NOTIFICATION_KEYS[self.KEY]

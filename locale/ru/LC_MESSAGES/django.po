@@ -32,6 +32,7 @@ msgid "Your {company_name} code: {code}. Expires in {expiry_minutes} min."
 msgstr "Код {company_name}: {code}. Действует {expiry_minutes} мин."
 
 #: notification.auth_change_requested.subject
+#: notification.auth_change_requested.push_title
 msgid "Authenticator change requested"
 msgstr "Запрошена смена способа входа"
 
@@ -84,6 +85,7 @@ msgid "Your {change_type} will be changed to {masked_new_value}."
 msgstr "Ваш {change_type} будет изменён на {masked_new_value}."
 
 #: notification.auth_change_urgent.subject
+#: notification.auth_change_urgent.push_title
 msgid "URGENT: {change_type} change tomorrow"
 msgstr "СРОЧНО: смена {change_type} завтра"
 
@@ -136,6 +138,7 @@ msgid "Your account {change_type} has been updated."
 msgstr "{change_type} вашей учётной записи обновлён."
 
 #: notification.gdpr.export_ready.subject
+#: notification.gdpr.export_ready.heading
 msgid "Your data export is ready"
 msgstr "Выгрузка ваших данных готова"
 
@@ -168,6 +171,7 @@ msgid "Signing in once is enough to keep your account active."
 msgstr "Достаточно один раз войти, чтобы сохранить учётную запись."
 
 #: notification.gdpr.inactivity_closed.subject
+#: notification.gdpr.inactivity_closed.heading
 msgid "Your account has been closed"
 msgstr "Ваша учётная запись закрыта"
 
@@ -176,10 +180,12 @@ msgid "Your account was closed due to prolonged inactivity and your personal dat
 msgstr "Учётная запись закрыта из-за длительного бездействия, персональные данные удалены согласно политике хранения данных."
 
 #: notification.gdpr.inactivity_closed.warning
+#: notification.listing_blocked.warning
 msgid "If you believe this was a mistake, please contact our support team."
 msgstr "Если это ошибка, напишите в нашу поддержку."
 
 #: notification.gdpr.dsar.received.subject
+#: notification.gdpr.dsar.received.heading
 msgid "We received your privacy request"
 msgstr "Мы получили ваш запрос о персональных данных"
 
@@ -212,10 +218,12 @@ msgid "Reference: {reference}"
 msgstr "Номер запроса: {reference}"
 
 #: notification.workspace.invitation.subject
+#: notification.workspace.invitation.new_user.subject
 msgid "You are invited to {workspace_name}"
 msgstr "Вас пригласили в {workspace_name}"
 
 #: notification.workspace.invitation.heading
+#: notification.workspace.invitation.new_user.heading
 msgid "Workspace invitation"
 msgstr "Приглашение в рабочее пространство"
 
@@ -224,10 +232,13 @@ msgid "{inviter_name} invited you to join the workspace “{workspace_name}”."
 msgstr "{inviter_name} приглашает вас в рабочее пространство «{workspace_name}»."
 
 #: notification.workspace.invitation.cta
+#: notification.workspace.invitation.reminder.cta
 msgid "Accept invitation"
 msgstr "Принять приглашение"
 
 #: notification.workspace.invitation.role_line
+#: notification.workspace.invitation.new_user.role_line
+#: notification.workspace.invitation.reminder.role_line
 msgid "You're invited to join as {role_name}."
 msgstr "Вас приглашают с ролью {role_name}."
 
@@ -288,26 +299,6 @@ msgstr "Приглашение в рабочее пространство «{wor
 msgid "If this was a mistake, you can invite the same address again."
 msgstr "Если это ошибка, вы можете пригласить тот же адрес заново."
 
-#: notification.workspace.member_password_reset.subject
-msgid "Your {workspace_name} password was reset"
-msgstr "Ваш пароль в {workspace_name} сброшен"
-
-#: notification.workspace.member_password_reset.heading
-msgid "Your password was reset"
-msgstr "Ваш пароль сброшен"
-
-#: notification.workspace.member_password_reset.body
-msgid "Your password for the workspace “{workspace_name}” was reset by {actor_name}, and your active sessions have been signed out. Your new password is not in this email — {actor_name} will give it to you directly."
-msgstr "Ваш пароль в рабочем пространстве «{workspace_name}» сброшен администратором {actor_name}, активные сессии завершены. Нового пароля в этом письме нет — {actor_name} передаст его вам напрямую."
-
-#: notification.workspace.member_password_reset.cta
-msgid "Go to sign in"
-msgstr "Перейти ко входу"
-
-#: notification.workspace.member_password_reset.warning
-msgid "If you weren't expecting this, contact {actor_name} or your workspace administrator immediately — a password reset you didn't ask for can mean someone is trying to take over your account."
-msgstr "Если вы этого не ждали, немедленно свяжитесь с {actor_name} или администратором рабочего пространства — сброс пароля, которого вы не просили, может означать попытку захвата учётной записи."
-
 #: notification.workspace.provisioned_account.subject
 msgid "Your {workspace_name} account is ready"
 msgstr "Ваша учётная запись в {workspace_name} готова"
@@ -329,6 +320,7 @@ msgid "Temporary password"
 msgstr "Временный пароль"
 
 #: notification.workspace.provisioned_account.cta
+#: notification.magic_link_login.cta
 msgid "Sign in"
 msgstr "Войти"
 
@@ -372,7 +364,29 @@ msgstr "Двухфакторная аутентификация включена
 msgid "Go to workspace"
 msgstr "Перейти в пространство"
 
+#: notification.workspace.member_password_reset.subject
+msgid "Your {workspace_name} password was reset"
+msgstr "Ваш пароль в {workspace_name} сброшен"
+
+#: notification.workspace.member_password_reset.heading
+msgid "Your password was reset"
+msgstr "Ваш пароль сброшен"
+
+#: notification.workspace.member_password_reset.body
+msgid "Your password for the workspace “{workspace_name}” was reset by {actor_name}, and your active sessions have been signed out. Your new password is not in this email — {actor_name} will give it to you directly."
+msgstr "Ваш пароль в рабочем пространстве «{workspace_name}» сброшен администратором {actor_name}, активные сессии завершены. Нового пароля в этом письме нет — {actor_name} передаст его вам напрямую."
+
+#: notification.workspace.member_password_reset.cta
+msgid "Go to sign in"
+msgstr "Перейти ко входу"
+
+#: notification.workspace.member_password_reset.warning
+msgid "If you weren't expecting this, contact {actor_name} or your workspace administrator immediately — a password reset you didn't ask for can mean someone is trying to take over your account."
+msgstr "Если вы этого не ждали, немедленно свяжитесь с {actor_name} или администратором рабочего пространства — сброс пароля, которого вы не просили, может означать попытку захвата учётной записи."
+
 #: notification.new_message.subject
+#: notification.new_message.heading
+#: notification.new_message.push_title
 msgid "New message from {sender_name}"
 msgstr "Новое сообщение от {sender_name}"
 
@@ -384,11 +398,8 @@ msgstr "У вас новое сообщение по «{listing_title}»."
 msgid "Open Chat"
 msgstr "Открыть чат"
 
-#: notification.new_message.push_body
-msgid "{sender_name}: {message_preview}"
-msgstr "{sender_name}: {message_preview}"
-
 #: notification.report_reviewed.subject
+#: notification.report_reviewed.heading
 msgid "Your report has been reviewed"
 msgstr "Ваша жалоба рассмотрена"
 
@@ -397,6 +408,7 @@ msgid "You reported a listing. After checking it, we have taken action."
 msgstr "Вы пожаловались на объявление. Мы проверили его и приняли меры."
 
 #: notification.report_reviewed.cta
+#: notification.moderation.report_received.cta
 msgid "View Details"
 msgstr "Подробнее"
 
@@ -433,6 +445,7 @@ msgid "“{listing_title}” expires in {days_remaining} days."
 msgstr "«{listing_title}» снимется с публикации через {days_remaining} дн."
 
 #: notification.listing_blocked.subject
+#: notification.listing_blocked.heading
 msgid "Your listing has been blocked"
 msgstr "Ваше объявление заблокировано"
 
@@ -440,9 +453,18 @@ msgstr "Ваше объявление заблокировано"
 msgid "Your listing “{listing_title}” has been blocked for violating {company_name} guidelines."
 msgstr "Объявление «{listing_title}» заблокировано за нарушение правил {company_name}."
 
+#: notification.listing_blocked.reason_line
+msgid "Reason: {reason_label}."
+msgstr "Причина: {reason_label}."
+
 #: notification.listing_blocked.cta
 msgid "Learn More"
 msgstr "Подробнее"
+
+#: notification.listing_blocked.appeal_cta
+#: notification.moderation.sanction_issued.cta
+msgid "Appeal this decision"
+msgstr "Обжаловать решение"
 
 #: notification.listing_blocked.push_title
 msgid "Listing blocked"
@@ -451,6 +473,220 @@ msgstr "Объявление заблокировано"
 #: notification.listing_blocked.push_body
 msgid "“{listing_title}” was blocked for guideline violations."
 msgstr "«{listing_title}» заблокировано за нарушение правил."
+
+#: notification.moderation.report_received.subject
+#: notification.moderation.report_received.heading
+msgid "Your report has been received"
+msgstr "Ваша жалоба получена"
+
+#: notification.moderation.report_received.body
+msgid "We received your report about “{target_label}” (ref. {case_ref}). We'll let you know once it has been reviewed."
+msgstr "Мы получили вашу жалобу на «{target_label}» (номер {case_ref}). Сообщим, когда её рассмотрим."
+
+#: notification.moderation.report_received.push_title
+msgid "Report received"
+msgstr "Жалоба получена"
+
+#: notification.moderation.report_received.push_body
+msgid "We received your report about “{target_label}”."
+msgstr "Мы получили вашу жалобу на «{target_label}»."
+
+#: notification.moderation.sanction_issued.subject
+#: notification.moderation.sanction_issued.heading
+msgid "Action has been taken on your account"
+msgstr "К вашей учётной записи применены меры"
+
+#: notification.moderation.sanction_issued.body
+msgid "Your account has received a {sanction_kind}. Reason: {reason_label}."
+msgstr "К вашей учётной записи применена мера: {sanction_kind}. Причина: {reason_label}."
+
+#: notification.moderation.sanction_issued.expiry_line
+msgid "This restriction lasts until {expires_label}."
+msgstr "Ограничение действует до {expires_label}."
+
+#: notification.moderation.sanction_issued.warning
+msgid "If you believe this is a mistake, you can appeal this decision."
+msgstr "Если вы считаете это ошибкой, вы можете обжаловать решение."
+
+#: notification.moderation.sanction_issued.push_title
+msgid "Account action taken"
+msgstr "Применены меры к учётной записи"
+
+#: notification.moderation.sanction_issued.push_body
+msgid "Your account has received a {sanction_kind}."
+msgstr "К вашей учётной записи применена мера: {sanction_kind}."
+
+#: notification.moderation.appeal_resolved.subject
+#: notification.moderation.appeal_resolved.heading
+msgid "Your appeal has been resolved"
+msgstr "Ваша апелляция рассмотрена"
+
+#: notification.moderation.appeal_resolved.body
+msgid "Your appeal has been reviewed. Outcome: {outcome_label}."
+msgstr "Мы рассмотрели вашу апелляцию. Решение: {outcome_label}."
+
+#: notification.feed.comment_received.subject
+msgid "New comment on your post"
+msgstr "Новый комментарий к вашей публикации"
+
+#: notification.feed.comment_received.heading
+msgid "Someone commented on your post"
+msgstr "Вашу публикацию прокомментировали"
+
+#: notification.feed.comment_received.body
+msgid "There is a new comment under your post."
+msgstr "Под вашей публикацией появился новый комментарий."
+
+#: notification.feed.comment_received.cta
+msgid "View post"
+msgstr "Открыть публикацию"
+
+#: notification.feed.comment_received.push_title
+msgid "New comment"
+msgstr "Новый комментарий"
+
+#: notification.feed.comment_received.push_body
+msgid "Someone commented on your post."
+msgstr "Вашу публикацию прокомментировали."
+
+#: notification.feed.reaction_received.push_title
+msgid "New reaction"
+msgstr "Новая реакция"
+
+#: notification.feed.reaction_received.push_body
+msgid "Someone reacted to your post."
+msgstr "На вашу публикацию отреагировали."
+
+#: notification.feed.new_post_from_followed.push_title
+msgid "New post"
+msgstr "Новая публикация"
+
+#: notification.feed.new_post_from_followed.push_body
+msgid "Someone you follow posted an update."
+msgstr "Новая публикация от того, на кого вы подписаны."
+
+#: notification.orders.placed.subject
+msgid "Order {order_number} received"
+msgstr "Заказ {order_number} принят"
+
+#: notification.orders.placed.heading
+msgid "Thank you for your order"
+msgstr "Спасибо за заказ"
+
+#: notification.orders.placed.body
+msgid "We received your order {order_number} for {total} {currency}. We'll let you know when its status changes."
+msgstr "Мы получили ваш заказ {order_number} на сумму {total} {currency}. Сообщим, когда его статус изменится."
+
+#: notification.orders.placed.cta
+#: notification.orders.status_changed.cta
+msgid "View order"
+msgstr "Открыть заказ"
+
+#: notification.orders.placed.push_title
+msgid "Order received"
+msgstr "Заказ принят"
+
+#: notification.orders.placed.push_body
+msgid "Order {order_number} for {total} {currency} was received."
+msgstr "Заказ {order_number} на сумму {total} {currency} принят."
+
+#: notification.orders.status_changed.subject
+msgid "Order {order_number}: {status}"
+msgstr "Заказ {order_number}: {status}"
+
+#: notification.orders.status_changed.heading
+msgid "Your order has been updated"
+msgstr "Статус заказа изменился"
+
+#: notification.orders.status_changed.body
+msgid "Your order {order_number} is now {status}."
+msgstr "Новый статус заказа {order_number}: {status}."
+
+#: notification.orders.status_changed.push_title
+msgid "Order updated"
+msgstr "Заказ обновлён"
+
+#: notification.orders.status_changed.push_body
+msgid "Order {order_number} is now {status}."
+msgstr "Статус заказа {order_number}: {status}."
+
+#: notification.reservations.booked.subject
+msgid "Booking {reservation_number} confirmed: {title}"
+msgstr "Бронирование {reservation_number} подтверждено: {title}"
+
+#: notification.reservations.booked.heading
+msgid "Your booking is in"
+msgstr "Бронирование оформлено"
+
+#: notification.reservations.booked.body
+msgid "You booked {title} for {start_local} ({timezone}). Booking number {reservation_number}."
+msgstr "Вы забронировали {title} на {start_local} ({timezone}). Номер бронирования: {reservation_number}."
+
+#: notification.reservations.booked.cta
+#: notification.reservations.status_changed.cta
+#: notification.reservations.reminder.cta
+msgid "View booking"
+msgstr "Открыть бронирование"
+
+#: notification.reservations.booked.push_title
+msgid "Booking received"
+msgstr "Бронирование принято"
+
+#: notification.reservations.status_changed.subject
+msgid "Booking {reservation_number}: {status}"
+msgstr "Бронирование {reservation_number}: {status}"
+
+#: notification.reservations.status_changed.heading
+msgid "Your booking has been updated"
+msgstr "Статус бронирования изменился"
+
+#: notification.reservations.status_changed.body
+msgid "Your booking of {title} for {start_local} ({timezone}) is now {status}."
+msgstr "Бронирование {title} на {start_local} ({timezone}) — новый статус: {status}."
+
+#: notification.reservations.status_changed.push_title
+msgid "Booking updated"
+msgstr "Бронирование обновлено"
+
+#: notification.reservations.reminder.subject
+msgid "Reminder: {title} at {start_local}"
+msgstr "Напоминание: {title}, {start_local}"
+
+#: notification.reservations.reminder.heading
+msgid "Your booking is coming up"
+msgstr "Скоро ваше бронирование"
+
+#: notification.reservations.reminder.body
+msgid "A reminder: {title} at {start_local} ({timezone}). Booking number {reservation_number}."
+msgstr "Напоминаем: {title}, {start_local} ({timezone}). Номер бронирования: {reservation_number}."
+
+#: notification.reservations.reminder.push_title
+msgid "Upcoming booking"
+msgstr "Скоро бронирование"
+
+#: notification.reservations.reminder.push_body
+msgid "{title} at {start_local}."
+msgstr "{title}, {start_local}."
+
+#: notification.reservations.new_for_provider.subject
+msgid "New booking {reservation_number}: {title}"
+msgstr "Новое бронирование {reservation_number}: {title}"
+
+#: notification.reservations.new_for_provider.heading
+msgid "You have a new booking"
+msgstr "У вас новое бронирование"
+
+#: notification.reservations.new_for_provider.body
+msgid "{title} was booked for {start_local} ({timezone}). Booking number {reservation_number}."
+msgstr "Забронировано: {title} на {start_local} ({timezone}). Номер бронирования: {reservation_number}."
+
+#: notification.reservations.new_for_provider.cta
+msgid "Open the agenda"
+msgstr "Открыть расписание"
+
+#: notification.reservations.new_for_provider.push_title
+msgid "New booking"
+msgstr "Новое бронирование"
 
 #: notification.magic_link_login.subject
 msgid "Your {company_name} sign-in link"
@@ -489,6 +725,7 @@ msgid "If this was you, no action is needed. If you don't recognise this sign-in
 msgstr "Если это вы — делать ничего не нужно. Если вход вам незнаком, немедленно защитите учётную запись."
 
 #: notification.suspicious_login.subject
+#: notification.suspicious_login.heading
 msgid "Suspicious sign-in detected"
 msgstr "Обнаружен подозрительный вход"
 
@@ -523,26 +760,6 @@ msgstr "Все активные сеансы вашей учётной запи�
 #: notification.all_sessions_revoked.warning
 msgid "If you did not initiate this action, please reset your password immediately."
 msgstr "Если вы этого не делали, немедленно смените пароль."
-
-#: notification.footer.legal
-msgid "© {company_year} {company_name}"
-msgstr "© {company_year} {company_name}"
-
-#: notification.footer.address
-msgid "{company_address}"
-msgstr "{company_address}"
-
-#: notification.footer.consent
-msgid "You received this email because you agreed to receive messages from {company_name}."
-msgstr "Вы получили это письмо, потому что согласились получать сообщения от {company_name}."
-
-#: notification.footer.unsubscribe
-msgid "Unsubscribe"
-msgstr "Отписаться"
-
-#: notification.footer.manage
-msgid "Manage notifications"
-msgstr "Настроить уведомления"
 
 #: notification.billing.payment_succeeded.subject
 msgid "Payment received: {amount}"
@@ -619,3 +836,15 @@ msgstr "Сохранить подписку"
 #: notification.billing.subscription_ending.note
 msgid "If you changed your mind, use the button above before the date shown and nothing will be interrupted."
 msgstr "Если вы передумали, нажмите кнопку выше до указанной даты — и ничего не прервётся."
+
+#: notification.footer.consent
+msgid "You received this email because you agreed to receive messages from {company_name}."
+msgstr "Вы получили это письмо, потому что согласились получать сообщения от {company_name}."
+
+#: notification.footer.unsubscribe
+msgid "Unsubscribe"
+msgstr "Отписаться"
+
+#: notification.footer.manage
+msgid "Manage notifications"
+msgstr "Настроить уведомления"
