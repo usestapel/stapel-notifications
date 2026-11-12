@@ -579,6 +579,7 @@ msgstr "Мы получили ваш заказ {order_number} на сумму {
 
 #: notification.orders.placed.cta
 #: notification.orders.status_changed.cta
+#: notification.orders.refunded.cta
 msgid "View order"
 msgstr "Открыть заказ"
 
@@ -1043,3 +1044,23 @@ msgstr "Нет в наличии"
 #: notification.inventory.stock_out.push_body
 msgid "{purchasable_key} at {location} is out of stock."
 msgstr "{purchasable_key} на складе {location} закончился."
+
+#: notification.orders.refunded.subject
+msgid "Order {order_number} refunded"
+msgstr "Возврат по заказу {order_number}"
+
+#: notification.orders.refunded.heading
+msgid "Your order has been refunded"
+msgstr "Деньги за заказ возвращены"
+
+#: notification.orders.refunded.body
+msgid "We refunded {total} {currency} for your order {order_number}."
+msgstr "Мы вернули {total} {currency} за ваш заказ {order_number}."
+
+#: notification.orders.refunded.push_title
+msgid "Order refunded"
+msgstr "Возврат по заказу"
+
+#: notification.orders.refunded.push_body
+msgid "Order {order_number}: {total} {currency} refunded."
+msgstr "Заказ {order_number}: возвращено {total} {currency}."

@@ -236,6 +236,13 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.orders.status_changed.cta": "View order",
     "notification.orders.status_changed.push_title": "Order updated",
     "notification.orders.status_changed.push_body": "Order {order_number} is now {status}.",
+    # A staff refund of a paid order, in full (orders.order.refunded).
+    "notification.orders.refunded.subject": "Order {order_number} refunded",
+    "notification.orders.refunded.heading": "Your order has been refunded",
+    "notification.orders.refunded.body": "We refunded {total} {currency} for your order {order_number}.",
+    "notification.orders.refunded.cta": "View order",
+    "notification.orders.refunded.push_title": "Order refunded",
+    "notification.orders.refunded.push_body": "Order {order_number}: {total} {currency} refunded.",
     # ── Reservations (stapel-reservations upstream, registry-only) ─────
     # The CTA renders only when the caller passes "reservation_url"
     # (RESERVATION_URL_TEMPLATE on the reservations side; empty = no link).

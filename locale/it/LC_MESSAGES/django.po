@@ -579,6 +579,7 @@ msgstr "Abbiamo ricevuto il tuo ordine {order_number} di {total} {currency}. Ti 
 
 #: notification.orders.placed.cta
 #: notification.orders.status_changed.cta
+#: notification.orders.refunded.cta
 msgid "View order"
 msgstr "Vedi ordine"
 
@@ -1043,3 +1044,23 @@ msgstr "Esaurito"
 #: notification.inventory.stock_out.push_body
 msgid "{purchasable_key} at {location} is out of stock."
 msgstr "{purchasable_key} presso {location} è esaurito."
+
+#: notification.orders.refunded.subject
+msgid "Order {order_number} refunded"
+msgstr "Ordine {order_number} rimborsato"
+
+#: notification.orders.refunded.heading
+msgid "Your order has been refunded"
+msgstr "Il tuo ordine è stato rimborsato"
+
+#: notification.orders.refunded.body
+msgid "We refunded {total} {currency} for your order {order_number}."
+msgstr "Ti abbiamo rimborsato {total} {currency} per il tuo ordine {order_number}."
+
+#: notification.orders.refunded.push_title
+msgid "Order refunded"
+msgstr "Ordine rimborsato"
+
+#: notification.orders.refunded.push_body
+msgid "Order {order_number}: {total} {currency} refunded."
+msgstr "Ordine {order_number}: rimborsati {total} {currency}."

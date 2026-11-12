@@ -31,7 +31,8 @@ PYTHON ?= python3
 # operations of 0.17.0: listing the caller's push devices and unregistering
 # one by id; 6400 -> 6600 with the two DSAR letters of 0.28.0; 6600 -> 6700 with the
 # two order receipts; 6700 -> 7100 with the eight brick-wave letters, measured
-# at 7089 after their intents were cut to one line) — a trimmed-to-fit context file is
+# at 7089 after their intents were cut to one line; 7100 -> 7200 with the
+# orders.refunded letter, measured at 7136) — a trimmed-to-fit context file is
 # indistinguishable from a complete one at the point of use, which is the
 # failure mode the hard-budget gate exists to prevent. contract-check below
 # enforces the same ceiling; it does not disable the check.
@@ -46,7 +47,7 @@ contract:
 	$(PYTHON) -m stapel_notifications._codegen --out docs
 	$(PYTHON) -m stapel_notifications._capabilities --out docs
 	$(PYTHON) -m stapel_notifications._template_contract --out docs
-	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 7100
+	$(PYTHON) -m stapel_tools.llms_txt . --out docs --budget 7200
 
 # Drift gate: regenerate into a temp dir and diff against the committed docs/*.json
 # (mirrors the monolith's `make codegen-check` and the frontend's `gen:*:check`).
@@ -58,7 +59,7 @@ contract-check:
 	$(PYTHON) -m stapel_notifications._codegen --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._capabilities --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
 	$(PYTHON) -m stapel_notifications._template_contract --out "$$tmp/docs" || { rm -rf "$$tmp"; exit 1; }; \
-	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 7100 || { rm -rf "$$tmp"; exit 1; }; \
+	$(PYTHON) -m stapel_tools.llms_txt "$$tmp" --out "$$tmp/docs" --budget 7200 || { rm -rf "$$tmp"; exit 1; }; \
 	rc=0; \
 	for f in schema.json flows.json errors.json capabilities.json templates.json llms.txt; do \
 		if ! diff -q "docs/$$f" "$$tmp/docs/$$f" >/dev/null 2>&1; then \

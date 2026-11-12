@@ -19,6 +19,15 @@ subscriber on the producer's fact: `promotions.promotion_exhausted`
 and is declared telemetry. No producer lives in this package. The `llms.txt`
 ceiling moves 6700 -> 7100 (measured 7089 with one-line intents).
 
+### Added — `orders.refunded` (registry-only)
+
+To the buyer when staff refund a paid order in full (stapel-orders emits
+`orders.order.refunded` and requests this type): system group, push +
+email, its own letter (`orders_refunded.html`), every slot in all eight
+shipped languages. Reads `order_number`, `total`, `currency`; the CTA renders
+only with `order_url`, which is declared telemetry. The `llms.txt` ceiling
+moves 7100 -> 7200 (measured 7136).
+
 ## [0.30.0] — 2026-11-05
 
 ### Added — every letter in eight languages

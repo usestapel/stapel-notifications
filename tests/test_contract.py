@@ -88,10 +88,11 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # DSAR letters stapel-gdpr requests (gdpr.dsar.received/opened), and
 # 6600 -> 6700 for the two order receipts (orders.placed/status_changed), and
 # 6700 -> 7100 for the eight brick-wave letters (delivery, courses, referrals,
-# promotions, inventory; measured 7089 with one-line intents). The
+# promotions, inventory; measured 7089 with one-line intents), and
+# 7100 -> 7200 for the orders.refunded letter (measured 7136). The
 # budget stays enforced — matching the Makefile's contract targets.
 ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
-LLMS_TXT_BUDGET = 7100
+LLMS_TXT_BUDGET = 7200
 
 
 def _emit(out_dir: Path) -> None:

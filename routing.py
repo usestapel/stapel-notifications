@@ -175,6 +175,8 @@ NOTIFICATION_ROUTING = {
                                "telemetry": ["order_url"]},
     "orders.status_changed": {"channels": ["push", "email"],        "group": "system",
                                "telemetry": ["order_url"]},
+    "orders.refunded":       {"channels": ["push", "email"],        "group": "system",
+                               "telemetry": ["order_url"]},
     # Reservation notices (stapel-reservations upstream, registry-only — no
     # producer in this package). Customer: booked, status_changed, reminder;
     # provider: new_for_provider. "reservation_url" is declared telemetry;
@@ -290,6 +292,7 @@ DEFAULT_EMAIL_TEMPLATES = {
     "feed.comment_received": "notifications/email/feed_comment_received.html",
     "orders.placed": "notifications/email/orders_placed.html",
     "orders.status_changed": "notifications/email/orders_status_changed.html",
+    "orders.refunded": "notifications/email/orders_refunded.html",
     "reservations.booked": "notifications/email/reservations_booked.html",
     "reservations.status_changed": "notifications/email/reservations_status_changed.html",
     "reservations.reminder": "notifications/email/reservations_reminder.html",

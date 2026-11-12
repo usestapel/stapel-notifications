@@ -579,6 +579,7 @@ msgstr "Otrzymaliśmy Twoje zamówienie {order_number} na kwotę {total} {curren
 
 #: notification.orders.placed.cta
 #: notification.orders.status_changed.cta
+#: notification.orders.refunded.cta
 msgid "View order"
 msgstr "Zobacz zamówienie"
 
@@ -1043,3 +1044,23 @@ msgstr "Brak w magazynie"
 #: notification.inventory.stock_out.push_body
 msgid "{purchasable_key} at {location} is out of stock."
 msgstr "{purchasable_key} w lokalizacji {location}: brak w magazynie."
+
+#: notification.orders.refunded.subject
+msgid "Order {order_number} refunded"
+msgstr "Zwrot za zamówienie {order_number}"
+
+#: notification.orders.refunded.heading
+msgid "Your order has been refunded"
+msgstr "Zwróciliśmy pieniądze za Twoje zamówienie"
+
+#: notification.orders.refunded.body
+msgid "We refunded {total} {currency} for your order {order_number}."
+msgstr "Zwróciliśmy {total} {currency} za Twoje zamówienie {order_number}."
+
+#: notification.orders.refunded.push_title
+msgid "Order refunded"
+msgstr "Zwrot za zamówienie"
+
+#: notification.orders.refunded.push_body
+msgid "Order {order_number}: {total} {currency} refunded."
+msgstr "Zamówienie {order_number}: zwrócono {total} {currency}."

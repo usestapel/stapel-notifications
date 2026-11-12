@@ -579,6 +579,7 @@ msgstr "Nous avons bien reçu votre commande {order_number} d'un montant de {tot
 
 #: notification.orders.placed.cta
 #: notification.orders.status_changed.cta
+#: notification.orders.refunded.cta
 msgid "View order"
 msgstr "Voir la commande"
 
@@ -1043,3 +1044,23 @@ msgstr "Rupture de stock"
 #: notification.inventory.stock_out.push_body
 msgid "{purchasable_key} at {location} is out of stock."
 msgstr "{purchasable_key} à {location} est en rupture de stock."
+
+#: notification.orders.refunded.subject
+msgid "Order {order_number} refunded"
+msgstr "Commande {order_number} remboursée"
+
+#: notification.orders.refunded.heading
+msgid "Your order has been refunded"
+msgstr "Votre commande a été remboursée"
+
+#: notification.orders.refunded.body
+msgid "We refunded {total} {currency} for your order {order_number}."
+msgstr "Nous vous avons remboursé {total} {currency} pour votre commande {order_number}."
+
+#: notification.orders.refunded.push_title
+msgid "Order refunded"
+msgstr "Commande remboursée"
+
+#: notification.orders.refunded.push_body
+msgid "Order {order_number}: {total} {currency} refunded."
+msgstr "Commande {order_number} : {total} {currency} remboursés."

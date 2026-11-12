@@ -1,6 +1,7 @@
 """Order receipts (cart/checkout module upstream, registry-only).
 
-``orders.placed`` and ``orders.status_changed`` go to the buyer; the CTA
+``orders.placed``, ``orders.status_changed`` and ``orders.refunded`` go to
+the buyer; the CTA
 renders only when the caller passes ``order_url`` (additive, like
 listing_blocked's ``appeal_url``), and ``order_url`` is declared telemetry.
 """
@@ -90,10 +91,42 @@ def test_status_changed_names_the_status(user, capture_email):
     assert "is now shipped" in mail["html"]
 
 
+@pytest.mark.django_db
+def test_refunded_states_the_refunded_amount_with_a_link(user, capture_email):
+    """The variables orders sends with a staff refund (status, total, reason)."""
+    UserContact.objects.create(user_id=user.id, email="u@example.com")
+    process_notification(
+        notification_type="orders.refunded",
+        user_id=str(user.id),
+        variables={**VARIABLES, "status": "refunded", "reason": "",
+                   "order_url": "https://shop.example/orders/42"},
+    )
+    (mail,) = capture_email
+    assert mail["subject"] == "Order 20261029-ABCDEF refunded"
+    assert "We refunded 26.75 USD for your order 20261029-ABCDEF." in mail["html"]
+    assert 'href="https://shop.example/orders/42"' in mail["html"]
+    log = NotificationLog.objects.get(user_id=user.id, notification_type="orders.refunded", channel="push")
+    assert log.status == "sent"
+    assert log.title == "Order refunded"
+    assert log.data.get("order_url") == "https://shop.example/orders/42"
+
+
+@pytest.mark.django_db
+def test_refunded_without_order_url_has_no_cta(user, capture_email):
+    UserContact.objects.create(user_id=user.id, email="u@example.com")
+    process_notification(
+        notification_type="orders.refunded",
+        user_id=str(user.id),
+        variables={**VARIABLES, "status": "refunded"},
+    )
+    (mail,) = capture_email
+    assert "View order" not in mail["html"]
+
+
 def test_types_are_registered_system_push_and_email():
     from stapel_notifications.routing import NOTIFICATION_ROUTING, get_channels, get_group
 
-    for ntype in ("orders.placed", "orders.status_changed"):
+    for ntype in ("orders.placed", "orders.status_changed", "orders.refunded"):
         assert get_group(ntype) == "system"
         assert set(get_channels(ntype)) == {"push", "email"}
         assert NOTIFICATION_ROUTING[ntype]["telemetry"] == ["order_url"]

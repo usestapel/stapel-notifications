@@ -206,6 +206,9 @@
     "notifications/email/orders_status_changed.html": {
       "intent": "`orders.status_changed`: order moved to a new status; CTA only with `order_url`. Registry-only."
     },
+    "notifications/email/orders_refunded.html": {
+      "intent": "`orders.refunded`: a paid order refunded in full; CTA only with `order_url`. Registry-only."
+    },
     "notifications/email/reservations_booked.html": {
       "intent": "`reservations.booked`: customer confirmation of a booked slot (title, local start, number); CTA only with `reservation_url`. Registry-only."
     },
