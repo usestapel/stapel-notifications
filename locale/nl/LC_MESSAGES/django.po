@@ -848,3 +848,198 @@ msgstr "Afmelden"
 #: notification.footer.manage
 msgid "Manage notifications"
 msgstr "Meldingen beheren"
+
+#: notification.delivery.shipment_status_changed.subject
+msgid "Shipment {shipment_number}: {status}"
+msgstr "Zending {shipment_number}: {status}"
+
+#: notification.delivery.shipment_status_changed.heading
+msgid "Your delivery has been updated"
+msgstr "Je levering is bijgewerkt"
+
+#: notification.delivery.shipment_status_changed.body
+msgid "New status of your shipment {shipment_number}: {status}."
+msgstr "Nieuwe status van je zending {shipment_number}: {status}."
+
+#: notification.delivery.shipment_status_changed.tracking_line
+msgid "Tracking number: {tracking_number}"
+msgstr "Trackingnummer: {tracking_number}"
+
+#: notification.delivery.shipment_status_changed.tracking_cta
+msgid "Track the parcel"
+msgstr "Pakket volgen"
+
+#: notification.delivery.shipment_status_changed.cta
+msgid "View shipment"
+msgstr "Zending bekijken"
+
+#: notification.delivery.shipment_status_changed.push_title
+msgid "Delivery updated"
+msgstr "Levering bijgewerkt"
+
+#: notification.delivery.shipment_status_changed.push_body
+msgid "Shipment {shipment_number}: {status}."
+msgstr "Zending {shipment_number}: {status}."
+
+#: notification.courses.enrollment_activated.subject
+msgid "You're enrolled in {course_title}"
+msgstr "Je bent ingeschreven voor {course_title}"
+
+#: notification.courses.enrollment_activated.heading
+msgid "Welcome to the course"
+msgstr "Welkom bij de cursus"
+
+#: notification.courses.enrollment_activated.body
+msgid "Your enrollment in {course_title} is active. You can start learning now."
+msgstr "Je inschrijving voor {course_title} is actief. Je kunt nu beginnen met leren."
+
+#: notification.courses.enrollment_activated.cta
+#: notification.courses.completed.cta
+msgid "Open the course"
+msgstr "Cursus openen"
+
+#: notification.courses.enrollment_activated.push_title
+msgid "Enrollment active"
+msgstr "Inschrijving actief"
+
+#: notification.courses.enrollment_activated.push_body
+msgid "You can start {course_title} now."
+msgstr "Je kunt nu beginnen met {course_title}."
+
+#: notification.courses.completed.subject
+msgid "You completed {course_title}"
+msgstr "Je hebt {course_title} afgerond"
+
+#: notification.courses.completed.heading
+msgid "Congratulations!"
+msgstr "Gefeliciteerd!"
+
+#: notification.courses.completed.body
+msgid "You have completed {course_title}. Well done!"
+msgstr "Je hebt {course_title} afgerond. Goed gedaan!"
+
+#: notification.courses.completed.push_title
+msgid "Course completed"
+msgstr "Cursus afgerond"
+
+#: notification.courses.completed.push_body
+msgid "You completed {course_title}."
+msgstr "Je hebt {course_title} afgerond."
+
+#: notification.courses.certificate_issued.subject
+msgid "Your certificate for {course_title}"
+msgstr "Je certificaat voor {course_title}"
+
+#: notification.courses.certificate_issued.heading
+msgid "Your certificate is ready"
+msgstr "Je certificaat is klaar"
+
+#: notification.courses.certificate_issued.body
+msgid "Certificate {certificate_number} for {course_title} has been issued to you."
+msgstr "Certificaat {certificate_number} voor {course_title} is aan je uitgereikt."
+
+#: notification.courses.certificate_issued.cta
+msgid "View certificate"
+msgstr "Certificaat bekijken"
+
+#: notification.courses.certificate_issued.push_title
+msgid "Certificate issued"
+msgstr "Certificaat uitgereikt"
+
+#: notification.courses.certificate_issued.push_body
+msgid "Your certificate for {course_title} is ready."
+msgstr "Je certificaat voor {course_title} is klaar."
+
+#: notification.referrals.reward_granted.subject
+msgid "You've earned a referral reward"
+msgstr "Je hebt een verwijzingsbeloning verdiend"
+
+#: notification.referrals.reward_granted.heading
+msgid "Thanks for spreading the word"
+msgstr "Bedankt dat je ons aanbeveelt"
+
+#: notification.referrals.reward_granted.body
+#: notification.referrals.reward_granted.push_body
+msgid "Your referral reward has been granted."
+msgstr "Je verwijzingsbeloning is toegekend."
+
+#: notification.referrals.reward_granted.credits_line
+msgid "{value} credits have been added to your balance."
+msgstr "Er zijn {value} tegoedpunten aan je saldo toegevoegd."
+
+#: notification.referrals.reward_granted.code_line
+msgid "Your promo code: {grant_ref}"
+msgstr "Je kortingscode: {grant_ref}"
+
+#: notification.referrals.reward_granted.push_title
+msgid "Referral reward"
+msgstr "Verwijzingsbeloning"
+
+#: notification.promotions.promotion_exhausted.subject
+msgid "Promotion {promotion_key} has reached its usage limit"
+msgstr "Actie {promotion_key} heeft de gebruikslimiet bereikt"
+
+#: notification.promotions.promotion_exhausted.heading
+msgid "A promotion has run out"
+msgstr "Een actie is uitgeput"
+
+#: notification.promotions.promotion_exhausted.body
+msgid "Promotion {promotion_key} has been used {used} times and reached its limit of {usage_limit_total}. It no longer applies."
+msgstr "Actie {promotion_key} is {used} keer gebruikt en heeft de limiet van {usage_limit_total} bereikt. De actie geldt niet meer."
+
+#: notification.promotions.promotion_exhausted.cta
+msgid "Review the promotion"
+msgstr "Actie bekijken"
+
+#: notification.promotions.promotion_exhausted.push_title
+msgid "Promotion exhausted"
+msgstr "Actie uitgeput"
+
+#: notification.promotions.promotion_exhausted.push_body
+msgid "{promotion_key} has reached its usage limit."
+msgstr "{promotion_key} heeft de gebruikslimiet bereikt."
+
+#: notification.inventory.stock_low.subject
+msgid "Low stock: {purchasable_key}"
+msgstr "Lage voorraad: {purchasable_key}"
+
+#: notification.inventory.stock_low.heading
+msgid "Stock is running low"
+msgstr "De voorraad raakt op"
+
+#: notification.inventory.stock_low.body
+msgid "{purchasable_key} at {location} is down to {available} available (threshold {threshold})."
+msgstr "{purchasable_key} op {location}: nog {available} beschikbaar (drempel {threshold})."
+
+#: notification.inventory.stock_low.cta
+#: notification.inventory.stock_out.cta
+msgid "Review stock"
+msgstr "Voorraad bekijken"
+
+#: notification.inventory.stock_low.push_title
+msgid "Low stock"
+msgstr "Lage voorraad"
+
+#: notification.inventory.stock_low.push_body
+msgid "{purchasable_key} at {location}: {available} left."
+msgstr "{purchasable_key} op {location}: nog {available} over."
+
+#: notification.inventory.stock_out.subject
+msgid "Out of stock: {purchasable_key}"
+msgstr "Uitverkocht: {purchasable_key}"
+
+#: notification.inventory.stock_out.heading
+msgid "An item is out of stock"
+msgstr "Een artikel is uitverkocht"
+
+#: notification.inventory.stock_out.body
+msgid "{purchasable_key} at {location} has no units available."
+msgstr "{purchasable_key} op {location} heeft geen eenheden meer beschikbaar."
+
+#: notification.inventory.stock_out.push_title
+msgid "Out of stock"
+msgstr "Uitverkocht"
+
+#: notification.inventory.stock_out.push_body
+msgid "{purchasable_key} at {location} is out of stock."
+msgstr "{purchasable_key} op {location} is uitverkocht."

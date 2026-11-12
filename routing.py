@@ -198,6 +198,30 @@ NOTIFICATION_ROUTING = {
                                       "telemetry": ["post_url"]},
     "feed.new_post_from_followed":  {"channels": ["push"],          "group": "messages",
                                       "telemetry": ["post_url"]},
+    # Brick-wave companions (registry-only — no producer in this package).
+    # To the buyer / learner / rewarded user: a shipment moved
+    # (stapel-delivery), an enrollment opened, a course was completed, a
+    # certificate issued (stapel-courses), a referral reward paid
+    # (stapel-referrals). Each link variable is declared telemetry; omitting
+    # it renders no CTA.
+    "delivery.shipment_status_changed": {"channels": ["push", "email"], "group": "system",
+                                         "telemetry": ["shipment_url", "tracking_url"]},
+    "courses.enrollment_activated":     {"channels": ["push", "email"], "group": "system",
+                                         "telemetry": ["course_url"]},
+    "courses.completed":                {"channels": ["push", "email"], "group": "system",
+                                         "telemetry": ["course_url"]},
+    "courses.certificate_issued":       {"channels": ["push", "email"], "group": "system",
+                                         "telemetry": ["certificate_url"]},
+    "referrals.reward_granted":         {"channels": ["push", "email"], "group": "system"},
+    # To staff: a host subscriber maps the producer's fact
+    # (promotions.promotion.exhausted, inventory.stock.low / .out) onto these
+    # and picks the recipients — the producers notify nobody themselves.
+    "promotions.promotion_exhausted":   {"channels": ["push", "email"], "group": "system",
+                                         "telemetry": ["promotion_url"]},
+    "inventory.stock_low":              {"channels": ["push", "email"], "group": "system",
+                                         "telemetry": ["stock_url"]},
+    "inventory.stock_out":              {"channels": ["push", "email"], "group": "system",
+                                         "telemetry": ["stock_url"]},
     "workspace.invitation":  {"channels": ["email"], "group": "system",
                               "transactional": True},
     # Invite variant for a not-yet-registered recipient: the acceptance link
@@ -270,6 +294,14 @@ DEFAULT_EMAIL_TEMPLATES = {
     "reservations.status_changed": "notifications/email/reservations_status_changed.html",
     "reservations.reminder": "notifications/email/reservations_reminder.html",
     "reservations.new_for_provider": "notifications/email/reservations_new_for_provider.html",
+    "delivery.shipment_status_changed": "notifications/email/delivery_shipment_status_changed.html",
+    "courses.enrollment_activated": "notifications/email/courses_enrollment_activated.html",
+    "courses.completed": "notifications/email/courses_completed.html",
+    "courses.certificate_issued": "notifications/email/courses_certificate_issued.html",
+    "referrals.reward_granted": "notifications/email/referrals_reward_granted.html",
+    "promotions.promotion_exhausted": "notifications/email/promotions_promotion_exhausted.html",
+    "inventory.stock_low": "notifications/email/inventory_stock_low.html",
+    "inventory.stock_out": "notifications/email/inventory_stock_out.html",
     "magic_link_login": "notifications/email/magic_link_login.html",
     "new_device_login": "notifications/email/new_device_login.html",
     "suspicious_login": "notifications/email/suspicious_login.html",

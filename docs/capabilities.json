@@ -251,6 +251,30 @@
       "intent": "\"Your subscription will not renew\" — `billing.subscription_ending`, billing group, email only: the letter a `cancel_at_period_end` subscriber is owed, naming the date access stops."
     },
     {
+      "name": "notifications/email/courses_certificate_issued.html",
+      "kind": "template",
+      "path": "templates/notifications/email/courses_certificate_issued.html",
+      "intent": "`courses.certificate_issued` (learner); CTA with `certificate_url`. Registry-only."
+    },
+    {
+      "name": "notifications/email/courses_completed.html",
+      "kind": "template",
+      "path": "templates/notifications/email/courses_completed.html",
+      "intent": "`courses.completed` (learner); CTA with `course_url`. Registry-only."
+    },
+    {
+      "name": "notifications/email/courses_enrollment_activated.html",
+      "kind": "template",
+      "path": "templates/notifications/email/courses_enrollment_activated.html",
+      "intent": "`courses.enrollment_activated` (learner); CTA with `course_url`. Registry-only."
+    },
+    {
+      "name": "notifications/email/delivery_shipment_status_changed.html",
+      "kind": "template",
+      "path": "templates/notifications/email/delivery_shipment_status_changed.html",
+      "intent": "`delivery.shipment_status_changed` (buyer); tracking line/link and CTA (`shipment_url`) only when passed. Registry-only."
+    },
+    {
       "name": "notifications/email/feed_comment_received.html",
       "kind": "template",
       "path": "templates/notifications/email/feed_comment_received.html",
@@ -285,6 +309,18 @@
       "kind": "template",
       "path": "templates/notifications/email/gdpr_inactivity_warning.html",
       "intent": "\"Your account will be closed in N days\" — notification_type `gdpr.inactivity_warning`, auth group, email only: the warning a retention-driven closure owes the account before it happens."
+    },
+    {
+      "name": "notifications/email/inventory_stock_low.html",
+      "kind": "template",
+      "path": "templates/notifications/email/inventory_stock_low.html",
+      "intent": "`inventory.stock_low` (staff); CTA with `stock_url`. Registry-only."
+    },
+    {
+      "name": "notifications/email/inventory_stock_out.html",
+      "kind": "template",
+      "path": "templates/notifications/email/inventory_stock_out.html",
+      "intent": "`inventory.stock_out` (staff); CTA with `stock_url`. Registry-only."
     },
     {
       "name": "notifications/email/listing_blocked.html",
@@ -351,6 +387,18 @@
       "kind": "template",
       "path": "templates/notifications/email/otp_code.html",
       "intent": "The one-time-code letter — notification_type `otp_code`, auth group (mandatory, no unsubscribe), routed to email and SMS. Request the type instead of composing a verification-code mail: the code formatting, the branding and the language resolution are already handled."
+    },
+    {
+      "name": "notifications/email/promotions_promotion_exhausted.html",
+      "kind": "template",
+      "path": "templates/notifications/email/promotions_promotion_exhausted.html",
+      "intent": "`promotions.promotion_exhausted` (staff); CTA with `promotion_url`. Registry-only."
+    },
+    {
+      "name": "notifications/email/referrals_reward_granted.html",
+      "kind": "template",
+      "path": "templates/notifications/email/referrals_reward_granted.html",
+      "intent": "`referrals.reward_granted`; credits line (`unit` credits) or code line (`grant_ref`). Registry-only."
     },
     {
       "name": "notifications/email/report_reviewed.html",

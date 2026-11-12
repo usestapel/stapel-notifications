@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased — proposed 0.30.1
+
+### Added — types for the brick-wave companions (registry-only)
+
+Eight built-in types (system group, push + email, each with its own letter,
+every slot in all eight shipped languages). To the buyer / learner / rewarded
+user: `delivery.shipment_status_changed` (`shipment_number`, `status`,
+`tracking_number`; links `shipment_url`, `tracking_url`),
+`courses.enrollment_activated` and `courses.completed` (`course_title`;
+`course_url`), `courses.certificate_issued` (`certificate_number`;
+`certificate_url`), `referrals.reward_granted` (`value` + `unit`, credits line
+when `unit` is `credits`; `grant_ref` code line). To staff, sent by a host
+subscriber on the producer's fact: `promotions.promotion_exhausted`
+(`promotion_key`, `used`, `usage_limit_total`; `promotion_url`),
+`inventory.stock_low` / `inventory.stock_out` (`purchasable_key`, `location`,
+`available`, `threshold`; `stock_url`). Every link renders only when passed
+and is declared telemetry. No producer lives in this package. The `llms.txt`
+ceiling moves 6700 -> 7100 (measured 7089 with one-line intents).
+
 ## [0.30.0] — 2026-11-05
 
 ### Added — every letter in eight languages

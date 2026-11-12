@@ -848,3 +848,198 @@ msgstr "Annulla iscrizione"
 #: notification.footer.manage
 msgid "Manage notifications"
 msgstr "Gestisci notifiche"
+
+#: notification.delivery.shipment_status_changed.subject
+msgid "Shipment {shipment_number}: {status}"
+msgstr "Spedizione {shipment_number}: {status}"
+
+#: notification.delivery.shipment_status_changed.heading
+msgid "Your delivery has been updated"
+msgstr "La tua consegna è stata aggiornata"
+
+#: notification.delivery.shipment_status_changed.body
+msgid "New status of your shipment {shipment_number}: {status}."
+msgstr "Lo stato della tua spedizione {shipment_number} è ora: {status}."
+
+#: notification.delivery.shipment_status_changed.tracking_line
+msgid "Tracking number: {tracking_number}"
+msgstr "Numero di tracciamento: {tracking_number}"
+
+#: notification.delivery.shipment_status_changed.tracking_cta
+msgid "Track the parcel"
+msgstr "Traccia il pacco"
+
+#: notification.delivery.shipment_status_changed.cta
+msgid "View shipment"
+msgstr "Vedi spedizione"
+
+#: notification.delivery.shipment_status_changed.push_title
+msgid "Delivery updated"
+msgstr "Consegna aggiornata"
+
+#: notification.delivery.shipment_status_changed.push_body
+msgid "Shipment {shipment_number}: {status}."
+msgstr "Spedizione {shipment_number}: {status}."
+
+#: notification.courses.enrollment_activated.subject
+msgid "You're enrolled in {course_title}"
+msgstr "Sei iscritto a {course_title}"
+
+#: notification.courses.enrollment_activated.heading
+msgid "Welcome to the course"
+msgstr "Benvenuto nel corso"
+
+#: notification.courses.enrollment_activated.body
+msgid "Your enrollment in {course_title} is active. You can start learning now."
+msgstr "La tua iscrizione a {course_title} è attiva. Puoi iniziare subito."
+
+#: notification.courses.enrollment_activated.cta
+#: notification.courses.completed.cta
+msgid "Open the course"
+msgstr "Apri il corso"
+
+#: notification.courses.enrollment_activated.push_title
+msgid "Enrollment active"
+msgstr "Iscrizione attiva"
+
+#: notification.courses.enrollment_activated.push_body
+msgid "You can start {course_title} now."
+msgstr "Puoi iniziare {course_title} subito."
+
+#: notification.courses.completed.subject
+msgid "You completed {course_title}"
+msgstr "Hai completato {course_title}"
+
+#: notification.courses.completed.heading
+msgid "Congratulations!"
+msgstr "Congratulazioni!"
+
+#: notification.courses.completed.body
+msgid "You have completed {course_title}. Well done!"
+msgstr "Hai completato {course_title}. Ottimo lavoro!"
+
+#: notification.courses.completed.push_title
+msgid "Course completed"
+msgstr "Corso completato"
+
+#: notification.courses.completed.push_body
+msgid "You completed {course_title}."
+msgstr "Hai completato {course_title}."
+
+#: notification.courses.certificate_issued.subject
+msgid "Your certificate for {course_title}"
+msgstr "Il tuo certificato per {course_title}"
+
+#: notification.courses.certificate_issued.heading
+msgid "Your certificate is ready"
+msgstr "Il tuo certificato è pronto"
+
+#: notification.courses.certificate_issued.body
+msgid "Certificate {certificate_number} for {course_title} has been issued to you."
+msgstr "Ti è stato rilasciato il certificato {certificate_number} per {course_title}."
+
+#: notification.courses.certificate_issued.cta
+msgid "View certificate"
+msgstr "Vedi certificato"
+
+#: notification.courses.certificate_issued.push_title
+msgid "Certificate issued"
+msgstr "Certificato rilasciato"
+
+#: notification.courses.certificate_issued.push_body
+msgid "Your certificate for {course_title} is ready."
+msgstr "Il tuo certificato per {course_title} è pronto."
+
+#: notification.referrals.reward_granted.subject
+msgid "You've earned a referral reward"
+msgstr "Hai ottenuto un premio per l'invito"
+
+#: notification.referrals.reward_granted.heading
+msgid "Thanks for spreading the word"
+msgstr "Grazie per aver parlato di noi"
+
+#: notification.referrals.reward_granted.body
+#: notification.referrals.reward_granted.push_body
+msgid "Your referral reward has been granted."
+msgstr "Il tuo premio per l'invito è stato assegnato."
+
+#: notification.referrals.reward_granted.credits_line
+msgid "{value} credits have been added to your balance."
+msgstr "{value} crediti sono stati aggiunti al tuo saldo."
+
+#: notification.referrals.reward_granted.code_line
+msgid "Your promo code: {grant_ref}"
+msgstr "Il tuo codice promozionale: {grant_ref}"
+
+#: notification.referrals.reward_granted.push_title
+msgid "Referral reward"
+msgstr "Premio per l'invito"
+
+#: notification.promotions.promotion_exhausted.subject
+msgid "Promotion {promotion_key} has reached its usage limit"
+msgstr "La promozione {promotion_key} ha raggiunto il limite di utilizzi"
+
+#: notification.promotions.promotion_exhausted.heading
+msgid "A promotion has run out"
+msgstr "Una promozione è esaurita"
+
+#: notification.promotions.promotion_exhausted.body
+msgid "Promotion {promotion_key} has been used {used} times and reached its limit of {usage_limit_total}. It no longer applies."
+msgstr "La promozione {promotion_key} è stata usata {used} volte e ha raggiunto il limite di {usage_limit_total}. Non si applica più."
+
+#: notification.promotions.promotion_exhausted.cta
+msgid "Review the promotion"
+msgstr "Controlla la promozione"
+
+#: notification.promotions.promotion_exhausted.push_title
+msgid "Promotion exhausted"
+msgstr "Promozione esaurita"
+
+#: notification.promotions.promotion_exhausted.push_body
+msgid "{promotion_key} has reached its usage limit."
+msgstr "{promotion_key} ha raggiunto il limite di utilizzi."
+
+#: notification.inventory.stock_low.subject
+msgid "Low stock: {purchasable_key}"
+msgstr "Scorte basse: {purchasable_key}"
+
+#: notification.inventory.stock_low.heading
+msgid "Stock is running low"
+msgstr "Le scorte stanno finendo"
+
+#: notification.inventory.stock_low.body
+msgid "{purchasable_key} at {location} is down to {available} available (threshold {threshold})."
+msgstr "{purchasable_key} presso {location}: solo {available} disponibili (soglia {threshold})."
+
+#: notification.inventory.stock_low.cta
+#: notification.inventory.stock_out.cta
+msgid "Review stock"
+msgstr "Controlla le scorte"
+
+#: notification.inventory.stock_low.push_title
+msgid "Low stock"
+msgstr "Scorte basse"
+
+#: notification.inventory.stock_low.push_body
+msgid "{purchasable_key} at {location}: {available} left."
+msgstr "{purchasable_key} presso {location}: ne restano {available}."
+
+#: notification.inventory.stock_out.subject
+msgid "Out of stock: {purchasable_key}"
+msgstr "Esaurito: {purchasable_key}"
+
+#: notification.inventory.stock_out.heading
+msgid "An item is out of stock"
+msgstr "Un articolo è esaurito"
+
+#: notification.inventory.stock_out.body
+msgid "{purchasable_key} at {location} has no units available."
+msgstr "{purchasable_key} presso {location} non ha unità disponibili."
+
+#: notification.inventory.stock_out.push_title
+msgid "Out of stock"
+msgstr "Esaurito"
+
+#: notification.inventory.stock_out.push_body
+msgid "{purchasable_key} at {location} is out of stock."
+msgstr "{purchasable_key} presso {location} è esaurito."

@@ -218,6 +218,30 @@
     "notifications/email/reservations_new_for_provider.html": {
       "intent": "`reservations.new_for_provider`: the provider's notice of a new booking; CTA only with `reservation_url`. Registry-only."
     },
+    "notifications/email/delivery_shipment_status_changed.html": {
+      "intent": "`delivery.shipment_status_changed` (buyer); tracking line/link and CTA (`shipment_url`) only when passed. Registry-only."
+    },
+    "notifications/email/courses_enrollment_activated.html": {
+      "intent": "`courses.enrollment_activated` (learner); CTA with `course_url`. Registry-only."
+    },
+    "notifications/email/courses_completed.html": {
+      "intent": "`courses.completed` (learner); CTA with `course_url`. Registry-only."
+    },
+    "notifications/email/courses_certificate_issued.html": {
+      "intent": "`courses.certificate_issued` (learner); CTA with `certificate_url`. Registry-only."
+    },
+    "notifications/email/referrals_reward_granted.html": {
+      "intent": "`referrals.reward_granted`; credits line (`unit` credits) or code line (`grant_ref`). Registry-only."
+    },
+    "notifications/email/promotions_promotion_exhausted.html": {
+      "intent": "`promotions.promotion_exhausted` (staff); CTA with `promotion_url`. Registry-only."
+    },
+    "notifications/email/inventory_stock_low.html": {
+      "intent": "`inventory.stock_low` (staff); CTA with `stock_url`. Registry-only."
+    },
+    "notifications/email/inventory_stock_out.html": {
+      "intent": "`inventory.stock_out` (staff); CTA with `stock_url`. Registry-only."
+    },
     "notifications/email/moderation_report_received.html": {
       "intent": "\"Your report has been received\" — notification_type `moderation.report_received`, system group, push and email: the receipt for the person who filed a report, before any verdict (DSA Art. 16(4)). stapel-moderation upstream — registry-only, no producer in this package yet."
     },

@@ -696,6 +696,304 @@
       "transactional": true
     },
     {
+      "key": "courses.certificate_issued",
+      "template": "notifications/email/courses_certificate_issued.html",
+      "chain": [
+        "notifications/email/courses_certificate_issued.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "certificate_number",
+          "certificate_url",
+          "course_title"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "certificate_url": "required",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "courses.completed",
+      "template": "notifications/email/courses_completed.html",
+      "chain": [
+        "notifications/email/courses_completed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "course_title",
+          "course_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "course_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "courses.enrollment_activated",
+      "template": "notifications/email/courses_enrollment_activated.html",
+      "chain": [
+        "notifications/email/courses_enrollment_activated.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "course_title",
+          "course_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "course_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "delivery.shipment_status_changed",
+      "template": "notifications/email/delivery_shipment_status_changed.html",
+      "chain": [
+        "notifications/email/delivery_shipment_status_changed.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "shipment_number",
+          "shipment_url",
+          "status",
+          "tracking_number",
+          "tracking_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject",
+          "tracking_cta",
+          "tracking_line"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "shipment_url": "required",
+        "subject": "required",
+        "tracking_cta": "required",
+        "tracking_line": "required",
+        "tracking_number": "optional",
+        "tracking_url": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
       "key": "feed.comment_received",
       "template": "notifications/email/feed_comment_received.html",
       "chain": [
@@ -1086,6 +1384,154 @@
         "email"
       ],
       "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "inventory.stock_low",
+      "template": "notifications/email/inventory_stock_low.html",
+      "chain": [
+        "notifications/email/inventory_stock_low.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "available",
+          "location",
+          "purchasable_key",
+          "stock_url",
+          "threshold"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "stock_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "inventory.stock_out",
+      "template": "notifications/email/inventory_stock_out.html",
+      "chain": [
+        "notifications/email/inventory_stock_out.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "location",
+          "purchasable_key",
+          "stock_url"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "stock_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
       "transactional": false
     },
     {
@@ -1887,6 +2333,156 @@
         "sms"
       ],
       "group": "auth",
+      "transactional": false
+    },
+    {
+      "key": "promotions.promotion_exhausted",
+      "template": "notifications/email/promotions_promotion_exhausted.html",
+      "chain": [
+        "notifications/email/promotions_promotion_exhausted.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "promotion_key",
+          "promotion_url",
+          "usage_limit_total",
+          "used"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "cta",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "cta": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "promotion_url": "required",
+        "subject": "required",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
+      "transactional": false
+    },
+    {
+      "key": "referrals.reward_granted",
+      "template": "notifications/email/referrals_reward_granted.html",
+      "chain": [
+        "notifications/email/referrals_reward_granted.html",
+        "notifications/email/_base.html",
+        "notifications/email/_footer_unsubscribe.html"
+      ],
+      "context": {
+        "branding": [
+          "brand_bg",
+          "brand_primary",
+          "brand_primary_dark",
+          "brand_text",
+          "company_address",
+          "company_host",
+          "company_name",
+          "company_url",
+          "company_year",
+          "logo_url"
+        ],
+        "caller": [
+          "grant_ref",
+          "unit",
+          "value"
+        ],
+        "conditional": [
+          "manage_notifications_url",
+          "unsubscribe_url"
+        ],
+        "translation": [
+          "body",
+          "code_line",
+          "credits_line",
+          "footer_address",
+          "footer_consent",
+          "footer_legal",
+          "footer_manage",
+          "footer_unsubscribe",
+          "heading",
+          "push_body",
+          "push_title",
+          "subject"
+        ]
+      },
+      "consumed": {
+        "body": "required",
+        "brand_bg": "optional",
+        "brand_primary": "optional",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "code_line": "required",
+        "company_host": "optional",
+        "company_name": "required",
+        "company_url": "required",
+        "credits_line": "required",
+        "footer_address": "required",
+        "footer_consent": "optional",
+        "footer_legal": "required",
+        "footer_manage": "optional",
+        "footer_unsubscribe": "optional",
+        "grant_ref": "optional",
+        "heading": "required",
+        "logo_url": "required",
+        "manage_notifications_url": "optional",
+        "subject": "required",
+        "unit": "optional",
+        "unsubscribe_url": "optional"
+      },
+      "channels": [
+        "push",
+        "email"
+      ],
+      "group": "system",
       "transactional": false
     },
     {
@@ -2962,12 +3558,18 @@
         "billing.payment_failed",
         "billing.payment_succeeded",
         "billing.subscription_ending",
+        "courses.certificate_issued",
+        "courses.completed",
+        "courses.enrollment_activated",
+        "delivery.shipment_status_changed",
         "feed.comment_received",
         "gdpr.dsar.opened",
         "gdpr.dsar.received",
         "gdpr.export_ready",
         "gdpr.inactivity_closed",
         "gdpr.inactivity_warning",
+        "inventory.stock_low",
+        "inventory.stock_out",
         "listing_blocked",
         "listing_expiring",
         "magic_link_login",
@@ -2979,6 +3581,8 @@
         "orders.placed",
         "orders.status_changed",
         "otp_code",
+        "promotions.promotion_exhausted",
+        "referrals.reward_granted",
         "report_reviewed",
         "reservations.booked",
         "reservations.new_for_provider",
@@ -3025,6 +3629,7 @@
         "appeal_cta",
         "appeal_note",
         "appeal_url",
+        "available",
         "badge",
         "body",
         "brand_bg",
@@ -3032,10 +3637,13 @@
         "brand_primary_dark",
         "brand_text",
         "case_ref",
+        "certificate_number",
+        "certificate_url",
         "change_type",
         "channel",
         "chat_url",
         "code",
+        "code_line",
         "company_address",
         "company_host",
         "company_name",
@@ -3043,6 +3651,9 @@
         "company_year",
         "content_html",
         "content_text",
+        "course_title",
+        "course_url",
+        "credits_line",
         "cta",
         "currency",
         "days_remaining",
@@ -3060,6 +3671,7 @@
         "footer_legal",
         "footer_manage",
         "footer_unsubscribe",
+        "grant_ref",
         "heading",
         "initial_password",
         "invitee_email",
@@ -3071,6 +3683,7 @@
         "link",
         "listing_title",
         "listing_url",
+        "location",
         "login_url",
         "logo_url",
         "manage_notifications_url",
@@ -3087,6 +3700,9 @@
         "period_end",
         "period_start",
         "post_url",
+        "promotion_key",
+        "promotion_url",
+        "purchasable_key",
         "push_body",
         "push_title",
         "reason",
@@ -3107,18 +3723,30 @@
         "secure_url",
         "security_url",
         "sender_name",
+        "shipment_number",
+        "shipment_url",
         "sms",
         "start_local",
         "status",
+        "stock_url",
         "subject",
         "subject_email",
         "target_label",
+        "threshold",
         "timezone",
         "title",
         "total",
+        "tracking_cta",
+        "tracking_line",
+        "tracking_number",
+        "tracking_url",
+        "unit",
         "unsubscribe_url",
+        "usage_limit_total",
+        "used",
         "username",
         "username_label",
+        "value",
         "warning",
         "workspace_name",
         "workspace_url"
@@ -3138,12 +3766,18 @@
         "billing.payment_failed",
         "billing.payment_succeeded",
         "billing.subscription_ending",
+        "courses.certificate_issued",
+        "courses.completed",
+        "courses.enrollment_activated",
+        "delivery.shipment_status_changed",
         "feed.comment_received",
         "gdpr.dsar.opened",
         "gdpr.dsar.received",
         "gdpr.export_ready",
         "gdpr.inactivity_closed",
         "gdpr.inactivity_warning",
+        "inventory.stock_low",
+        "inventory.stock_out",
         "listing_blocked",
         "listing_expiring",
         "magic_link_login",
@@ -3155,6 +3789,8 @@
         "orders.placed",
         "orders.status_changed",
         "otp_code",
+        "promotions.promotion_exhausted",
+        "referrals.reward_granted",
         "report_reviewed",
         "reservations.booked",
         "reservations.new_for_provider",
@@ -3194,6 +3830,7 @@
         "appeal_cta",
         "appeal_note",
         "appeal_url",
+        "available",
         "badge",
         "body",
         "brand_bg",
@@ -3201,10 +3838,13 @@
         "brand_primary_dark",
         "brand_text",
         "case_ref",
+        "certificate_number",
+        "certificate_url",
         "change_type",
         "channel",
         "chat_url",
         "code",
+        "code_line",
         "company_address",
         "company_host",
         "company_name",
@@ -3212,6 +3852,9 @@
         "company_year",
         "content_html",
         "content_text",
+        "course_title",
+        "course_url",
+        "credits_line",
         "cta",
         "currency",
         "days_remaining",
@@ -3229,6 +3872,7 @@
         "footer_legal",
         "footer_manage",
         "footer_unsubscribe",
+        "grant_ref",
         "heading",
         "initial_password",
         "invitee_email",
@@ -3240,6 +3884,7 @@
         "link",
         "listing_title",
         "listing_url",
+        "location",
         "login_url",
         "logo_url",
         "manage_notifications_url",
@@ -3256,6 +3901,9 @@
         "period_end",
         "period_start",
         "post_url",
+        "promotion_key",
+        "promotion_url",
+        "purchasable_key",
         "push_body",
         "push_title",
         "reason",
@@ -3276,18 +3924,30 @@
         "secure_url",
         "security_url",
         "sender_name",
+        "shipment_number",
+        "shipment_url",
         "sms",
         "start_local",
         "status",
+        "stock_url",
         "subject",
         "subject_email",
         "target_label",
+        "threshold",
         "timezone",
         "title",
         "total",
+        "tracking_cta",
+        "tracking_line",
+        "tracking_number",
+        "tracking_url",
+        "unit",
         "unsubscribe_url",
+        "usage_limit_total",
+        "used",
         "username",
         "username_label",
+        "value",
         "warning",
         "workspace_name",
         "workspace_url"
@@ -3585,6 +4245,212 @@
       "unknown_tags": []
     },
     {
+      "path": "notifications/email/courses_certificate_issued.html",
+      "role": "letter",
+      "used_by": [
+        "courses.certificate_issued"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "certificate_url": "required",
+        "cta": "required",
+        "heading": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "certificate_number",
+        "certificate_url",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "course_title",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/courses_completed.html",
+      "role": "letter",
+      "used_by": [
+        "courses.completed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "course_url": "required",
+        "cta": "required",
+        "heading": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "course_title",
+        "course_url",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/courses_enrollment_activated.html",
+      "role": "letter",
+      "used_by": [
+        "courses.enrollment_activated"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "course_url": "required",
+        "cta": "required",
+        "heading": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "course_title",
+        "course_url",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/delivery_shipment_status_changed.html",
+      "role": "letter",
+      "used_by": [
+        "delivery.shipment_status_changed"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "shipment_url": "required",
+        "tracking_cta": "required",
+        "tracking_line": "required",
+        "tracking_number": "optional",
+        "tracking_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "shipment_number",
+        "shipment_url",
+        "status",
+        "subject",
+        "tracking_cta",
+        "tracking_line",
+        "tracking_number",
+        "tracking_url",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
       "path": "notifications/email/feed_comment_received.html",
       "role": "letter",
       "used_by": [
@@ -3844,6 +4710,108 @@
         "logo_url",
         "subject",
         "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/inventory_stock_low.html",
+      "role": "letter",
+      "used_by": [
+        "inventory.stock_low"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "stock_url": "required"
+      },
+      "declared": [
+        "available",
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "location",
+        "logo_url",
+        "manage_notifications_url",
+        "purchasable_key",
+        "push_body",
+        "push_title",
+        "stock_url",
+        "subject",
+        "threshold",
+        "unsubscribe_url"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/inventory_stock_out.html",
+      "role": "letter",
+      "used_by": [
+        "inventory.stock_out"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "stock_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "location",
+        "logo_url",
+        "manage_notifications_url",
+        "purchasable_key",
+        "push_body",
+        "push_title",
+        "stock_url",
+        "subject",
+        "unsubscribe_url"
       ],
       "unknown_tags": []
     },
@@ -4396,6 +5364,109 @@
         "sms",
         "subject",
         "warning"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/promotions_promotion_exhausted.html",
+      "role": "letter",
+      "used_by": [
+        "promotions.promotion_exhausted"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_primary_dark": "optional",
+        "brand_text": "optional",
+        "cta": "required",
+        "heading": "required",
+        "promotion_url": "required"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "cta",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "promotion_key",
+        "promotion_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unsubscribe_url",
+        "usage_limit_total",
+        "used"
+      ],
+      "unknown_tags": []
+    },
+    {
+      "path": "notifications/email/referrals_reward_granted.html",
+      "role": "letter",
+      "used_by": [
+        "referrals.reward_granted"
+      ],
+      "extends": "notifications/email/_base.html",
+      "includes": [],
+      "blocks": [
+        "content",
+        "preheader"
+      ],
+      "consumed": {
+        "body": "required",
+        "brand_text": "optional",
+        "code_line": "required",
+        "credits_line": "required",
+        "grant_ref": "optional",
+        "heading": "required",
+        "unit": "optional"
+      },
+      "declared": [
+        "body",
+        "brand_bg",
+        "brand_primary",
+        "brand_primary_dark",
+        "brand_text",
+        "code_line",
+        "company_address",
+        "company_host",
+        "company_name",
+        "company_url",
+        "company_year",
+        "credits_line",
+        "footer_address",
+        "footer_consent",
+        "footer_legal",
+        "footer_manage",
+        "footer_unsubscribe",
+        "grant_ref",
+        "heading",
+        "logo_url",
+        "manage_notifications_url",
+        "push_body",
+        "push_title",
+        "subject",
+        "unit",
+        "unsubscribe_url",
+        "value"
       ],
       "unknown_tags": []
     },

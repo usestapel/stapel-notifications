@@ -263,6 +263,71 @@ NOTIFICATION_KEYS: dict[str, str] = {
     "notification.reservations.new_for_provider.cta": "Open the agenda",
     "notification.reservations.new_for_provider.push_title": "New booking",
     "notification.reservations.new_for_provider.push_body": "{title}, {start_local}.",
+    # ── Delivery (stapel-delivery upstream, registry-only) ─────────────
+    # To the buyer when a shipment moves. The CTA renders only with
+    # "shipment_url", the tracking line only with "tracking_number",
+    # the tracking link only with "tracking_url".
+    "notification.delivery.shipment_status_changed.subject": "Shipment {shipment_number}: {status}",
+    "notification.delivery.shipment_status_changed.heading": "Your delivery has been updated",
+    "notification.delivery.shipment_status_changed.body": "New status of your shipment {shipment_number}: {status}.",
+    "notification.delivery.shipment_status_changed.tracking_line": "Tracking number: {tracking_number}",
+    "notification.delivery.shipment_status_changed.tracking_cta": "Track the parcel",
+    "notification.delivery.shipment_status_changed.cta": "View shipment",
+    "notification.delivery.shipment_status_changed.push_title": "Delivery updated",
+    "notification.delivery.shipment_status_changed.push_body": "Shipment {shipment_number}: {status}.",
+    # ── Courses (stapel-courses upstream, registry-only) ───────────────
+    # To the learner. The CTA renders only with "course_url"
+    # (certificate_issued: "certificate_url").
+    "notification.courses.enrollment_activated.subject": "You're enrolled in {course_title}",
+    "notification.courses.enrollment_activated.heading": "Welcome to the course",
+    "notification.courses.enrollment_activated.body": "Your enrollment in {course_title} is active. You can start learning now.",
+    "notification.courses.enrollment_activated.cta": "Open the course",
+    "notification.courses.enrollment_activated.push_title": "Enrollment active",
+    "notification.courses.enrollment_activated.push_body": "You can start {course_title} now.",
+    "notification.courses.completed.subject": "You completed {course_title}",
+    "notification.courses.completed.heading": "Congratulations!",
+    "notification.courses.completed.body": "You have completed {course_title}. Well done!",
+    "notification.courses.completed.cta": "Open the course",
+    "notification.courses.completed.push_title": "Course completed",
+    "notification.courses.completed.push_body": "You completed {course_title}.",
+    "notification.courses.certificate_issued.subject": "Your certificate for {course_title}",
+    "notification.courses.certificate_issued.heading": "Your certificate is ready",
+    "notification.courses.certificate_issued.body": "Certificate {certificate_number} for {course_title} has been issued to you.",
+    "notification.courses.certificate_issued.cta": "View certificate",
+    "notification.courses.certificate_issued.push_title": "Certificate issued",
+    "notification.courses.certificate_issued.push_body": "Your certificate for {course_title} is ready.",
+    # ── Referrals (stapel-referrals upstream, registry-only) ───────────
+    # To the rewarded user. The credits line renders only for
+    # unit == "credits", the code line only with "grant_ref".
+    "notification.referrals.reward_granted.subject": "You've earned a referral reward",
+    "notification.referrals.reward_granted.heading": "Thanks for spreading the word",
+    "notification.referrals.reward_granted.body": "Your referral reward has been granted.",
+    "notification.referrals.reward_granted.credits_line": "{value} credits have been added to your balance.",
+    "notification.referrals.reward_granted.code_line": "Your promo code: {grant_ref}",
+    "notification.referrals.reward_granted.push_title": "Referral reward",
+    "notification.referrals.reward_granted.push_body": "Your referral reward has been granted.",
+    # ── Promotions (stapel-promotions upstream, registry-only) ─────────
+    # To staff. The CTA renders only with "promotion_url".
+    "notification.promotions.promotion_exhausted.subject": "Promotion {promotion_key} has reached its usage limit",
+    "notification.promotions.promotion_exhausted.heading": "A promotion has run out",
+    "notification.promotions.promotion_exhausted.body": "Promotion {promotion_key} has been used {used} times and reached its limit of {usage_limit_total}. It no longer applies.",
+    "notification.promotions.promotion_exhausted.cta": "Review the promotion",
+    "notification.promotions.promotion_exhausted.push_title": "Promotion exhausted",
+    "notification.promotions.promotion_exhausted.push_body": "{promotion_key} has reached its usage limit.",
+    # ── Inventory (stapel-inventory upstream, registry-only) ───────────
+    # To staff. The CTA renders only with "stock_url".
+    "notification.inventory.stock_low.subject": "Low stock: {purchasable_key}",
+    "notification.inventory.stock_low.heading": "Stock is running low",
+    "notification.inventory.stock_low.body": "{purchasable_key} at {location} is down to {available} available (threshold {threshold}).",
+    "notification.inventory.stock_low.cta": "Review stock",
+    "notification.inventory.stock_low.push_title": "Low stock",
+    "notification.inventory.stock_low.push_body": "{purchasable_key} at {location}: {available} left.",
+    "notification.inventory.stock_out.subject": "Out of stock: {purchasable_key}",
+    "notification.inventory.stock_out.heading": "An item is out of stock",
+    "notification.inventory.stock_out.body": "{purchasable_key} at {location} has no units available.",
+    "notification.inventory.stock_out.cta": "Review stock",
+    "notification.inventory.stock_out.push_title": "Out of stock",
+    "notification.inventory.stock_out.push_body": "{purchasable_key} at {location} is out of stock.",
     # ── Magic Link Login (A6) ───────────────────────────────────
     "notification.magic_link_login.subject": "Your {company_name} sign-in link",
     "notification.magic_link_login.heading": "Sign in to {company_name}",
