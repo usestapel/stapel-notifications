@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — proposed 0.30.1
+## [0.30.1] — 2026-11-13
 
 ### Added — types for the brick-wave companions (registry-only)
 
