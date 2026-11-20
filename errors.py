@@ -1,5 +1,13 @@
 """Error constants for notifications service."""
-from stapel_core.django.api.errors import register_service_errors
+from stapel_core.django.api.errors import (  # noqa: F401 - ERR_400_TOO_MANY_IDS re-exported
+    ERR_400_TOO_MANY_IDS,
+    register_service_errors,
+)
+
+# The mark-read id list is bounded so one request cannot ask the database for
+# an unbounded IN (...); over the bound it answers core's ERR_400_TOO_MANY_IDS
+# with `requested` and `limit`. A client with more than a page of ids to clear
+# wants `all: true`, which is one UPDATE regardless of size.
 
 ERR_400_INVALID_PLATFORM = 'error.400.invalid_platform'
 ERR_404_TOKEN_NOT_FOUND = 'error.404.token_not_found'
@@ -15,17 +23,12 @@ ERR_404_DEVICE_NOT_FOUND = 'error.404.device_not_found'
 # `marked: 0` would let a "mark all read" button that forgot its flag look
 # like a feed that was already read.
 ERR_400_READ_TARGET_REQUIRED = 'error.400.read_target_required'
-# The id list is bounded so one request cannot ask the database for an
-# unbounded IN (...). A client with more than a page of ids to clear wants
-# `all: true`, which is one UPDATE regardless of size.
-ERR_400_TOO_MANY_IDS = 'error.400.too_many_ids'
 
 SERVICE_ERRORS = {
     ERR_400_INVALID_PLATFORM: 'Platform must be one of: ios, android, web.',
     ERR_404_TOKEN_NOT_FOUND: 'Device token not found.',
     ERR_404_DEVICE_NOT_FOUND: 'Device not found, or it is not registered to you.',
     ERR_400_READ_TARGET_REQUIRED: 'Send exactly one of: a non-empty "ids" list, or "all": true.',
-    ERR_400_TOO_MANY_IDS: 'Too many ids in one request. Send fewer, or "all": true.',
 }
 
 # Machine-readable recovery hints (remediation) — the canonical "what to do"
@@ -48,7 +51,6 @@ SERVICE_REMEDIATION = {
     # client can say the right thing without asking anybody: name the ids, or
     # set the flag.
     ERR_400_READ_TARGET_REQUIRED: 'fix_input',
-    ERR_400_TOO_MANY_IDS: 'fix_input',
 }
 
 register_service_errors(SERVICE_ERRORS, remediation=SERVICE_REMEDIATION)

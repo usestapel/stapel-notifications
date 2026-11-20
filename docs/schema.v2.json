@@ -1,0 +1,726 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "",
+    "version": "0.0.0",
+    "x-stapel-contract": 2
+  },
+  "paths": {
+    "/notifications/api/v1/devices/": {
+      "get": {
+        "operationId": "list_device_tokens",
+        "description": "The caller's own push devices, most recently registered first. The raw token is never returned: a client identifies its own device by hashing the token it holds (SHA-256, hex) and matching `token_fingerprint`. Rows with `is_active: false` are still registered but the push provider has rejected the token, so nothing is delivered to them.\n\n**Permissions:** `IsNotAnonymousUser`",
+        "summary": "List registered push devices",
+        "tags": [
+          "Devices"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          },
+          {
+            "JWTBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceListItemResponse"
+                  }
+                },
+                "examples": {
+                  "DeviceListItemResponse": {
+                    "value": [
+                      {
+                        "id": 42,
+                        "token_fingerprint": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                        "platform": "ios",
+                        "is_active": true,
+                        "created_at": "2026-03-17T10:30:00Z",
+                        "last_seen": "2026-03-18T08:02:11Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "register_device_token",
+        "description": "List the caller's push devices, or register one.\n\n**Permissions:** `IsNotAnonymousUser`",
+        "summary": "Register push token",
+        "tags": [
+          "Devices"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceTokenRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceTokenRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "JWTCookieAuth": []
+          },
+          {
+            "JWTBearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceTokenResponse"
+                },
+                "examples": {
+                  "DeviceTokenResponse": {
+                    "value": {
+                      "token": "eHh4eHg6dG9rZW4...",
+                      "platform": "ios"
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": "",
+            "x-stapel-errors": [
+              "error.400.invalid_platform"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": "",
+            "x-stapel-errors": [
+              "error.409.conflict"
+            ]
+          }
+        }
+      }
+    },
+    "/notifications/api/v1/devices/{token}/": {
+      "delete": {
+        "operationId": "unregister_device_token",
+        "description": "Unregister a push notification token.\n\n**Permissions:** `IsNotAnonymousUser`",
+        "summary": "Unregister push token",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "Devices"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          },
+          {
+            "JWTBearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": "",
+            "x-stapel-errors": [
+              "error.404.token_not_found"
+            ]
+          }
+        }
+      }
+    },
+    "/notifications/api/v1/devices/by-id/{device_id}/": {
+      "delete": {
+        "operationId": "unregister_device",
+        "description": "Unregister a push device by the id ``GET /devices/`` handed out.\n\nThe token-keyed sibling above stays: a client that has just minted a token\nand wants it gone does not need a round trip through the list. This one is\nfor the other direction — a device row read from the list, unregistered by\nthe identifier the list gave, without the caller ever holding the token\n(a second device in the list is not one this client can produce a token\nfor at all).\n\n**Permissions:** `IsNotAnonymousUser`",
+        "summary": "Unregister a push device by id",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "tags": [
+          "Devices"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          },
+          {
+            "JWTBearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No response body"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": "",
+            "x-stapel-errors": [
+              "error.404.device_not_found"
+            ]
+          }
+        }
+      }
+    },
+    "/notifications/api/v1/feed/": {
+      "get": {
+        "operationId": "get_notification_feed",
+        "description": "Returns push notification log entries for the authenticated user, ordered by created_at desc. Each row carries `read_at` — null while unread — and the page envelope carries `unread_count`, the number of unread rows in the WHOLE feed, so a bell badge is answered by the same request that fills the list.\n\n**Permissions:** `IsAuthenticated`",
+        "summary": "Get notification feed",
+        "parameters": [
+          {
+            "name": "anchor",
+            "required": false,
+            "in": "query",
+            "description": "Anchor value to paginate from (exclusive)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "direction",
+            "required": false,
+            "in": "query",
+            "description": "Pagination direction",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "next",
+                "prev",
+                "center"
+              ],
+              "default": "next"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Number of items (default 20, max 50)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "tags": [
+          "Feed"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          },
+          {
+            "JWTBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedFeedItemResponseList"
+                },
+                "examples": {
+                  "FeedItemResponse": {
+                    "value": {
+                      "items": [
+                        {
+                          "id": "550e8400-e29b-41d4-a716-446655440000",
+                          "notification_type": "listing_blocked",
+                          "title": "Your listing has been blocked",
+                          "body": "Your listing was blocked for guideline violations.",
+                          "data": {
+                            "listing_id": "8f14e45f-ceea-467f-a0e6-0f2b4c1d9a3e"
+                          },
+                          "created_at": "2026-03-17T10:30:00Z",
+                          "read_at": "2026-03-17T11:04:52Z"
+                        }
+                      ],
+                      "next_anchor": null,
+                      "prev_anchor": null,
+                      "has_next": false,
+                      "has_prev": false,
+                      "count": 1,
+                      "unread_count": 0
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "x-stapel-pagination": {
+          "style": "anchor",
+          "items": "items",
+          "params": [
+            "anchor",
+            "direction",
+            "limit"
+          ]
+        }
+      }
+    },
+    "/notifications/api/v1/feed/read/": {
+      "post": {
+        "operationId": "mark_notification_feed_read",
+        "description": "Send exactly one of `ids` (feed item ids from `GET feed/`, at most 500) or `all: true`. Idempotent: `marked` counts the rows this call moved from unread to read, so a repeat returns 0. `unread_count` is the caller's remaining unread total after the write. Only the caller's own rows are touched; unknown or foreign ids are ignored rather than reported, and when anything changed a `notification.read` signal goes out on `notifications:user:<id>` so the caller's other open screens correct their badge.\n\n**Permissions:** `IsAuthenticated`",
+        "summary": "Mark feed items read",
+        "tags": [
+          "Feed"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedReadRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedReadRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedReadRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTCookieAuth": []
+          },
+          {
+            "JWTBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeedReadResponse"
+                },
+                "examples": {
+                  "FeedReadResponse": {
+                    "value": {
+                      "marked": 3,
+                      "unread_count": 0
+                    }
+                  }
+                }
+              }
+            },
+            "description": ""
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": "",
+            "x-stapel-errors": [
+              "error.400.read_target_required",
+              "error.400.too_many_ids"
+            ]
+          }
+        }
+      }
+    },
+    "/notifications/api/v1/notification-keys/": {
+      "get": {
+        "operationId": "get_notification_keys",
+        "description": "Returns all notification translation keys with English defaults. Used by translate service to sync.\n\n**Permissions:** `OperandHolder`",
+        "summary": "Get notification translation keys",
+        "tags": [
+          "Translation Keys"
+        ],
+        "security": [
+          {
+            "JWTCookieAuth": []
+          },
+          {
+            "JWTBearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            },
+            "description": ""
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DeviceListItemResponse": {
+        "type": "object",
+        "description": "One push device registered to the caller.\n\nThe raw token is deliberately absent — see ``token_fingerprint``.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Device registration id, for DELETE devices/by-id/{id}/",
+            "example": 42
+          },
+          "token_fingerprint": {
+            "type": "string",
+            "description": "SHA-256 of the device token, hex — hash your own token to find this device",
+            "example": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+          },
+          "platform": {
+            "type": "string",
+            "description": "Device platform",
+            "example": "ios"
+          },
+          "is_active": {
+            "type": "boolean",
+            "description": "False once the push provider rejected this token — registered, but no longer delivered to",
+            "example": true
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp of the first registration",
+            "example": "2026-03-17T10:30:00Z"
+          },
+          "last_seen": {
+            "type": "string",
+            "description": "ISO 8601 timestamp of the last registration of this token",
+            "example": "2026-03-18T08:02:11Z"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "is_active",
+          "last_seen",
+          "platform",
+          "token_fingerprint"
+        ]
+      },
+      "DeviceTokenRequest": {
+        "type": "object",
+        "description": "Register a push token.",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "FCM device token",
+            "example": "eHh4eHg6dG9rZW4..."
+          },
+          "platform": {
+            "type": "string",
+            "description": "Device platform",
+            "example": "ios"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "DeviceTokenResponse": {
+        "type": "object",
+        "description": "Push token registration result.",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Registered token",
+            "example": "eHh4eHg6dG9rZW4..."
+          },
+          "platform": {
+            "type": "string",
+            "description": "Device platform",
+            "example": "ios"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "FeedItemResponse": {
+        "type": "object",
+        "description": "Notification feed item.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Notification UUID",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "notification_type": {
+            "type": "string",
+            "description": "Type",
+            "example": "listing_blocked"
+          },
+          "title": {
+            "type": "string",
+            "description": "Notification title",
+            "example": "Your listing has been blocked"
+          },
+          "body": {
+            "type": "string",
+            "description": "Notification body",
+            "example": "Your listing was blocked for guideline violations."
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Extra data (deep links etc)",
+            "example": {
+              "listing_id": "8f14e45f-ceea-467f-a0e6-0f2b4c1d9a3e"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "description": "ISO 8601 timestamp",
+            "example": "2026-03-17T10:30:00Z"
+          },
+          "read_at": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 8601 timestamp the recipient marked this read, or null while it is unread",
+            "example": "2026-03-17T11:04:52Z"
+          }
+        },
+        "required": [
+          "body",
+          "created_at",
+          "data",
+          "id",
+          "notification_type",
+          "title"
+        ]
+      },
+      "FeedReadRequest": {
+        "type": "object",
+        "description": "Mark feed rows read. Send exactly one of ``ids`` or ``all``.",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Feed item ids to mark read — the ids from GET feed/. Ignored when `all` is true"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Mark every unread row of the caller's feed read",
+            "example": false
+          }
+        }
+      },
+      "FeedReadResponse": {
+        "type": "object",
+        "description": "What the mark-as-read write actually changed.",
+        "properties": {
+          "marked": {
+            "type": "integer",
+            "description": "Rows this call moved from unread to read — 0 on a repeat of the same call",
+            "example": 3
+          },
+          "unread_count": {
+            "type": "integer",
+            "description": "The caller's unread rows remaining after the write",
+            "example": 0
+          }
+        },
+        "required": [
+          "marked",
+          "unread_count"
+        ]
+      },
+      "PaginatedFeedItemResponseList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeedItemResponse"
+            }
+          },
+          "next_anchor": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "nullable": true,
+            "example": null,
+            "description": "Anchor value for next page. The raw value of the ordering field: a string for a datetime anchor, an integer for a sequence one. Set `anchor_type` on the paginator to narrow this."
+          },
+          "prev_anchor": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "nullable": true,
+            "example": null,
+            "description": "Anchor value for previous page. The raw value of the ordering field: a string for a datetime anchor, an integer for a sequence one. Set `anchor_type` on the paginator to narrow this."
+          },
+          "has_next": {
+            "type": "boolean",
+            "description": "Whether there are more items after this page",
+            "example": false
+          },
+          "has_prev": {
+            "type": "boolean",
+            "description": "Whether there are items before this page",
+            "example": false
+          },
+          "count": {
+            "type": "integer",
+            "description": "Number of items in current page",
+            "example": 1
+          },
+          "unread_count": {
+            "type": "integer",
+            "description": "Unread rows in the caller's whole feed — not just this page.",
+            "example": 0
+          }
+        },
+        "required": [
+          "items",
+          "has_next",
+          "has_prev",
+          "count",
+          "unread_count"
+        ],
+        "x-stapel-pagination": {
+          "style": "anchor",
+          "items": "items"
+        }
+      },
+      "StapelError": {
+        "type": "object",
+        "description": "Structured error returned by all Stapel API endpoints.",
+        "properties": {
+          "localizable_error": {
+            "type": "string",
+            "description": "Translation key for client-side localization",
+            "example": "error.404.not_found"
+          },
+          "error": {
+            "type": "string",
+            "description": "Human-readable fallback/debug message — not reliably English,"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {},
+            "description": "Context values for template placeholders",
+            "example": {
+              "retry_after": 30
+            }
+          },
+          "error_language": {
+            "type": "string",
+            "description": "The language `error` is written in (e.g. 'en', 'ru'),"
+          }
+        },
+        "required": [
+          "error",
+          "localizable_error"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "JWTBearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT access token in the `Authorization: Bearer <token>` header — the credential a native client sends. When the JWT cookie is also present, the cookie wins."
+      },
+      "JWTCookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "stapel_jwt",
+        "description": "JWT token stored in cookie. Login via /auth/admin/ to get the cookie."
+      }
+    }
+  }
+}

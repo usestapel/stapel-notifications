@@ -59,7 +59,7 @@ class FeedItemResponse:
         notification_type: Type. Example: listing_blocked
         title: Notification title. Example: Your listing has been blocked
         body: Notification body. Example: Your listing was blocked for guideline violations.
-        data: Extra data (deep links etc).
+        data: Extra data (deep links etc). Example: {"listing_id": "8f14e45f-ceea-467f-a0e6-0f2b4c1d9a3e"}
         created_at: ISO 8601 timestamp. Example: 2026-03-17T10:30:00Z
         read_at: ISO 8601 timestamp the recipient marked this read, or null while it is unread. Example: 2026-03-17T11:04:52Z
     """

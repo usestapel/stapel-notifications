@@ -76,13 +76,11 @@ _FIXTURES = Path(
 _MACHINE_RU: dict[str, str] = {
     "error.404.device_not_found": "Устройство не найдено или зарегистрировано не на вас.",
     "error.400.read_target_required": "Укажите ровно одно: непустой список «ids» или «all»: true.",
-    "error.400.too_many_ids": "Слишком много идентификаторов в одном запросе. Отправьте меньше или «all»: true.",
 }
 
 _MACHINE_ES: dict[str, str] = {
     "error.404.device_not_found": "Dispositivo no encontrado o no está registrado a tu nombre.",
     "error.400.read_target_required": "Envía exactamente uno: una lista «ids» no vacía, o «all»: true.",
-    "error.400.too_many_ids": "Demasiados identificadores en una sola petición. Envía menos, o «all»: true.",
 }
 
 #: language -> machine-translation table, consulted for the keys the

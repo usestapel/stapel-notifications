@@ -365,6 +365,9 @@ class FeedPagination(CreatedAtAnchorPagination):
             "description": (
                 "Unread rows in the caller's whole feed — not just this page."
             ),
+            # Every envelope property carries an example, or an item example
+            # cannot be wrapped into the page (stapel-core 0.99.2).
+            "example": 0,
         }
         envelope["required"] = [*envelope["required"], "unread_count"]
         return envelope
@@ -482,7 +485,10 @@ class NotificationFeedReadView(SerializerSeamMixin, APIView):
             return StapelErrorResponse(400, ERR_400_READ_TARGET_REQUIRED)
 
         if len(ids) > MAX_READ_IDS:
-            return StapelErrorResponse(400, ERR_400_TOO_MANY_IDS)
+            return StapelErrorResponse(
+                400, ERR_400_TOO_MANY_IDS,
+                params={"requested": len(ids), "limit": MAX_READ_IDS},
+            )
 
         unread = feed_queryset(request.user.id).filter(read_at__isnull=True)
         if not mark_all:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.30.1"
+version = "0.30.2"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -36,7 +36,10 @@ dependencies = [
     # in a service that installs this app.
     # 0.95.3 floor: request_notification carries dedup_key/dedup_ttl on the
     # notification.requested payload, which the intake claims.
-    "stapel-core>=0.95.3,<1.0",
+    # 0.99.2: error.400.too_many_ids is core's key (the mark-read bound
+    # raises it), errors.json carries declared param_types, and the feed's
+    # item example is wrapped into its page envelope.
+    "stapel-core>=0.99.2,<1.0",
 ]
 
 [project.urls]
@@ -70,7 +73,7 @@ test = [
     "pytest-django",
     "pytest-asyncio",
     "pytest-cov",
-    "stapel-tools>=0.35.0,<1",
+    "stapel-tools>=0.84.0,<1",
 ]
 
 [tool.setuptools]

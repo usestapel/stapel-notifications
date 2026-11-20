@@ -91,7 +91,7 @@ TRIAD = ("schema.json", "flows.json", "errors.json")
 # promotions, inventory; measured 7089 with one-line intents), and
 # 7100 -> 7200 for the orders.refunded letter (measured 7136). The
 # budget stays enforced — matching the Makefile's contract targets.
-ARTIFACTS = TRIAD + ("capabilities.json", "templates.json", "llms.txt")
+ARTIFACTS = TRIAD + ("schema.v2.json", "capabilities.json", "templates.json", "llms.txt")
 LLMS_TXT_BUDGET = 7200
 
 

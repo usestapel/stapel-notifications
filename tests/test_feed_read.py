@@ -229,7 +229,9 @@ def test_too_many_ids_is_a_400(authed_client, user):
     resp = authed_client.post("/feed/read/", {"ids": ids}, format="json")
 
     assert resp.status_code == 400
-    assert resp.json()["localizable_error"] == "error.400.too_many_ids"
+    body = resp.json()
+    assert body["localizable_error"] == "error.400.too_many_ids"
+    assert body["params"] == {"requested": MAX_READ_IDS + 1, "limit": MAX_READ_IDS}
 
 
 def test_a_full_page_of_ids_is_accepted(authed_client, user):

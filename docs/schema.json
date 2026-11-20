@@ -260,12 +260,25 @@
                 "examples": {
                   "FeedItemResponse": {
                     "value": {
-                      "id": "550e8400-e29b-41d4-a716-446655440000",
-                      "notification_type": "listing_blocked",
-                      "title": "Your listing has been blocked",
-                      "body": "Your listing was blocked for guideline violations.",
-                      "created_at": "2026-03-17T10:30:00Z",
-                      "read_at": "2026-03-17T11:04:52Z"
+                      "items": [
+                        {
+                          "id": "550e8400-e29b-41d4-a716-446655440000",
+                          "notification_type": "listing_blocked",
+                          "title": "Your listing has been blocked",
+                          "body": "Your listing was blocked for guideline violations.",
+                          "data": {
+                            "listing_id": "8f14e45f-ceea-467f-a0e6-0f2b4c1d9a3e"
+                          },
+                          "created_at": "2026-03-17T10:30:00Z",
+                          "read_at": "2026-03-17T11:04:52Z"
+                        }
+                      ],
+                      "next_anchor": null,
+                      "prev_anchor": null,
+                      "has_next": false,
+                      "has_prev": false,
+                      "count": 1,
+                      "unread_count": 0
                     }
                   }
                 }
@@ -318,7 +331,8 @@
                 "examples": {
                   "FeedReadResponse": {
                     "value": {
-                      "marked": 3
+                      "marked": 3,
+                      "unread_count": 0
                     }
                   }
                 }
@@ -482,7 +496,10 @@
           "data": {
             "type": "object",
             "additionalProperties": {},
-            "description": "Extra data (deep links etc)"
+            "description": "Extra data (deep links etc)",
+            "example": {
+              "listing_id": "8f14e45f-ceea-467f-a0e6-0f2b4c1d9a3e"
+            }
           },
           "created_at": {
             "type": "string",
@@ -519,7 +536,8 @@
           },
           "all": {
             "type": "boolean",
-            "description": "Mark every unread row of the caller's feed read"
+            "description": "Mark every unread row of the caller's feed read",
+            "example": false
           }
         }
       },
@@ -534,7 +552,8 @@
           },
           "unread_count": {
             "type": "integer",
-            "description": "The caller's unread rows remaining after the write"
+            "description": "The caller's unread rows remaining after the write",
+            "example": 0
           }
         },
         "required": [
@@ -561,6 +580,7 @@
               }
             ],
             "nullable": true,
+            "example": null,
             "description": "Anchor value for next page. The raw value of the ordering field: a string for a datetime anchor, an integer for a sequence one. Set `anchor_type` on the paginator to narrow this."
           },
           "prev_anchor": {
@@ -573,23 +593,28 @@
               }
             ],
             "nullable": true,
+            "example": null,
             "description": "Anchor value for previous page. The raw value of the ordering field: a string for a datetime anchor, an integer for a sequence one. Set `anchor_type` on the paginator to narrow this."
           },
           "has_next": {
             "type": "boolean",
-            "description": "Whether there are more items after this page"
+            "description": "Whether there are more items after this page",
+            "example": false
           },
           "has_prev": {
             "type": "boolean",
-            "description": "Whether there are items before this page"
+            "description": "Whether there are items before this page",
+            "example": false
           },
           "count": {
             "type": "integer",
-            "description": "Number of items in current page"
+            "description": "Number of items in current page",
+            "example": 1
           },
           "unread_count": {
             "type": "integer",
-            "description": "Unread rows in the caller's whole feed — not just this page."
+            "description": "Unread rows in the caller's whole feed — not just this page.",
+            "example": 0
           }
         },
         "required": [

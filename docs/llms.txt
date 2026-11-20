@@ -1,4 +1,4 @@
-# stapel-notifications 0.30.1
+# stapel-notifications 0.30.2
 
 Multi-channel user notifications: routes typed notification requests to email, SMS, push and Telegram with per-user preferences and language, branded email templates, device push-token management (registered devices are listable, so a push toggle can render its own state) and an in-app notification feed, live over the realtime substrate where it is installed; delivery is logged per channel with idempotency.
 
@@ -210,7 +210,7 @@ Render `t(code, params)`; branch UX on the remediation. Localized text lives in 
 - error.400.invalid_ad_id [400] fix_input
 - error.400.invalid_platform [400] fix_input
 - error.400.read_target_required [400] fix_input
-- error.400.too_many_ids [400] fix_input
+- error.400.too_many_ids [400] fix_input {requested,limit}
 - error.400.validation_error [400] fix_input
 - error.400.verification_failed [400] verify
 - error.400.verification_invalid_factor [400] verify
@@ -235,7 +235,7 @@ Render `t(code, params)`; branch UX on the remediation. Localized text lives in 
 - error.422.unprocessable_entity [422] wait_and_retry
 - error.423.locked [423] wait_and_retry
 - error.423.verification_locked [423] wait_and_retry
-- error.429.rate_limit [429] wait_and_retry {retry_after_minutes}
+- error.429.rate_limit [429] wait_and_retry {retry_after_display,retry_after,retry_after_minutes}
 - error.429.too_many_requests [429] wait_and_retry
 - error.500.internal [500] contact_support
 - error.503.mandate_unavailable [503] retry

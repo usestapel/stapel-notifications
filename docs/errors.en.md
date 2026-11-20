@@ -22,7 +22,7 @@
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | Invalid advertisement ID |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | Platform must be one of: ios, android, web. |
 | `error.400.read_target_required` | 400 | — | `fix_input` | Send exactly one of: a non-empty "ids" list, or "all": true. |
-| `error.400.too_many_ids` | 400 | — | `fix_input` | Too many ids in one request. Send fewer, or "all": true. |
+| `error.400.too_many_ids` | 400 | `requested`, `limit` | `fix_input` | Too many ids: {requested} requested, at most {limit} per batch request |
 | `error.400.validation_error` | 400 | — | `fix_input` | Validation error |
 | `error.400.verification_failed` | 400 | — | `verify` | Verification failed |
 | `error.400.verification_invalid_factor` | 400 | — | `verify` | This verification factor is not available |
@@ -47,7 +47,7 @@
 | `error.422.unprocessable_entity` | 422 | — | `wait_and_retry` | Unprocessable entity |
 | `error.423.locked` | 423 | — | `wait_and_retry` | Resource is locked |
 | `error.423.verification_locked` | 423 | — | `wait_and_retry` | Too many failed attempts — verification locked |
-| `error.429.rate_limit` | 429 | `retry_after_minutes` | `wait_and_retry` | Too many attempts. Try again in {retry_after_minutes} minutes. |
+| `error.429.rate_limit` | 429 | `retry_after_display`, `retry_after`, `retry_after_minutes` | `wait_and_retry` | Too many attempts. Try again in {retry_after_display} ({retry_after} s, about {retry_after_minutes} min). |
 | `error.429.too_many_requests` | 429 | — | `wait_and_retry` | Too many requests. Please try again later. |
 | `error.500.internal` | 500 | — | `contact_support` | Something went wrong |
 | `error.503.mandate_unavailable` | 503 | — | `retry` | Cannot verify workspace mandate right now |

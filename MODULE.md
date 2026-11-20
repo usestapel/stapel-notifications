@@ -773,8 +773,8 @@ re-read the feed.
 `{"all": false}`) and both targets are the same 400,
 `error.400.read_target_required`: a "mark all read" button that lost its flag
 must not look like a feed that was already read. More than 500 ids is
-`error.400.too_many_ids` — a bound on the `IN (...)` this endpoint can be made
-to build; a client with more than that to clear means `all: true`, which is one
+core's `error.400.too_many_ids` with `requested` and `limit` — a bound on the
+`IN (...)` this endpoint can be made to build; a client with more than that to clear means `all: true`, which is one
 `UPDATE` whatever the size.
 
 **Guests may call it.** Same stance as the feed itself: an anonymous session's

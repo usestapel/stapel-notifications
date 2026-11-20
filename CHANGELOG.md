@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.30.2] — 2026-11-20
+
+Patch. No migration, no consumer edit. Requires stapel-core 0.99.2.
+
+- **`error.400.too_many_ids` is core's key.** This package registered it with
+  its own text, stapel-profiles with another, so an instance installing both
+  failed core's stale-translation gate. Mark-read over 500 ids now answers
+  core's key with `params` `{"requested", "limit"}`; the key is no longer
+  registered or translated here.
+- **Contract profile 2:** `docs/schema.v2.json` (stapel_tools.codegen
+  `contract_profile=2`) beside the unchanged-profile `docs/schema.json`, for a
+  native client generator.
+- **Examples:** the feed's 200 example documented one item as the page; it is
+  now the page envelope (core 0.99.2, plus an `unread_count` example) and the
+  item carries a `data` example. Falsy examples (`all: false`,
+  `unread_count: 0`) are kept by core 0.99.
+- `errors.json` regenerated under core 0.99 (`error.429.rate_limit` text,
+  `param_types`); the shape test accepts `param_types`.
+- Gates: `tests/test_contract_profile2.py` on stapel-tools 0.84.0's
+  `contract_gates` (the `test` extra and CI floor move to 0.84.0).
+
 ## [0.30.1] — 2026-11-13
 
 ### Added — types for the brick-wave companions (registry-only)
