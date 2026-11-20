@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "user.session_expired",
+  "description": "Consumed from stapel-auth. A session reached its expiry unrevoked (announced once by auth's expiry sweep). Notifications deletes the push device rows that session registered, exactly as for user.session_revoked. Contract owned by the emitter.",
+  "type": "object",
+  "required": [
+    "user_id",
+    "session_id",
+    "expired_at"
+  ],
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "expired_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

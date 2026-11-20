@@ -47,12 +47,22 @@
               }
             },
             "description": ""
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": ""
           }
         }
       },
       "post": {
         "operationId": "register_device_token",
-        "description": "Register this installation's push token, or refresh it. Call it after every sign-in and on every token refresh. The row is bound to the caller's session (deleted when that session is revoked) and, with `device_id`, to the installation: a new token from the same installation replaces the old one in the same row, and the installation's rows under other accounts are removed. A token still live for another account answers 409 unless that row carries the same `device_id` (the same installation switching accounts), in which case it is handed over.\n\n**Permissions:** `IsNotAnonymousUser`",
+        "description": "Register this installation's push token, or refresh it. Call it after every sign-in and on every token refresh. The row is bound to the caller's session, which is deleted with it when the session is revoked or expires: the session the access token names (`sid`), or — only for a token that names none — `session_id`. With `device_id` the row is also bound to the installation: a new token from the same installation replaces the old one in the same row, and the installation's rows under other accounts are removed. A token still live for another account answers 409 unless that row carries the same `device_id` (the same installation switching accounts), in which case it is handed over.\n\n**Permissions:** `IsNotAnonymousUser`",
         "summary": "Register push token",
         "tags": [
           "Devices"
@@ -113,6 +123,16 @@
             },
             "description": ""
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": ""
+          },
           "409": {
             "content": {
               "application/json": {
@@ -154,6 +174,16 @@
           "204": {
             "description": "No response body"
           },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": ""
+          },
           "404": {
             "content": {
               "application/json": {
@@ -193,6 +223,16 @@
         "responses": {
           "204": {
             "description": "No response body"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": ""
           },
           "404": {
             "content": {
@@ -244,6 +284,16 @@
             "description": "No response body"
           },
           "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StapelError"
+                }
+              }
+            },
+            "description": ""
+          },
+          "403": {
             "content": {
               "application/json": {
                 "schema": {
@@ -526,7 +576,7 @@
           "session_id": {
             "type": "string",
             "nullable": true,
-            "description": "The auth session this registration belongs to — the id auth's session list marks is_current. Ignored where the service can read the session itself. When that session is revoked the row is deleted",
+            "description": "Only for access tokens without a session claim (issued by stapel-auth before 0.54.0) — the id auth's session list marks is_current. Ignored, not refused, when the token carries the session (sid) or the service can read it itself. When that session is revoked or expires the row is deleted",
             "example": "550e8400-e29b-41d4-a716-446655440000"
           }
         },
@@ -557,7 +607,7 @@
           },
           "session_bound": {
             "type": "boolean",
-            "description": "True when the row is bound to a session and is deleted when that session is revoked",
+            "description": "True when the row is bound to a session and is deleted when that session is revoked or expires",
             "example": true
           }
         },

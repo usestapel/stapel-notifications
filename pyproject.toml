@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stapel-notifications"
-version = "0.31.0"
+version = "0.31.1"
 description = "Push and in-app notifications Django app for the Stapel framework"
 readme = "README.md"
 license = { text = "MIT" }
@@ -39,7 +39,9 @@ dependencies = [
     # 0.99.2: error.400.too_many_ids is core's key (the mark-read bound
     # raises it), errors.json carries declared param_types, and the feed's
     # item example is wrapped into its page envelope.
-    "stapel-core>=0.99.2,<1.0",
+    # 0.99.4: request_session_id reads the verified sid claim the device row
+    # is bound to.
+    "stapel-core>=0.99.4,<1.0",
 ]
 
 [project.urls]

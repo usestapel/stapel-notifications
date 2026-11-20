@@ -15,7 +15,7 @@ class DeviceTokenRequest:
         token: FCM device token. Example: eHh4eHg6dG9rZW4...
         platform: Device platform. Example: ios
         device_id: The installation's stable id, generated once per install (opaque, 16-255 characters of letters, digits and - . _ ~ : + / =). A new token from the same installation refreshes its row instead of adding one, and a token still held by another account is handed over (instead of 409) when that row carries the same device_id. Example: 3f2b9c4e-8a71-4d6e-9b0a-5c1e7f2d4a90
-        session_id: The auth session this registration belongs to — the id auth's session list marks is_current. Ignored where the service can read the session itself. When that session is revoked the row is deleted. Example: 550e8400-e29b-41d4-a716-446655440000
+        session_id: Only for access tokens without a session claim (issued by stapel-auth before 0.54.0) — the id auth's session list marks is_current. Ignored, not refused, when the token carries the session (sid) or the service can read it itself. When that session is revoked or expires the row is deleted. Example: 550e8400-e29b-41d4-a716-446655440000
     """
     token: str
     platform: str
@@ -31,7 +31,7 @@ class DeviceTokenResponse:
         token: Registered token. Example: eHh4eHg6dG9rZW4...
         platform: Device platform. Example: ios
         device_id: The installation id the row carries, or null. Example: 3f2b9c4e-8a71-4d6e-9b0a-5c1e7f2d4a90
-        session_bound: True when the row is bound to a session and is deleted when that session is revoked. Example: true
+        session_bound: True when the row is bound to a session and is deleted when that session is revoked or expires. Example: true
     """
     token: str
     platform: str

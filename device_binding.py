@@ -2,23 +2,31 @@
 
 A push device row is bound to two things besides the account:
 
-* the **session** that registered it — ``user.session_revoked`` for that
-  session deletes the row (``actions.handle_user_session_revoked``), so a
-  handset that signed out, or whose session was revoked elsewhere, stops
-  receiving the account's pushes even when its own unregister never arrived;
+* the **session** that registered it — ``user.session_revoked`` or
+  ``user.session_expired`` for that session deletes the row
+  (``actions.handle_user_session_ended``), so a handset that signed out, whose
+  session was revoked elsewhere, or whose session ran out, stops receiving the
+  account's pushes even when its own unregister never arrived;
 * the **installation** (``device_id``) — one installation holds one row per
   account, so a rotated token refreshes the row instead of adding one, and a
   token another account still holds on the same installation is handed over
   instead of refused.
 
-Access tokens carry no session claim: stapel-auth finds the session of a
-request through its own access-token ledger
-(``stapel_auth.sessions.services.current_session``). So the session is read
-from auth when auth runs in this process, and is otherwise the one the client
-declares — the id auth's own session list marks ``is_current``. A declared id
-is not verified here, and does not need to be for safety: a client that lies
-can only make its own device row outlive (unbound) or die with (another of its
-own sessions) a session of the same account, never touch another account.
+The session comes from the credential, in this order:
+
+1. the ``sid`` claim of the verified access token
+   (``stapel_core.django.jwt.claims.request_session_id``) — signed by the
+   issuer, readable in any process that verifies tokens, with or without
+   stapel-auth installed. When it is present a ``session_id`` in the body is
+   ignored, not refused;
+2. stapel-auth's own resolver when auth runs in this process
+   (``current_session``, its access-token ledger) — tokens issued before the
+   claim existed;
+3. the ``session_id`` the client declares (the id auth's session list marks
+   ``is_current``) — only when the token carries no claim. Not verifiable
+   here, and safe anyway: a client that lies can only make its own device row
+   outlive (unbound) or die with another of its own sessions, never touch
+   another account.
 """
 from __future__ import annotations
 
@@ -45,9 +53,15 @@ def valid_device_id(value: str | None) -> bool:
 def resolve_session(request, declared: str | None) -> str | None:
     """The session this request registers a device under, or ``None``.
 
-    stapel-auth in this process answers from its ledger and wins over the
-    body; otherwise the declared id is taken as given (bounded in length).
+    The token's verified ``sid`` claim wins; then stapel-auth's ledger when
+    it runs in this process; the declared id (bounded in length) only when
+    neither knows the session.
     """
+    from stapel_core.django.jwt.claims import request_session_id
+
+    claimed = request_session_id(request)
+    if claimed:
+        return claimed
     if apps.is_installed("stapel_auth"):
         try:
             from stapel_auth.sessions.services import current_session

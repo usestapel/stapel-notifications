@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.31.1] — 2026-11-20
+
+Patch. No migration. Requires stapel-core 0.99.4; pairs with stapel-auth
+0.54.0 (older auths keep working through the fallbacks below).
+
+### Changed — the session comes from the token
+
+- `POST devices/` binds the row to the session the verified access token
+  names (`sid`, `stapel_core.django.jwt.claims.request_session_id`), in any
+  process — stapel-auth need not be installed. A `session_id` in the body is
+  read only when the token carries no claim (tokens from before auth 0.54.0):
+  then auth's own resolver when it runs in this process, then the declared
+  id. With a claim present a sent `session_id` is ignored, not refused, so a
+  client that sends someone else's id is bound to its own token's session.
+  Mobile clients on auth 0.54.0+ can stop sending `session_id`.
+
+### Added — `user.session_expired`
+
+- Consumed (`schemas/consumes/user.session_expired.json`) by the same handler
+  as `user.session_revoked`, now `actions.handle_user_session_ended`: a
+  session that runs out takes its device rows with it, scoped to the account
+  the event names.
+
+### Contract
+
+- Every device operation (list, register, both unregisters, delete by id)
+  declares the guest refusal: `403`, `error.403.forbidden`, in profile 1 and
+  profile 2.
+
 ## [0.31.0] — 2026-11-20
 
 Minor: the device registry and the push payload grow. Migration

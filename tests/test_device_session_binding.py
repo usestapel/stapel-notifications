@@ -17,7 +17,7 @@ from django.test import override_settings
 
 from stapel_core.comm import emit
 
-from stapel_notifications.actions import handle_user_session_revoked
+from stapel_notifications.actions import handle_user_session_ended
 from stapel_notifications.channels import push as push_channel
 from stapel_notifications.models import DevicePushToken
 from stapel_notifications.services import process_notification
@@ -81,7 +81,7 @@ class TestSessionBinding:
             user_id=other_user.id, token="tok-foreign", platform="ios", session_id=mine,
         )
 
-        handle_user_session_revoked(_revoked(user.id, mine))
+        handle_user_session_ended(_revoked(user.id, mine))
 
         assert set(DevicePushToken.objects.values_list("token", flat=True)) == {
             "tok-other-session", "tok-unbound", "tok-foreign",
@@ -90,19 +90,19 @@ class TestSessionBinding:
     def test_a_redelivery_is_a_no_op(self, authed_client, user):
         session = str(uuid.uuid4())
         _register(authed_client, "tok-1", session=session)
-        handle_user_session_revoked(_revoked(user.id, session))
-        handle_user_session_revoked(_revoked(user.id, session))
+        handle_user_session_ended(_revoked(user.id, session))
+        handle_user_session_ended(_revoked(user.id, session))
         assert not DevicePushToken.objects.exists()
 
     def test_a_malformed_event_does_not_raise(self, caplog):
-        handle_user_session_revoked(_revoked("not-a-uuid", "s"))
-        handle_user_session_revoked(_revoked("", ""))
+        handle_user_session_ended(_revoked("not-a-uuid", "s"))
+        handle_user_session_ended(_revoked("", ""))
 
     def test_refresh_under_a_new_session_rebinds_the_row(self, authed_client, user):
         old, new = str(uuid.uuid4()), str(uuid.uuid4())
         _register(authed_client, "tok-1", session=old)
         _register(authed_client, "tok-1", session=new)
-        handle_user_session_revoked(_revoked(user.id, old))
+        handle_user_session_ended(_revoked(user.id, old))
         assert DevicePushToken.objects.get(token="tok-1").session_id == new
 
     def test_an_unbound_row_is_listed_as_unbound(self, authed_client, user):

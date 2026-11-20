@@ -317,9 +317,10 @@ def handle_translations_changed(event):
 
 
 @on_action("user.session_revoked")
-def handle_user_session_revoked(event):
-    """A session ended (sign-out, revoke from another device, admin action):
-    its handset stops receiving this account's pushes.
+@on_action("user.session_expired")
+def handle_user_session_ended(event):
+    """A session ended — revoked (sign-out, revoke from another device, admin
+    action) or expired: its handset stops receiving this account's pushes.
 
     Deletes the device rows that session registered (``session_id``, see
     ``device_binding``). Unbound rows (registered before the binding existed,
@@ -337,7 +338,8 @@ def handle_user_session_revoked(event):
     session_id = payload.get("session_id")
     if not user_id or not session_id:
         logger.error(
-            "user.session_revoked without user_id/session_id: %s",
+            "%s without user_id/session_id: %s",
+            getattr(event, "event_type", "session event"),
             getattr(event, "event_id", "?"),
         )
         return
@@ -347,11 +349,12 @@ def handle_user_session_revoked(event):
         ).delete()
     except (TypeError, ValueError, ValidationError):
         logger.error(
-            "user.session_revoked with an unusable user id: %s",
+            "%s with an unusable user id: %s",
+            getattr(event, "event_type", "session event"),
             getattr(event, "event_id", "?"),
         )
         return
     logger.info(
-        "user.session_revoked: %d push device(s) of session %s (user %s) removed",
-        deleted, session_id, user_id,
+        "%s: %d push device(s) of session %s (user %s) removed",
+        getattr(event, "event_type", "session ended"), deleted, session_id, user_id,
     )

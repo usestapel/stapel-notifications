@@ -36,7 +36,8 @@ from stapel_core.django.api.errors import (
     StapelErrorSerializer,
     StapelResponse,
 )
-from stapel_core.django.api.errors import ERR_409_CONFLICT
+from stapel_core.django.api.errors import ERR_403_FORBIDDEN, ERR_409_CONFLICT
+from stapel_core.django.openapi.contract import raises
 from stapel_core.django.api.pagination import CreatedAtAnchorPagination
 from stapel_core.django.api.permissions import (
     ANONYMOUS_ALLOWED,
@@ -119,6 +120,7 @@ def _device_dto(device: DevicePushToken) -> DeviceListItemResponse:
 
 
 @extend_schema(tags=["Devices"])
+@raises(ERR_403_FORBIDDEN)  # a guest session (IsNotAnonymousUser)
 class DeviceTokenView(SerializerSeamMixin, APIView):
     """List the caller's push devices, or register one."""
 
@@ -145,7 +147,10 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
             "registered but the push provider has rejected the token, so "
             "nothing is delivered to them."
         ),
-        responses={200: DeviceListItemResponseSerializer(many=True)},
+        responses={
+            200: DeviceListItemResponseSerializer(many=True),
+            403: StapelErrorSerializer,
+        },
     )
     def get(self, request):  # noqa: R007
         # Inactive rows are included on purpose. A toggle that reads this
@@ -168,8 +173,11 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
         description=(
             "Register this installation's push token, or refresh it. Call it "
             "after every sign-in and on every token refresh. The row is bound "
-            "to the caller's session (deleted when that session is revoked) "
-            "and, with `device_id`, to the installation: a new token from the "
+            "to the caller's session, which is deleted with it when the "
+            "session is revoked or expires: the session the access token "
+            "names (`sid`), or — only for a token that names none — "
+            "`session_id`. With `device_id` the row is also bound to the "
+            "installation: a new token from the "
             "same installation replaces the old one in the same row, and the "
             "installation's rows under other accounts are removed. A token "
             "still live for another account answers 409 unless that row "
@@ -180,6 +188,7 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
         responses={
             201: DeviceTokenResponseSerializer,
             400: StapelErrorSerializer,
+            403: StapelErrorSerializer,
             409: StapelErrorSerializer,
         },
     )
@@ -277,6 +286,7 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
 
 
 @extend_schema(tags=["Devices"])
+@raises(ERR_403_FORBIDDEN)  # a guest session (IsNotAnonymousUser)
 class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
     """Unregister a push notification token named in the URL.
 
@@ -299,6 +309,7 @@ class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
         deprecated=True,
         responses={
             204: None,
+            403: StapelErrorSerializer,
             404: StapelErrorSerializer,
         },
     )
@@ -315,6 +326,7 @@ class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
 
 
 @extend_schema(tags=["Devices"])
+@raises(ERR_403_FORBIDDEN)  # a guest session (IsNotAnonymousUser)
 class DeviceUnregisterBodyView(SerializerSeamMixin, APIView):
     """Unregister this installation's push device by token or installation id.
 
@@ -339,6 +351,7 @@ class DeviceUnregisterBodyView(SerializerSeamMixin, APIView):
         responses={
             204: None,
             400: StapelErrorSerializer,
+            403: StapelErrorSerializer,
             404: StapelErrorSerializer,
         },
     )
@@ -363,6 +376,7 @@ class DeviceUnregisterBodyView(SerializerSeamMixin, APIView):
 
 
 @extend_schema(tags=["Devices"])
+@raises(ERR_403_FORBIDDEN)  # a guest session (IsNotAnonymousUser)
 class DeviceUnregisterView(SerializerSeamMixin, APIView):
     """Unregister a push device by the id ``GET /devices/`` handed out.
 
@@ -383,6 +397,7 @@ class DeviceUnregisterView(SerializerSeamMixin, APIView):
         summary="Unregister a push device by id",
         responses={
             204: None,
+            403: StapelErrorSerializer,
             404: StapelErrorSerializer,
         },
     )

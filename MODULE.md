@@ -458,6 +458,7 @@ in-process in a monolith, bus consumer in microservices — transport chosen by
 | `user.deleted` | Deprecated upstream (stapel-gdpr removes it in 0.6.0). Subscribed by the same registration (`legacy_user_deleted`): the same `erasure.erase_account` as the erasure path, receipting too when the payload carries a `correlation_id` |
 | `user.merged` | Carry the guest's feed rows and push tokens to the survivor; the survivor's `UserNotificationSettings` win on collision; the guest's `UserContact` is dropped, never carried — see **7a. Merge policy** below |
 | `user.session_revoked` | Delete the `DevicePushToken` rows that session registered (`session_id`), so a signed-out handset stops receiving the account's pushes; unbound rows are left alone — see **Sessions and installations** below |
+| `user.session_expired` | The same handler (`actions.handle_user_session_ended`): a session that ran out unrevoked takes its rows with it (stapel-auth 0.54.0 announces expiry) |
 | `user.deletion_initiated` | Soft-deactivate the active `UserContact` + `DevicePushToken` rows and stamp them `closure_paused_at` (reversible) |
 | `user.deletion_cancelled` | Reactivate exactly the rows stamped `closure_paused_at` — never a token the push provider rejected |
 | `profile.changed` | Upsert `UserNotificationSettings` channel switches (incl. an unsubscribe) — `intake.sync_profile_preferences`, the same function as `consume_profiles` |
@@ -690,12 +691,17 @@ it, because the server is the one being asked.
 A row is bound to two things besides the account (`device_binding.py`):
 
 - **The session that registered it** (`session_id`). `user.session_revoked`
-  for that session deletes the row — sign-out, "sign out other devices", an
-  admin revoke — so the handset stops receiving the account's pushes even when
-  its own unregister never arrived. Access tokens carry no session claim, so
-  the session comes from stapel-auth's `current_session(request)` when auth
-  runs in this process, and otherwise from the `session_id` the client sends
-  (the id auth's `GET sessions/` marks `is_current`). A declared id is not
+  or `user.session_expired` for that session deletes the row — sign-out,
+  "sign out other devices", an admin revoke, the session running out — so the
+  handset stops receiving the account's pushes even when its own unregister
+  never arrived. The session comes from the credential (0.31.1): the verified
+  `sid` claim of the access token (`stapel_core.django.jwt.claims.
+  request_session_id`, stapel-auth 0.54.0+ mints it), which works in any
+  process; for a token without the claim, stapel-auth's `current_session(request)`
+  when auth runs in this process, and only then the `session_id` the client
+  sends (the id auth's `GET sessions/` marks `is_current`). With a claim
+  present a sent `session_id` is ignored, never an error — a client that sends
+  someone else's id is bound to its own token's session. A declared id is not
   verified and need not be: lying can only unbind the caller's own device or
   tie it to another of its own sessions. Rows registered without a session
   (and every row from before 0.31.0) are unbound and behave as before until the
@@ -716,10 +722,10 @@ What a mobile client calls:
 
 | Moment | Call |
 |---|---|
-| sign-in, and every app start while signed in | `POST devices/ {token, platform, device_id, session_id}` |
+| sign-in, and every app start while signed in | `POST devices/ {token, platform, device_id}` (`session_id` only for tokens from an auth older than 0.54.0) |
 | token refresh (FCM rotation) | the same call with the new token and the same `device_id` |
 | sign-out, while the bearer is still valid | `POST devices/unregister/ {device_id}`, then delete the token at the provider |
-| sign-out that never reached the server, session revoked elsewhere | nothing: `user.session_revoked` removes the session's rows |
+| sign-out that never reached the server, session revoked elsewhere, session expired | nothing: `user.session_revoked` / `user.session_expired` removes the session's rows |
 | account switch | sign-out as above, then sign-in registers with the same `device_id`; leftovers of the previous account on this installation are removed |
 
 ### The push payload contract (`docs/push.json`)
