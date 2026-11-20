@@ -76,11 +76,15 @@ _FIXTURES = Path(
 _MACHINE_RU: dict[str, str] = {
     "error.404.device_not_found": "Устройство не найдено или зарегистрировано не на вас.",
     "error.400.read_target_required": "Укажите ровно одно: непустой список «ids» или «all»: true.",
+    "error.400.invalid_device_id": "device_id должен быть непрозрачным случайным значением длиной от 16 до 255 символов (буквы, цифры и - . _ ~ : + / =), созданным один раз на установку.",
+    "error.400.device_target_required": "Укажите ровно одно: «token» или «device_id».",
 }
 
 _MACHINE_ES: dict[str, str] = {
     "error.404.device_not_found": "Dispositivo no encontrado o no está registrado a tu nombre.",
     "error.400.read_target_required": "Envía exactamente uno: una lista «ids» no vacía, o «all»: true.",
+    "error.400.invalid_device_id": "device_id debe ser un valor aleatorio opaco de 16 a 255 caracteres (letras, dígitos y - . _ ~ : + / =), generado una vez por instalación.",
+    "error.400.device_target_required": "Envía exactamente uno: «token» o «device_id».",
 }
 
 #: language -> machine-translation table, consulted for the keys the

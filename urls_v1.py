@@ -6,6 +6,7 @@ from django.urls import path
 from .views import (
     DeviceTokenView,
     DeviceTokenDeleteView,
+    DeviceUnregisterBodyView,
     DeviceUnregisterView,
     NotificationKeysView,
     NotificationFeedView,
@@ -19,6 +20,8 @@ urlpatterns = [
     # Two segments, so it can never be shadowed by (or shadow) the one-segment
     # token route below whatever a token happens to look like.
     path('devices/by-id/<int:device_id>/', DeviceUnregisterView.as_view(), name='device-unregister'),
+    # Before the token route: the token travels in the body here.
+    path('devices/unregister/', DeviceUnregisterBodyView.as_view(), name='device-unregister-body'),
     path('devices/<str:token>/', DeviceTokenDeleteView.as_view(), name='device-token-delete'),
     path('notification-keys/', NotificationKeysView.as_view(), name='notification-keys'),
     path('feed/', NotificationFeedView.as_view(), name='notification-feed'),

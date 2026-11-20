@@ -1,12 +1,13 @@
 # Errors — Español
 
-`47` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.es.json`.
+`49` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.es.json`.
 
 | Código | Estado | Parámetros | Acción | Texto |
 |---|---|---|---|---|
 | `error.400.bad_request` | 400 | — | `fix_input` | Solicitud incorrecta |
 | `error.400.captcha_invalid` | 400 | — | `retry` | La verificación del captcha ha fallado. Inténtalo de nuevo. |
 | `error.400.captcha_required` | 400 | — | `retry` | Se requiere el token del captcha. |
+| `error.400.device_target_required` | 400 | — | `fix_input` | Envía exactamente uno: «token» o «device_id». |
 | `error.400.expected_list` | 400 | — | `fix_input` | Se esperaba una lista de elementos |
 | `error.400.field.blank` | 400 | `field` | `fix_input` | {field} no puede estar vacío |
 | `error.400.field.does_not_exist` | 400 | `field` | `fix_input` | {field} no existe |
@@ -20,6 +21,7 @@
 | `error.400.field.required` | 400 | `field` | `fix_input` | {field} es obligatorio |
 | `error.400.field.unique` | 400 | `field` | `fix_input` | {field} debe ser único |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | ID de anuncio no válido |
+| `error.400.invalid_device_id` | 400 | — | `fix_input` | device_id debe ser un valor aleatorio opaco de 16 a 255 caracteres (letras, dígitos y - . _ ~ : + / =), generado una vez por instalación. |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | La plataforma debe ser una de las siguientes: ios, android, web. |
 | `error.400.read_target_required` | 400 | — | `fix_input` | Envía exactamente uno: una lista «ids» no vacía, o «all»: true. |
 | `error.400.too_many_ids` | 400 | `requested`, `limit` | `fix_input` | Demasiados identificadores: {requested} solicitados, como máximo {limit} por solicitud por lotes |

@@ -270,6 +270,32 @@ class DevicePushToken(models.Model):
     ]
     platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES)
     is_active = models.BooleanField(default=True)
+    device_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "The installation's own stable id (opaque, generated once per "
+            "install). One installation holds one row per account: a new "
+            "token from the same installation refreshes this row, and the "
+            "installation's rows under other accounts are dropped. NULL on "
+            "rows registered without one."
+        ),
+    )
+    session_id = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "The auth session that registered (or last refreshed) this row. "
+            "user.session_revoked for that session deletes the row, so a "
+            "signed-out handset stops receiving the account's pushes. NULL = "
+            "unbound: removed only by unregister, account erasure or the "
+            "provider rejecting the token."
+        ),
+    )
     closure_paused_at = models.DateTimeField(
         null=True,
         blank=True,

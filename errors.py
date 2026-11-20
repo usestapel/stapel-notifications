@@ -23,12 +23,19 @@ ERR_404_DEVICE_NOT_FOUND = 'error.404.device_not_found'
 # `marked: 0` would let a "mark all read" button that forgot its flag look
 # like a feed that was already read.
 ERR_400_READ_TARGET_REQUIRED = 'error.400.read_target_required'
+# The installation id is what hands a token over between accounts on the same
+# installation, so a guessable one would let a stranger claim a live token.
+ERR_400_INVALID_DEVICE_ID = 'error.400.invalid_device_id'
+# Unregister names one target: the token held right now, or the installation.
+ERR_400_DEVICE_TARGET_REQUIRED = 'error.400.device_target_required'
 
 SERVICE_ERRORS = {
     ERR_400_INVALID_PLATFORM: 'Platform must be one of: ios, android, web.',
     ERR_404_TOKEN_NOT_FOUND: 'Device token not found.',
     ERR_404_DEVICE_NOT_FOUND: 'Device not found, or it is not registered to you.',
     ERR_400_READ_TARGET_REQUIRED: 'Send exactly one of: a non-empty "ids" list, or "all": true.',
+    ERR_400_INVALID_DEVICE_ID: 'device_id must be an opaque random value of 16 to 255 characters (letters, digits and - . _ ~ : + / =), generated once per installation.',
+    ERR_400_DEVICE_TARGET_REQUIRED: 'Send exactly one of: "token" or "device_id".',
 }
 
 # Machine-readable recovery hints (remediation) — the canonical "what to do"
@@ -51,6 +58,8 @@ SERVICE_REMEDIATION = {
     # client can say the right thing without asking anybody: name the ids, or
     # set the flag.
     ERR_400_READ_TARGET_REQUIRED: 'fix_input',
+    ERR_400_INVALID_DEVICE_ID: 'fix_input',
+    ERR_400_DEVICE_TARGET_REQUIRED: 'fix_input',
 }
 
 register_service_errors(SERVICE_ERRORS, remediation=SERVICE_REMEDIATION)

@@ -10,6 +10,10 @@ Dispatches to the provider configured via the ``PUSH_PROVIDER`` key of the
 Besides the short names, any dotted path to a provider class with a
 ``send(user_id, title, body, data) -> int`` method is accepted — the same
 fork-free escape hatch as the email/SMS channels and captcha backends.
+
+Every provider receives the same ``data`` map — the push payload contract of
+``push_payload`` (``docs/push.json``) — and the built-in ones turn it into one
+message per device with ``push_payload.compose``.
 """
 
 import logging
@@ -19,6 +23,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from stapel_notifications.channels.sms import UNCONFIGURED, UNCONFIGURED_MESSAGE
 from stapel_notifications.models import DevicePushToken
+from stapel_notifications.push_payload import LEGACY_LINK_KEYS, PAYLOAD_VERSION, compose, link_of
 
 logger = logging.getLogger(__name__)
 
@@ -62,20 +67,34 @@ def _active_tokens(user_id: str):
     return DevicePushToken.objects.filter(
         user_id=user_id,
         is_active=True,
-    ).values_list('token', 'platform')
+    ).order_by('pk').values_list('pk', 'token', 'platform')
 
 
 # ──────────────────────────────────────────────────────────────────
 # Provider classes
 # ──────────────────────────────────────────────────────────────────
 
+#: What the mock provider "sent": one entry per device, in order —
+#: ``{"user_id", "device": DevicePushToken.pk, "platform", "message"}`` where
+#: ``message`` is exactly what FCM would have been handed (``compose``). The
+#: push twin of Django's ``mail.outbox``; tests read and clear it.
+mock_outbox: list[dict] = []
+
+
 class _MockPushProvider:
     def send(self, user_id: str, title: str, body: str, data: dict | None) -> int:
-        count = len(_active_tokens(user_id))
+        devices = list(_active_tokens(user_id))
+        for pk, _token, platform in devices:
+            mock_outbox.append({
+                "user_id": str(user_id),
+                "device": pk,
+                "platform": platform,
+                "message": compose(title=title, body=body, data=data or {}),
+            })
         logger.info(
-            "[mock push] user=%s title=%r active_tokens=%d", user_id, title, count
+            "[mock push] user=%s title=%r active_tokens=%d", user_id, title, len(devices)
         )
-        return count
+        return len(devices)
 
 
 class _UnconfiguredPushProvider:
@@ -104,25 +123,31 @@ class _FCMPushProvider:
             logger.info("No active push tokens for user %s", user_id)
             return 0
 
+        payload = compose(title=title, body=body, data=data or {})
         sent_count = 0
-        for token, platform in tokens:
+        for _pk, token, _platform in tokens:
             try:
-                # Build platform-specific message
-                notification = messaging.Notification(title=title, body=body)
                 message = messaging.Message(
-                    notification=notification,
+                    notification=messaging.Notification(
+                        title=payload["title"], body=payload["body"],
+                    ),
                     token=token,
-                    data={k: str(v) for k, v in (data or {}).items()},
-                )
-
-                # iOS-specific: set badge and sound
-                if platform == 'ios':
-                    message.apns = messaging.APNSConfig(
-                        payload=messaging.APNSPayload(
-                            aps=messaging.Aps(sound='default'),
+                    data=payload["data"],
+                    android=messaging.AndroidConfig(
+                        notification=messaging.AndroidNotification(
+                            channel_id=payload["android"]["channel_id"],
                         ),
-                    )
-
+                    ),
+                    apns=messaging.APNSConfig(
+                        payload=messaging.APNSPayload(
+                            aps=messaging.Aps(
+                                badge=payload["apns"]["badge"],
+                                sound=payload["apns"]["sound"],
+                                thread_id=payload["apns"]["thread_id"],
+                            ),
+                        ),
+                    ),
+                )
                 messaging.send(message)
                 sent_count += 1
 
@@ -176,12 +201,18 @@ def send_push(user_id: str, title: str, body: str, data: dict | None = None) -> 
 
 from .registry import Channel  # noqa: E402  (kept beside its use)
 
-#: Variables whose value is a deep link the push payload may carry.
-_DEEP_LINK_KEYS = ("chat_url", "listing_url", "notifications_chat_url")
+def _unread_after_this(user_id) -> int:
+    """The badge: the recipient's unread feed rows plus the one being sent
+    (its row is written after the provider returns)."""
+    from stapel_notifications.models import NotificationLog
+
+    return NotificationLog.objects.filter(
+        user_id=user_id, status="sent", channel="push", read_at__isnull=True,
+    ).count() + 1
 
 
 def _deliver_push(msg) -> bool:
-    """Hand title/body/deep-links to the push provider for every device."""
+    """Hand the push payload contract (``docs/push.json``) to the provider."""
     import logging
 
     if not msg.user_id:
@@ -192,10 +223,20 @@ def _deliver_push(msg) -> bool:
         "push_title", all_vars.get("heading", all_vars.get("company_name", ""))
     )
     body = all_vars.get("push_body", msg.body)
-    data = {"notification_type": msg.notification_type}
-    for key in _DEEP_LINK_KEYS:
+    data = {
+        "v": PAYLOAD_VERSION,
+        "notification_type": msg.notification_type,
+        "group": msg.routing.get("group") or "system",
+        "badge": str(_unread_after_this(msg.user_id)),
+    }
+    if msg.log_id is not None:
+        data["notification_id"] = str(msg.log_id)
+    url = link_of(all_vars, msg.routing)
+    if url:
+        data["url"] = url
+    for key in LEGACY_LINK_KEYS:
         if key in all_vars:
-            data[key] = all_vars[key]
+            data[key] = str(all_vars[key])
 
     sent_count = send_push(msg.user_id, title, body, data)
     # The count, always — not only when it is zero. `True` means "the provider

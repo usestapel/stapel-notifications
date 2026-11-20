@@ -1,4 +1,6 @@
 {
+  "error.400.device_target_required": "Укажите ровно одно: «token» или «device_id».",
+  "error.400.invalid_device_id": "device_id должен быть непрозрачным случайным значением длиной от 16 до 255 символов (буквы, цифры и - . _ ~ : + / =), созданным один раз на установку.",
   "error.400.invalid_platform": "Платформа должна быть одной из: ios, android, web.",
   "error.400.read_target_required": "Укажите ровно одно: непустой список «ids» или «all»: true.",
   "error.404.device_not_found": "Устройство не найдено или зарегистрировано не на вас.",

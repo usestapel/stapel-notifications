@@ -8,12 +8,19 @@ from uuid import UUID
 class DeviceTokenRequest:
     """Register a push token.
 
+    Send it on every sign-in and every token refresh: a repeat refreshes the
+    same row, and the row is bound to the session that sent it.
+
     Attributes:
         token: FCM device token. Example: eHh4eHg6dG9rZW4...
         platform: Device platform. Example: ios
+        device_id: The installation's stable id, generated once per install (opaque, 16-255 characters of letters, digits and - . _ ~ : + / =). A new token from the same installation refreshes its row instead of adding one, and a token still held by another account is handed over (instead of 409) when that row carries the same device_id. Example: 3f2b9c4e-8a71-4d6e-9b0a-5c1e7f2d4a90
+        session_id: The auth session this registration belongs to — the id auth's session list marks is_current. Ignored where the service can read the session itself. When that session is revoked the row is deleted. Example: 550e8400-e29b-41d4-a716-446655440000
     """
     token: str
     platform: str
+    device_id: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 @dataclass
@@ -23,9 +30,13 @@ class DeviceTokenResponse:
     Attributes:
         token: Registered token. Example: eHh4eHg6dG9rZW4...
         platform: Device platform. Example: ios
+        device_id: The installation id the row carries, or null. Example: 3f2b9c4e-8a71-4d6e-9b0a-5c1e7f2d4a90
+        session_bound: True when the row is bound to a session and is deleted when that session is revoked. Example: true
     """
     token: str
     platform: str
+    device_id: Optional[str] = None
+    session_bound: bool = field(default=False, metadata={"example": True})
 
 
 @dataclass
@@ -41,6 +52,8 @@ class DeviceListItemResponse:
         is_active: False once the push provider rejected this token — registered, but no longer delivered to. Example: true
         created_at: ISO 8601 timestamp of the first registration. Example: 2026-03-17T10:30:00Z
         last_seen: ISO 8601 timestamp of the last registration of this token. Example: 2026-03-18T08:02:11Z
+        device_id: The installation id this row was registered with, or null. Example: 3f2b9c4e-8a71-4d6e-9b0a-5c1e7f2d4a90
+        session_bound: True when the row is deleted together with the session that registered it. Example: true
     """
     id: int
     token_fingerprint: str
@@ -48,6 +61,23 @@ class DeviceListItemResponse:
     is_active: bool
     created_at: str
     last_seen: str
+    device_id: Optional[str] = None
+    session_bound: bool = field(default=False, metadata={"example": True})
+
+
+@dataclass
+class DeviceUnregisterRequest:
+    """Unregister this installation's push device. Send exactly one of ``token`` or ``device_id``.
+
+    The token travels in the body, never in the URL: it is a bearer value
+    and URLs end up in access logs and traces.
+
+    Attributes:
+        token: The device token to remove. Example: eHh4eHg6dG9rZW4...
+        device_id: The installation id to remove every row of (for the caller's account). Example: 3f2b9c4e-8a71-4d6e-9b0a-5c1e7f2d4a90
+    """
+    token: Optional[str] = None
+    device_id: Optional[str] = None
 
 
 @dataclass

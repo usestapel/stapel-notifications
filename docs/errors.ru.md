@@ -1,12 +1,13 @@
 # Errors — Русский
 
-`47` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.ru.json`.
+`49` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.ru.json`.
 
 | Код | Статус | Параметры | Действие | Текст |
 |---|---|---|---|---|
 | `error.400.bad_request` | 400 | — | `fix_input` | Некорректный запрос |
 | `error.400.captcha_invalid` | 400 | — | `retry` | Проверка капчи не пройдена. Пожалуйста, попробуйте ещё раз. |
 | `error.400.captcha_required` | 400 | — | `retry` | Требуется токен капчи. |
+| `error.400.device_target_required` | 400 | — | `fix_input` | Укажите ровно одно: «token» или «device_id». |
 | `error.400.expected_list` | 400 | — | `fix_input` | Ожидался список элементов |
 | `error.400.field.blank` | 400 | `field` | `fix_input` | Поле «{field}» не может быть пустым |
 | `error.400.field.does_not_exist` | 400 | `field` | `fix_input` | «{field}» не существует |
@@ -20,6 +21,7 @@
 | `error.400.field.required` | 400 | `field` | `fix_input` | Поле «{field}» обязательно |
 | `error.400.field.unique` | 400 | `field` | `fix_input` | Значение поля «{field}» должно быть уникальным |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | Недопустимый идентификатор объявления |
+| `error.400.invalid_device_id` | 400 | — | `fix_input` | device_id должен быть непрозрачным случайным значением длиной от 16 до 255 символов (буквы, цифры и - . _ ~ : + / =), созданным один раз на установку. |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | Платформа должна быть одной из: ios, android, web. |
 | `error.400.read_target_required` | 400 | — | `fix_input` | Укажите ровно одно: непустой список «ids» или «all»: true. |
 | `error.400.too_many_ids` | 400 | `requested`, `limit` | `fix_input` | Слишком много идентификаторов: запрошено {requested}, максимум {limit} за один запрос |

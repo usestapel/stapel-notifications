@@ -51,7 +51,10 @@ from .dto import (
     FeedItemResponse,
     FeedReadResponse,
 )
+from .device_binding import resolve_session, valid_device_id
 from .errors import (
+    ERR_400_DEVICE_TARGET_REQUIRED,
+    ERR_400_INVALID_DEVICE_ID,
     ERR_400_INVALID_PLATFORM,
     ERR_400_READ_TARGET_REQUIRED,
     ERR_400_TOO_MANY_IDS,
@@ -64,6 +67,7 @@ from .serializers import (
     DeviceListItemResponseSerializer,
     DeviceTokenRequestSerializer,
     DeviceTokenResponseSerializer,
+    DeviceUnregisterRequestSerializer,
     FeedItemResponseSerializer,
     FeedReadRequestSerializer,
     FeedReadResponseSerializer,
@@ -109,6 +113,8 @@ def _device_dto(device: DevicePushToken) -> DeviceListItemResponse:
         is_active=device.is_active,
         created_at=device.created_at.isoformat(),
         last_seen=device.updated_at.isoformat(),
+        device_id=device.device_id,
+        session_bound=bool(device.session_id),
     )
 
 
@@ -159,6 +165,17 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
     @extend_schema(
         operation_id="register_device_token",
         summary="Register push token",
+        description=(
+            "Register this installation's push token, or refresh it. Call it "
+            "after every sign-in and on every token refresh. The row is bound "
+            "to the caller's session (deleted when that session is revoked) "
+            "and, with `device_id`, to the installation: a new token from the "
+            "same installation replaces the old one in the same row, and the "
+            "installation's rows under other accounts are removed. A token "
+            "still live for another account answers 409 unless that row "
+            "carries the same `device_id` (the same installation switching "
+            "accounts), in which case it is handed over."
+        ),
         request=DeviceTokenRequestSerializer,
         responses={
             201: DeviceTokenResponseSerializer,
@@ -173,63 +190,99 @@ class DeviceTokenView(SerializerSeamMixin, APIView):
         # validated_data is a DeviceTokenRequest dataclass instance
         token = serializer.validated_data.token
         platform = serializer.validated_data.platform
+        device_id = serializer.validated_data.device_id or None
 
         if platform not in VALID_PLATFORMS:
             return StapelErrorResponse(400, ERR_400_INVALID_PLATFORM)
+        if not valid_device_id(device_id):
+            return StapelErrorResponse(400, ERR_400_INVALID_DEVICE_ID)
+
+        session_id = resolve_session(request, serializer.validated_data.session_id)
+        me = request.user.id
 
         with transaction.atomic():
             # A device token identifies one physical device, and it is a
             # bearer value: whoever learns it can present it. A token that is
             # LIVE for another account stays there — moving it on request
             # would let anybody who saw the token take that account's push
-            # routing (and point their own notifications at its device). The
-            # hand-over path is the previous account's own unregister
-            # (logout, or DELETE from its device list). A binding the push
-            # provider already rejected (is_active=False) routes nothing, so
-            # moving it takes nothing from anybody.
-            stale = (
+            # routing. Two exits: the previous account's own unregister, or
+            # the same installation (equal device_id) announcing that it now
+            # belongs to this account. A binding the provider already
+            # rejected (is_active=False) routes nothing, so it moves freely.
+            holder = (
                 DevicePushToken.objects.select_for_update()
                 .filter(token=token)
-                .exclude(user_id=request.user.id)
+                .exclude(user_id=me)
                 .first()
             )
-            if stale is not None and stale.is_active:
+            if holder is not None and holder.is_active and not (
+                device_id and holder.device_id == device_id
+            ):
                 logger.warning(
                     "push token rebinding refused: token %s... is live for "
                     "user %s, requested by user %s",
                     token[:20],
-                    stale.user_id,
-                    request.user.id,
+                    holder.user_id,
+                    me,
                 )
                 return StapelErrorResponse(409, ERR_409_CONFLICT)
-            if stale is not None:
+            if holder is not None:
                 logger.warning(
                     "push token rebinding: token %s... moves from user %s "
-                    "to user %s (platform=%s) — previous binding removed",
+                    "to user %s (platform=%s, same installation=%s)",
                     token[:20],
-                    stale.user_id,
-                    request.user.id,
+                    holder.user_id,
+                    me,
                     platform,
+                    bool(device_id and holder.device_id == device_id),
                 )
-                stale.delete()
+                holder.delete()
 
-            DevicePushToken.objects.update_or_create(
-                token=token,
-                user_id=request.user.id,
-                defaults={
-                    "platform": platform,
-                    "is_active": True,
-                },
-            )
+            row = DevicePushToken.objects.filter(token=token, user_id=me).first()
+            if device_id:
+                # One installation, one account: its rows under any other
+                # account belong to a previous sign-in on this handset.
+                DevicePushToken.objects.filter(device_id=device_id).exclude(
+                    user_id=me
+                ).delete()
+                # Token rotation: the installation's row takes the new token.
+                rotated = (
+                    DevicePushToken.objects.filter(user_id=me, device_id=device_id)
+                    .exclude(token=token)
+                )
+                if row is None:
+                    row = rotated.first()
+                    rotated = rotated.exclude(pk=row.pk) if row else rotated
+                rotated.delete()
 
-        dto = DeviceTokenResponse(token=token, platform=platform)
+            if row is None:
+                row = DevicePushToken(token=token, user_id=me)
+            row.token = token
+            row.platform = platform
+            row.is_active = True
+            if device_id:
+                row.device_id = device_id
+            if session_id:
+                row.session_id = session_id
+            row.save()
+
+        dto = DeviceTokenResponse(
+            token=token,
+            platform=platform,
+            device_id=row.device_id,
+            session_bound=bool(row.session_id),
+        )
         response_cls = self.get_response_serializer_class()
         return StapelResponse(response_cls(dto), status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Devices"])
 class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
-    """Unregister a push notification token."""
+    """Unregister a push notification token named in the URL.
+
+    Deprecated: the token is a bearer value and a URL path lands in access
+    logs and traces. ``POST devices/unregister/`` takes it in the body.
+    """
 
     # Mirror of DeviceTokenView: a session that cannot register a device has
     # no binding of its own to remove (this deletes only rows already owned by
@@ -238,7 +291,12 @@ class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
 
     @extend_schema(
         operation_id="unregister_device_token",
-        summary="Unregister push token",
+        summary="Unregister push token (deprecated: token in the URL)",
+        description=(
+            "Deprecated — use `POST devices/unregister/`, which carries the "
+            "token in the body instead of the URL path."
+        ),
+        deprecated=True,
         responses={
             204: None,
             404: StapelErrorSerializer,
@@ -253,6 +311,54 @@ class DeviceTokenDeleteView(SerializerSeamMixin, APIView):
         if not deleted:
             return StapelErrorResponse(404, ERR_404_TOKEN_NOT_FOUND)
 
+        return StapelResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(tags=["Devices"])
+class DeviceUnregisterBodyView(SerializerSeamMixin, APIView):
+    """Unregister this installation's push device by token or installation id.
+
+    The token-in-body form of ``DELETE devices/{token}/``: a bearer value
+    does not belong in a URL. ``device_id`` removes every row the caller's
+    account holds for that installation, which is what a sign-out wants when
+    the current token is not at hand.
+    """
+
+    permission_classes = [IsNotAnonymousUser]
+    request_serializer_class = DeviceUnregisterRequestSerializer
+
+    @extend_schema(
+        operation_id="unregister_push_device",
+        summary="Unregister this device (token or device_id in the body)",
+        description=(
+            "Call it on sign-out, before the session ends, and when the person "
+            "switches push off. Send exactly one of `token` or `device_id`. "
+            "Only the caller's own rows are removed."
+        ),
+        request=DeviceUnregisterRequestSerializer,
+        responses={
+            204: None,
+            400: StapelErrorSerializer,
+            404: StapelErrorSerializer,
+        },
+    )
+    def post(self, request):  # noqa: R007
+        serializer = self.get_request_serializer_class()(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data.token or None
+        device_id = serializer.validated_data.device_id or None
+        if bool(token) == bool(device_id):
+            return StapelErrorResponse(400, ERR_400_DEVICE_TARGET_REQUIRED)
+
+        mine = DevicePushToken.objects.filter(user_id=request.user.id)
+        if token:
+            deleted, _ = mine.filter(token=token).delete()
+            if not deleted:
+                return StapelErrorResponse(404, ERR_404_TOKEN_NOT_FOUND)
+        else:
+            deleted, _ = mine.filter(device_id=device_id).delete()
+            if not deleted:
+                return StapelErrorResponse(404, ERR_404_DEVICE_NOT_FOUND)
         return StapelResponse(status=status.HTTP_204_NO_CONTENT)
 
 

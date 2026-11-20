@@ -9,6 +9,7 @@ import gettext as gettext_module
 import logging
 import re
 import string
+import uuid
 from pathlib import Path
 
 from stapel_core.notifications.tokens import generate_unsubscribe_token
@@ -618,6 +619,7 @@ def process_notification(
             telegram_chat_id=recipient_telegram,
             content_html=content_html,
             content_text=content_text,
+            log_id=uuid.uuid4(),
         )
         if not _should_send(group, channel, settings_obj):
             NotificationLog.objects.create(
@@ -705,6 +707,7 @@ def process_notification(
                 any_delivered = True
             confirm_delivery(event_id, channel, recipient, template_version)
             entry = NotificationLog.objects.create(
+                id=msg.log_id,
                 user_id=user_id,
                 notification_type=notification_type,
                 channel=channel,

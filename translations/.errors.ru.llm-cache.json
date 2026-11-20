@@ -1,4 +1,12 @@
 {
+  "error.400.device_target_required": {
+    "hash": "dd7ffb61388ae8bf",
+    "text": "Укажите ровно одно: «token» или «device_id»."
+  },
+  "error.400.invalid_device_id": {
+    "hash": "de7dde983892f098",
+    "text": "device_id должен быть непрозрачным случайным значением длиной от 16 до 255 символов (буквы, цифры и - . _ ~ : + / =), созданным один раз на установку."
+  },
   "error.400.read_target_required": {
     "hash": "e183c3b271c11744",
     "text": "Укажите ровно одно: непустой список «ids» или «all»: true."

@@ -1,12 +1,13 @@
 # Errors — English
 
-`47` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.en.json`.
+`49` error keys. Canonical texts live in the code (`register_service_errors`); localized texts in `translations/errors.en.json`.
 
 | Code | Status | Params | Remediation | Text |
 |---|---|---|---|---|
 | `error.400.bad_request` | 400 | — | `fix_input` | Bad request |
 | `error.400.captcha_invalid` | 400 | — | `retry` | Captcha verification failed. Please try again. |
 | `error.400.captcha_required` | 400 | — | `retry` | Captcha token is required. |
+| `error.400.device_target_required` | 400 | — | `fix_input` | Send exactly one of: "token" or "device_id". |
 | `error.400.expected_list` | 400 | — | `fix_input` | Expected a list of items |
 | `error.400.field.blank` | 400 | `field` | `fix_input` | {field} may not be blank |
 | `error.400.field.does_not_exist` | 400 | `field` | `fix_input` | {field} does not exist |
@@ -20,6 +21,7 @@
 | `error.400.field.required` | 400 | `field` | `fix_input` | {field} is required |
 | `error.400.field.unique` | 400 | `field` | `fix_input` | {field} must be unique |
 | `error.400.invalid_ad_id` | 400 | — | `fix_input` | Invalid advertisement ID |
+| `error.400.invalid_device_id` | 400 | — | `fix_input` | device_id must be an opaque random value of 16 to 255 characters (letters, digits and - . _ ~ : + / =), generated once per installation. |
 | `error.400.invalid_platform` | 400 | — | `fix_input` | Platform must be one of: ios, android, web. |
 | `error.400.read_target_required` | 400 | — | `fix_input` | Send exactly one of: a non-empty "ids" list, or "all": true. |
 | `error.400.too_many_ids` | 400 | `requested`, `limit` | `fix_input` | Too many ids: {requested} requested, at most {limit} per batch request |

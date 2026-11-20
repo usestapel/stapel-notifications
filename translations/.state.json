@@ -1,5 +1,13 @@
 {
   "errors.es": {
+    "error.400.device_target_required": {
+      "hash": "dd7ffb61388ae8bf",
+      "origin": "llm"
+    },
+    "error.400.invalid_device_id": {
+      "hash": "de7dde983892f098",
+      "origin": "llm"
+    },
     "error.400.invalid_platform": {
       "hash": "4e73b81787614773",
       "origin": "seed:stapel-builtin"
@@ -18,6 +26,14 @@
     }
   },
   "errors.ru": {
+    "error.400.device_target_required": {
+      "hash": "dd7ffb61388ae8bf",
+      "origin": "llm"
+    },
+    "error.400.invalid_device_id": {
+      "hash": "de7dde983892f098",
+      "origin": "llm"
+    },
     "error.400.invalid_platform": {
       "hash": "4e73b81787614773",
       "origin": "seed:stapel-builtin"

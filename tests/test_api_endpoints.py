@@ -39,7 +39,9 @@ class TestDeviceTokenRegister:
             "/devices/", {"token": "tok-a", "platform": "android"}, format="json"
         )
         assert resp.status_code == 201
-        assert resp.json() == {"token": "tok-a", "platform": "android"}
+        assert resp.json() == {
+            "token": "tok-a", "platform": "android", "device_id": None, "session_bound": False,
+        }
         row = DevicePushToken.objects.get(token="tok-a")
         assert row.user_id == user.id
         assert row.platform == "android"

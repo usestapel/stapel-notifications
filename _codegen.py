@@ -147,6 +147,19 @@ def _require_python_312() -> None:
         )
 
 
+def emit_push_payload(path: Path) -> None:
+    """Write the push payload contract (``push_payload.PUSH_PAYLOAD_SCHEMA``):
+    the shape of what a device receives, for a client to generate types from."""
+    import json
+
+    from stapel_notifications.push_payload import PUSH_PAYLOAD_SCHEMA
+
+    path.write_text(
+        json.dumps(PUSH_PAYLOAD_SCHEMA, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     _require_python_312()
 
@@ -179,6 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     flows = emit_flows(out / "flows.json")
     with scoped_error_registry():
         errors = emit_errors(out / "errors.json")
+    emit_push_payload(out / "push.json")
 
     print(
         f"stapel-notifications contract: {paths} paths, {flows} flows, "

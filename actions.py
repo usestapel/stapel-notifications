@@ -314,3 +314,44 @@ def handle_translations_changed(event):
     if not language or not keys:
         return
     resolve_and_cache(keys, language)
+
+
+@on_action("user.session_revoked")
+def handle_user_session_revoked(event):
+    """A session ended (sign-out, revoke from another device, admin action):
+    its handset stops receiving this account's pushes.
+
+    Deletes the device rows that session registered (``session_id``, see
+    ``device_binding``). Unbound rows (registered before the binding existed,
+    or by a client that declared no session) are left alone — they are
+    removed by unregister, erasure or the provider rejecting the token.
+    Scoped by ``user_id`` as well, so an event can only ever reach the rows
+    of the account it names.
+
+    Idempotent: a redelivery finds nothing left and deletes nothing.
+    """
+    from .models import DevicePushToken
+
+    payload = event.payload or {}
+    user_id = payload.get("user_id")
+    session_id = payload.get("session_id")
+    if not user_id or not session_id:
+        logger.error(
+            "user.session_revoked without user_id/session_id: %s",
+            getattr(event, "event_id", "?"),
+        )
+        return
+    try:
+        deleted, _ = DevicePushToken.objects.filter(
+            user_id=user_id, session_id=str(session_id),
+        ).delete()
+    except (TypeError, ValueError, ValidationError):
+        logger.error(
+            "user.session_revoked with an unusable user id: %s",
+            getattr(event, "event_id", "?"),
+        )
+        return
+    logger.info(
+        "user.session_revoked: %d push device(s) of session %s (user %s) removed",
+        deleted, session_id, user_id,
+    )

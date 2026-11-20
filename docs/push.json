@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "stapel-notifications/push.json",
+  "title": "PushMessage",
+  "description": "One push notification as stapel-notifications sends it to one device. `title`/`body` are the visible notification; `data` is the app's payload (all values strings); `android` and `apns` are the per-platform delivery hints the sender sets. A tap opens `data.url` when present (a deep link the app's link router validates), else the app's feed.",
+  "type": "object",
+  "required": [
+    "title",
+    "body",
+    "data",
+    "android",
+    "apns"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Notification title."
+    },
+    "body": {
+      "type": "string",
+      "description": "Notification body."
+    },
+    "data": {
+      "$ref": "#/$defs/PushData"
+    },
+    "android": {
+      "type": "object",
+      "required": [
+        "channel_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "channel_id": {
+          "type": "string",
+          "enum": [
+            "auth",
+            "billing",
+            "messages",
+            "system"
+          ],
+          "description": "Android notification channel: equal to data.group."
+        }
+      }
+    },
+    "apns": {
+      "type": "object",
+      "required": [
+        "badge",
+        "sound",
+        "thread_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "badge": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Unread rows in the recipient's feed, this one included."
+        },
+        "sound": {
+          "type": "string",
+          "enum": [
+            "default"
+          ]
+        },
+        "thread_id": {
+          "type": "string",
+          "enum": [
+            "auth",
+            "billing",
+            "messages",
+            "system"
+          ],
+          "description": "Notification grouping on iOS: equal to data.group."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "PushData": {
+      "type": "object",
+      "description": "The app's payload. Every value is a string.",
+      "required": [
+        "v",
+        "notification_id",
+        "notification_type",
+        "group",
+        "badge"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "v": {
+          "type": "string",
+          "const": "1",
+          "description": "Payload contract version."
+        },
+        "notification_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The feed row this push is (GET feed/ item id): mark it read with POST feed/read/ {ids:[notification_id]}."
+        },
+        "notification_type": {
+          "type": "string",
+          "description": "Notification type, e.g. new_message."
+        },
+        "group": {
+          "type": "string",
+          "enum": [
+            "auth",
+            "billing",
+            "messages",
+            "system"
+          ],
+          "description": "Routing group: the Android channel and the iOS thread."
+        },
+        "url": {
+          "type": "string",
+          "description": "Canonical deep link to open on tap. Absent when the notification links nowhere."
+        },
+        "badge": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "Unread feed rows, this one included (decimal string)."
+        },
+        "chat_url": {
+          "type": "string",
+          "deprecated": true,
+          "description": "Legacy deep-link key; read `url`."
+        },
+        "listing_url": {
+          "type": "string",
+          "deprecated": true,
+          "description": "Legacy deep-link key; read `url`."
+        },
+        "notifications_chat_url": {
+          "type": "string",
+          "deprecated": true,
+          "description": "Legacy deep-link key; read `url`."
+        }
+      }
+    }
+  }
+}

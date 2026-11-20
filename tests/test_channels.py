@@ -324,11 +324,12 @@ def fake_firebase(monkeypatch):
             self.body = body
 
     class Message:
-        def __init__(self, notification, token, data):
+        def __init__(self, notification, token, data, android=None, apns=None):
             self.notification = notification
             self.token = token
             self.data = data
-            self.apns = None
+            self.android = android
+            self.apns = apns
 
     def send(message):
         if message.token == "tok-dead":
@@ -342,7 +343,9 @@ def fake_firebase(monkeypatch):
     messaging.Message = Message
     messaging.APNSConfig = lambda payload: {"payload": payload}
     messaging.APNSPayload = lambda aps: {"aps": aps}
-    messaging.Aps = lambda sound: {"sound": sound}
+    messaging.Aps = lambda **aps: aps
+    messaging.AndroidConfig = lambda notification: {"notification": notification}
+    messaging.AndroidNotification = lambda channel_id: {"channel_id": channel_id}
     messaging.UnregisteredError = UnregisteredError
     messaging.send = send
 

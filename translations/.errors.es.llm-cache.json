@@ -1,4 +1,12 @@
 {
+  "error.400.device_target_required": {
+    "hash": "dd7ffb61388ae8bf",
+    "text": "Envía exactamente uno: «token» o «device_id»."
+  },
+  "error.400.invalid_device_id": {
+    "hash": "de7dde983892f098",
+    "text": "device_id debe ser un valor aleatorio opaco de 16 a 255 caracteres (letras, dígitos y - . _ ~ : + / =), generado una vez por instalación."
+  },
   "error.400.read_target_required": {
     "hash": "e183c3b271c11744",
     "text": "Envía exactamente uno: una lista «ids» no vacía, o «all»: true."

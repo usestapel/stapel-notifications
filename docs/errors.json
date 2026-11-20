@@ -24,6 +24,14 @@
     "owner": "stapel_core"
   },
   {
+    "code": "error.400.device_target_required",
+    "status": 400,
+    "params": [],
+    "remediation": "fix_input",
+    "en": "Send exactly one of: \"token\" or \"device_id\".",
+    "owner": "stapel_notifications"
+  },
+  {
     "code": "error.400.expected_list",
     "status": 400,
     "params": [],
@@ -152,6 +160,14 @@
     "remediation": "fix_input",
     "en": "Invalid advertisement ID",
     "owner": "stapel_core"
+  },
+  {
+    "code": "error.400.invalid_device_id",
+    "status": 400,
+    "params": [],
+    "remediation": "fix_input",
+    "en": "device_id must be an opaque random value of 16 to 255 characters (letters, digits and - . _ ~ : + / =), generated once per installation.",
+    "owner": "stapel_notifications"
   },
   {
     "code": "error.400.invalid_platform",

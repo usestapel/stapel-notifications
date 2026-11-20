@@ -20,7 +20,7 @@ interaction goes through `stapel_core.comm` (events + functions) and the bus.
 | Type → channel routing | `routing.NOTIFICATION_ROUTING` built-in catalog (33 types: `otp_code`, `auth_change_*`, `magic_link_login`, `new_device_login`, `suspicious_login`, `all_sessions_revoked`, `gdpr.*` (incl. `gdpr.dsar.received`/`gdpr.dsar.opened`), `new_message`, `report_reviewed`, `listing_expiring`, `listing_blocked`, `moderation.report_received`, `moderation.sanction_issued`, `moderation.appeal_resolved` (stapel-moderation upstream, registry-only — no producer in this package), `workspace.invitation` + `.new_user`/`.reminder`/`.decline_confirmed`/`.declined`, `workspace.provisioned_account`, `workspace.mfa_*`, `workspace.member_password_reset`) in groups `auth` (mandatory) / `messages` / `system` (user-mutable) |
 | User preferences | `UserNotificationSettings` (per channel×group booleans — `{email,push,sms,telegram}_{messages,system}`; **no language** — see §5), enforced in `services._should_send`; `auth` group always sends |
 | Contact projection | `UserContact` (email/phone/telegram_chat_id synced from auth via bus; `is_active` soft-off during account-closure grace period) |
-| Push tokens + feed | `DevicePushToken` model; REST API: `GET/POST devices/`, `DELETE devices/{token}/`, `DELETE devices/by-id/{id}/`, `GET feed/` (push log as feed — rows carry `read_at`, the envelope carries `unread_count`), `POST feed/read/` (mark rows or the whole feed read), `GET notification-keys/` (translation-key export for the translate collector) |
+| Push tokens + feed | `DevicePushToken` model; REST API: `GET/POST devices/`, `POST devices/unregister/` (token or installation id in the body), `DELETE devices/{token}/` (deprecated: token in the URL), `DELETE devices/by-id/{id}/`, `GET feed/` (push log as feed — rows carry `read_at`, the envelope carries `unread_count`), `POST feed/read/` (mark rows or the whole feed read), `GET notification-keys/` (translation-key export for the translate collector) |
 | Live feed (optional) | `notifications:user:<id>` Signal stream carrying `notification.new` and `notification.read` on the v1 envelope; socket `ws/notifications/inbox` behind the `[realtime]` extra — see § Live feed |
 | Branded email layer | `templates/notifications/email/_base.html` shared shell + 25 per-type templates + `_raw_content.html` escape hatch; branding driven entirely by settings |
 | i18n | `TranslationCache` model, lazy pull through the `translate.resolve` comm Function, English defaults in `translation_keys.NOTIFICATION_KEYS`, packaged gettext catalogues for de/es/fr/it/nl/pl/pt/ru covering every slot (§6) |
@@ -457,6 +457,7 @@ in-process in a monolith, bus consumer in microservices — transport chosen by
 | `gdpr.owner.probe` | Answer `gdpr.owner.alive` from the subscriber that erases (same registration) — see **6a. Erasure** below |
 | `user.deleted` | Deprecated upstream (stapel-gdpr removes it in 0.6.0). Subscribed by the same registration (`legacy_user_deleted`): the same `erasure.erase_account` as the erasure path, receipting too when the payload carries a `correlation_id` |
 | `user.merged` | Carry the guest's feed rows and push tokens to the survivor; the survivor's `UserNotificationSettings` win on collision; the guest's `UserContact` is dropped, never carried — see **7a. Merge policy** below |
+| `user.session_revoked` | Delete the `DevicePushToken` rows that session registered (`session_id`), so a signed-out handset stops receiving the account's pushes; unbound rows are left alone — see **Sessions and installations** below |
 | `user.deletion_initiated` | Soft-deactivate the active `UserContact` + `DevicePushToken` rows and stamp them `closure_paused_at` (reversible) |
 | `user.deletion_cancelled` | Reactivate exactly the rows stamped `closure_paused_at` — never a token the push provider rejected |
 | `profile.changed` | Upsert `UserNotificationSettings` channel switches (incl. an unsubscribe) — `intake.sync_profile_preferences`, the same function as `consume_profiles` |
@@ -683,6 +684,67 @@ minted a token and wants it gone without a round trip.
 A truthful toggle is then three lines of client logic: list, hash your token,
 match. Nothing is persisted in the browser, and a reload cannot desynchronize
 it, because the server is the one being asked.
+
+### Sessions and installations (0.31.0)
+
+A row is bound to two things besides the account (`device_binding.py`):
+
+- **The session that registered it** (`session_id`). `user.session_revoked`
+  for that session deletes the row — sign-out, "sign out other devices", an
+  admin revoke — so the handset stops receiving the account's pushes even when
+  its own unregister never arrived. Access tokens carry no session claim, so
+  the session comes from stapel-auth's `current_session(request)` when auth
+  runs in this process, and otherwise from the `session_id` the client sends
+  (the id auth's `GET sessions/` marks `is_current`). A declared id is not
+  verified and need not be: lying can only unbind the caller's own device or
+  tie it to another of its own sessions. Rows registered without a session
+  (and every row from before 0.31.0) are unbound and behave as before until the
+  next registration binds them.
+- **The installation** (`device_id`, opaque, 16–255 characters, generated once
+  per install). One installation holds one row per account: a new token from
+  the same installation replaces the old one in the same row; registering
+  removes the installation's rows under other accounts (an account switch);
+  and a token still live for another account is handed over instead of 409
+  when that row carries the same `device_id`. A different (or absent)
+  `device_id` still gets 409.
+
+`POST devices/unregister/` takes `{"token": ...}` or `{"device_id": ...}` in the
+body — a bearer value does not belong in a URL path, which ends up in access
+logs and traces. `DELETE devices/{token}/` stays as a deprecated alias.
+
+What a mobile client calls:
+
+| Moment | Call |
+|---|---|
+| sign-in, and every app start while signed in | `POST devices/ {token, platform, device_id, session_id}` |
+| token refresh (FCM rotation) | the same call with the new token and the same `device_id` |
+| sign-out, while the bearer is still valid | `POST devices/unregister/ {device_id}`, then delete the token at the provider |
+| sign-out that never reached the server, session revoked elsewhere | nothing: `user.session_revoked` removes the session's rows |
+| account switch | sign-out as above, then sign-in registers with the same `device_id`; leftovers of the previous account on this installation are removed |
+
+### The push payload contract (`docs/push.json`)
+
+Every push has one shape whichever provider carries it (`push_payload.py`,
+committed as `docs/push.json`, drift-gated by `make contract-check`; the mock
+sender's captured message is validated against it in
+`tests/test_push_payload.py`). `data` values are strings (FCM's data map):
+
+| Field | Meaning |
+|---|---|
+| `title`, `body` | the visible notification |
+| `data.v` | payload contract version, `"1"` |
+| `data.notification_id` | the feed row this push is — mark it read with `POST feed/read/ {ids: [id]}` |
+| `data.notification_type` | the type, e.g. `new_message` |
+| `data.group` | routing group (`auth`/`billing`/`messages`/`system`) |
+| `data.url` | canonical deep link: the `push_url` variable, else the variable the type's routing names under `link`, else the first legacy link key; absent when the notification links nowhere |
+| `data.badge` | unread feed rows, this one included (decimal string) |
+| `data.chat_url` / `listing_url` / `notifications_chat_url` | legacy link keys, still sent; read `url` |
+| `android.channel_id` | equal to `group` |
+| `apns.badge` / `sound` / `thread_id` | the badge as a number, `default`, and `group` |
+
+A host type points `url` at its link with `"link": "<variable>"` in its
+`TYPES` entry. A custom `PUSH_PROVIDER` receives the same `data` map and can
+build the same message with `push_payload.compose`.
 
 ## Live feed — the stream, and what to do without it
 

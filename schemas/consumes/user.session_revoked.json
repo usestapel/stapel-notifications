@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "user.session_revoked",
+  "description": "Consumed from stapel-auth. A user session was revoked (logout, per-session revoke, revoke-all, or an admin/security action). Notifications deletes the push device rows that session registered, so the handset stops receiving the account's pushes. Contract owned by the emitter.",
+  "type": "object",
+  "required": ["user_id", "session_id"],
+  "properties": {
+    "user_id":    { "type": "string", "format": "uuid" },
+    "session_id": { "type": "string" }
+  },
+  "additionalProperties": false
+}

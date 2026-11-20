@@ -4,6 +4,7 @@ from .dto import (
     DeviceListItemResponse,
     DeviceTokenRequest,
     DeviceTokenResponse,
+    DeviceUnregisterRequest,
     FeedItemResponse,
     FeedReadRequest,
     FeedReadResponse,
@@ -23,6 +24,11 @@ class DeviceTokenResponseSerializer(StapelDataclassSerializer):
 class DeviceListItemResponseSerializer(StapelDataclassSerializer):
     class Meta:
         dataclass = DeviceListItemResponse
+
+
+class DeviceUnregisterRequestSerializer(StapelDataclassSerializer):
+    class Meta:
+        dataclass = DeviceUnregisterRequest
 
 
 class FeedItemResponseSerializer(StapelDataclassSerializer):

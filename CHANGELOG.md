@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.31.0] — 2026-11-20
+
+Minor: the device registry and the push payload grow. Migration
+`0014_device_session_binding` (two nullable columns; existing rows stay valid
+and unbound). Requires stapel-core 0.99.2.
+
+- **Device rows follow the session.** `DevicePushToken.session_id` is set from
+  the registering session (stapel-auth's `current_session` in-process,
+  otherwise the `session_id` the client sends) and `user.session_revoked` for
+  that session deletes the rows (new consumer, `schemas/consumes/
+  user.session_revoked.json`). A signed-out handset stops receiving the
+  account's pushes even when its unregister never arrived.
+- **Installation id.** `POST devices/` accepts `device_id`: a new token from
+  the same installation refreshes the same row, the installation's rows under
+  other accounts are removed (account switch), and a token still live for
+  another account is handed over instead of 409 when its row has the same
+  `device_id`. A malformed id answers `error.400.invalid_device_id`. Responses
+  and list items carry `device_id` and `session_bound`.
+- **Unregister in the body.** `POST devices/unregister/` with `token` or
+  `device_id` (`error.400.device_target_required` unless exactly one).
+  `DELETE devices/{token}/` is kept and marked deprecated.
+- **Push payload contract.** Every push carries `notification_id` (the feed
+  row), `group`, `url` (canonical deep link), `badge` and `v` in `data`, the
+  Android channel and the APNs badge/thread from the group; documented as
+  `docs/push.json` (new contract artifact, drift-gated). The legacy link keys
+  are still sent. Routing entries may name their link variable with `link`.
+- The mock push provider records each message in
+  `channels.push.mock_outbox`.
+
 ## [0.30.2] — 2026-11-20
 
 Patch. No migration, no consumer edit. Requires stapel-core 0.99.2.

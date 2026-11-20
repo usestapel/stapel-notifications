@@ -48,6 +48,7 @@ leave.
 """
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from typing import Callable, Optional
 
@@ -83,6 +84,10 @@ class ChannelMessage:
     #: the message rather than returned so the ``deliver`` signature, which
     #: every host channel in the fleet is written against, does not change.
     facts: dict = field(default_factory=dict)
+    #: The id the journal row of a successful delivery is written under —
+    #: known before ``deliver`` so a push can carry it (``notification_id``,
+    #: the feed item a tap marks read).
+    log_id: Optional[uuid.UUID] = None
 
     @property
     def body(self) -> str:
