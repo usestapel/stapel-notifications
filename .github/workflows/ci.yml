@@ -48,7 +48,7 @@ jobs:
 
       - name: migration-lint (expand/contract gate, release-management.md §3)
         run: |
-          pip install "stapel-tools>=0.84.0,<1" --quiet
+          pip install "stapel-tools>=0.86.0,<1" --quiet
           stapel-migration-lint . --strict
 
       - name: Import check
@@ -129,7 +129,7 @@ jobs:
 
       - name: migration-lint (expand/contract gate, release-management.md §3)
         run: |
-          pip install "stapel-tools>=0.84.0,<1" --quiet
+          pip install "stapel-tools>=0.86.0,<1" --quiet
           stapel-migration-lint . --strict
 
       - name: Import check

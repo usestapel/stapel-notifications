@@ -75,7 +75,7 @@ test = [
     "pytest-django",
     "pytest-asyncio",
     "pytest-cov",
-    "stapel-tools>=0.84.0,<1",
+    "stapel-tools>=0.86.0,<1",
 ]
 
 [tool.setuptools]
